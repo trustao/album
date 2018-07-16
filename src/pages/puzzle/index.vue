@@ -1,14 +1,17 @@
 <template>
   <div class="cvs-wrap">
+    <canvas class="cvs" canvas-id="puzzle-bg"></canvas>
     <canvas class="cvs" canvas-id="puzzle"></canvas>
-    <canvas class="cvs" canvas-id="puzzle-mask"></canvas>
   </div>
 </template>
 
 <script>
-import { formatTime } from '@/utils/index'
+// import { forEachmatTime } from '@/utils/index'
 import card from '@/components/card'
-
+import puzzle from './puzzle'
+import svgJson from '@/images/stencil/svg.json'
+// import images from '~/stencil'
+const {drawImageBackground, drawSVGPath} = puzzle
 export default {
   components: {
     card
@@ -17,21 +20,39 @@ export default {
   data () {
     return {
       ctx: null,
-      maskCtx: null
+      bgCtx: null,
+      viewW: 0,
+      viewH: 0,
+      stencil: '',
+      images: []
     }
   },
   methods: {
     cvsInit () {
       this.ctx = wx.createCanvasContext('puzzle')
-      this.maskCtx = wx.createCanvasContext('puzzle-mask')
+      this.bgCtx = wx.createCanvasContext('puzzle-bg')
+      try {
+        const res = wx.getSystemInfoSync()
+        this.viewW = res.windowWidth
+        this.viewH = res.windowHeight
+      } catch (e) {
+        // Do something when catch error
+      }
     }
   },
   created () {
-    const logs = (wx.getStorageSync('logs') || [])
-    this.logs = logs.map(log => formatTime(new Date(log)))
+
+  },
+  onLoad (options) {
+    this.stencil = options.name
+    this.images = wx.getStorageSync('images') || []
+    console.log(this.stencil, this.images)
   },
   mounted () {
     this.cvsInit()
+    // drawColorBackground(this.bgCtx, {x: 0, y: 150}, {x: 200, y: 0}, 200, 150, null, true)
+    drawImageBackground(this.bgCtx, '/static/stencil/timg.jpg', 'puzzle-bg', 0, 200, 150)
+    drawSVGPath(this.ctx, svgJson.data[this.stencil].path, true)
   }
 }
 </script>

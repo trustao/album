@@ -1,8 +1,8 @@
 const actions = {
-  M: "moveTo",
-  C: "bezierCurveTo",
-  L: "lineTo",
-  Z: "closePath"
+  M: 'moveTo',
+  C: 'bezierCurveTo',
+  L: 'lineTo',
+  Z: 'closePath'
 }
 
 function drawSVGPath (ctx, path, isFill) {
@@ -12,16 +12,18 @@ function drawSVGPath (ctx, path, isFill) {
     var action = p.slice(0, 1)
     var args = p.slice(1).split(/,|\s/g)
     ctx[actions[action]].apply(ctx, args)
+    console.log('ctx.' + actions[action] + '(' + args.toString() + ')')
   })
   if (isFill) {
     ctx.fill()
   } else {
     ctx.storke()
   }
+  ctx.draw()
 }
 
-function drawColorBackground (ctx, colors = [], start, end, width, height, noGradient) {
-  colors = colors.length || ["#ffa7a6", "#fea9ac", "#feacae", "#fdb7b5", "#fdbeb9", "#fbcac0", "#f9cdc2"]
+function drawColorBackground (ctx, start, end, width, height, colors, noGradient) {
+  colors = colors || ['#ffa7a6', '#fea9ac', '#feacae', '#fdb7b5', '#fdbeb9', '#fbcac0', '#f9cdc2']
   var grd = ctx.createLinearGradient(start.x, start.y, end.x, end.y)
   if (noGradient) {
     colors.forEach((color, i) => {
@@ -41,7 +43,8 @@ function drawColorBackground (ctx, colors = [], start, end, width, height, noGra
 
 function drawImageBackground (ctx, path, cvsId, blur, width, height) {
   ctx.drawImage(path, 0, 0, width, height)
-  ctx.draw(() => {
+  ctx.draw(true, function () {
+    if (!blur) return
     wx.canvasGetImageData({
       canvasId: cvsId,
       x: 0,
@@ -50,16 +53,14 @@ function drawImageBackground (ctx, path, cvsId, blur, width, height) {
       height: height,
       success: (res) => {
         ctx.clearRect(0, 0, width, height)
-        console.log(res.data instanceof Uint8ClampedArray) // true
-        const sourceU8 = res.data
-        res.data = blurImage(sourceU8)
-        drawImageFromU8(res, cvsId, width, height, blur)
+        drawImageFromU8(blurImage(res.data, width, height, blur), cvsId, width, height, blur)
       }
     })
   })
 }
 
 function drawImageFromU8 (imgData, cvsId, width, height) {
+  console.log(imgData)
   wx.canvasPutImageData({
     canvasId: cvsId,
     x: 0,
@@ -69,8 +70,8 @@ function drawImageFromU8 (imgData, cvsId, width, height) {
     data: imgData,
     success (res) {
     },
-    fail () {
-      console.log('drawImageFromU8 failed')
+    fail (er) {
+      console.log('drawImageFromU8 failed', er)
     }
   })
 }
@@ -88,20 +89,20 @@ function blurImage (sourceU8, width, height, blur) {
     b: [],
     a: []
   }
-  const res = []
+  const res = new Uint8ClampedArray(width * height * 4)
   for (let i = 0; i < sourceU8.length; i++) {
     switch (i % 4) {
       case 0:
-        source.r.push(source[i])
+        source.r.push(sourceU8[i])
         break
       case 1:
-        source.g.push(source[i])
+        source.g.push(sourceU8[i])
         break
       case 2:
-        source.b.push(source[i])
+        source.b.push(sourceU8[i])
         break
       case 3:
-        source.a.push(source[i])
+        source.a.push(sourceU8[i])
         break
     }
   }
@@ -109,12 +110,12 @@ function blurImage (sourceU8, width, height, blur) {
     gaussBlur(source[key], target[key], width, height, blur)
   }
   for (let i = 0; i < target.r.length; i++) {
-    res.push(target.r)
-    res.push(target.g)
-    res.push(target.b)
-    res.push(target.a)
+    res[i * 4] = target.r[i]
+    res[i * 4 + 1] = target.g[i]
+    res[i * 4 + 2] = target.b[i]
+    res[i * 4 + 3] = target.a[i]
   }
-  return new Uint8ClampedArray(res)
+  return res
 }
 
 function gaussBlur (scl, tcl, w, h, r) {
@@ -127,7 +128,7 @@ function gaussBlur (scl, tcl, w, h, r) {
 function boxesForGauss (sigma, n) {
   var wIdeal = Math.sqrt((12 * sigma * sigma / n) + 1)
   var wl = Math.floor(wIdeal)
-  if (wl % 2 == 0) wl--
+  if (wl % 2 === 0) wl--
   var wu = wl + 2
 
   var mIdeal = (12 * sigma * sigma - n * wl * wl - 4 * n * wl - 3 * n) / (-4 * wl - 4)

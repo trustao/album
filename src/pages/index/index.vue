@@ -1,6 +1,5 @@
 <template>
   <div class="container" @click="clickHandle('test click', $event)">
-
     <div class="userinfo" @click="bindViewTap">
       <img class="userinfo-avatar" v-if="userInfo.avatarUrl" :src="userInfo.avatarUrl" background-size="cover" />
       <div class="userinfo-nickname">
@@ -38,7 +37,7 @@ export default {
 
   methods: {
     bindViewTap () {
-      const url = '../logs/main'
+      const url = '../puzzle/main'
       wx.navigateTo({ url })
     },
     getUserInfo () {
@@ -61,6 +60,17 @@ export default {
   created () {
     // 调用应用实例的方法获取全局数据
     this.getUserInfo()
+    wx.getImageInfo({
+      src: '/static/stencil/ballet.png',
+      success: (res) => {
+        console.log(res)
+      },
+      fail: (res) => {
+        console.log(res)
+      }
+    })
+  },
+  mounted () {
   }
 }
 </script>

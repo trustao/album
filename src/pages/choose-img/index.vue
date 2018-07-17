@@ -29,7 +29,7 @@
           success: (res) => {
             // 返回选定照片的本地文件路径列表，tempFilePath可以作为img标签的src属性显示图片
             var tempFilePaths = res.tempFilePaths
-            this.images = new Set(tempFilePaths.concat(this.images))
+            this.images = Array.from(new Set(this.images.concat(tempFilePaths)))
           }
         })
       },
@@ -54,6 +54,7 @@
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
+    flex-wrap: wrap;
     width: 100vw;
     background: #fff;
     padding-bottom: 120rpx;

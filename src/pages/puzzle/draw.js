@@ -22,9 +22,11 @@ function drawSVGPath (ctx, svg, x, y, width, height, isFill) {
     // console.log('ctx.' + actions[action] + '(' + args.toString() + ')')
   })
   if (isFill) {
+    ctx.setFillStyle('#fff')
     ctx.fill()
   } else {
-    ctx.storke()
+    ctx.setStrokeStyle('#fff')
+    ctx.stroke()
   }
 }
 
@@ -36,7 +38,7 @@ function transfromStringToMatrix (str, matrix, scaleX, scaleY) {
   matrix[5] += Number(translate[1] || translate[0])
 }
 
-function drawColorBackground (ctx, start, end, width, height, colors, noGradient) {
+function drawColorBackground (ctx, start, end, width, height, colors, noGradient, cb) {
   colors = colors || ['#ffa7a6', '#fea9ac', '#feacae', '#fdb7b5', '#fdbeb9', '#fbcac0', '#f9cdc2']
   var grd = ctx.createLinearGradient(start.x, start.y, end.x, end.y)
   if (noGradient) {
@@ -52,7 +54,7 @@ function drawColorBackground (ctx, start, end, width, height, colors, noGradient
   // Fill with gradient
   ctx.setFillStyle(grd)
   ctx.fillRect(0, 0, width, height)
-  ctx.draw()
+  ctx.draw(false, cb)
 }
 
 function drawImageBackground (ctx, path, cvsId, blur, width, height) {
@@ -99,15 +101,13 @@ class Block {
   }
 
   calcluateWeight (center) {
-    this.weight += this.factor * Math.sqrt((this.x - center.x) ** 2 + (this.y - center.y) ** 2) | 0
+    this.weight += this.factor * (center.y * 2 - Math.sqrt((this.x - center.x) ** 2 + (this.y - center.y) ** 2) | 0)
     return this
   }
 }
 
-function getBlocks (viewW, viewH, cvsId, l, distanceFactor = 1, areaFactor = 0.2) {
+function getImageData (viewW, viewH, cvsId) {
   return new Promise((resolve, reject) => {
-    const grid = createGrid(viewW, viewH, l, distanceFactor)
-    const blocks = []
     wx.canvasGetImageData({
       canvasId: cvsId,
       x: 0,
@@ -115,26 +115,7 @@ function getBlocks (viewW, viewH, cvsId, l, distanceFactor = 1, areaFactor = 0.2
       width: viewW,
       height: viewH,
       success (res) {
-        grid.forEach((item, index) => {
-          var endX = ''
-          if (item.lastOne) {
-            // 不全块
-            endX = ((viewW - item.x) * 4 | 0)
-          } else {
-            endX = item.l * 4
-          }
-          for (var i = 0; i < item.l; i++) {
-            var startIndex = ((item.y + i) * viewW + item.x) * 4 | 0
-            var piexSum = res.data.slice(startIndex, startIndex + endX).filter(c => c).length / 4
-            if (piexSum) {
-              item.calcluateWeight({x: viewW / 2, y: viewH / 2})
-              item.weight += piexSum * areaFactor
-              blocks.push(item)
-              return
-            }
-          }
-        })
-        resolve(blocks)
+        resolve(res.data)
       },
       fail (err) {
         console.log('get stencil imageData failed', err)
@@ -144,11 +125,33 @@ function getBlocks (viewW, viewH, cvsId, l, distanceFactor = 1, areaFactor = 0.2
   })
 }
 
-function createGrid (w, h, l) {
+function getBlocks (grid, uint8Arr, viewW, areaFactor) {
+  const blocks = []
+  grid.forEach((item, index) => {
+    let endX = ''
+    let piexSum = 0
+    if (item.lastOne) {
+      endX = ((viewW - item.x) * 4 | 0)
+    } else {
+      endX = item.l * 4
+    }
+    for (let i = 0; i < item.l; i++) {
+      const startIndex = ((item.y + i) * viewW + item.x) * 4 | 0
+      piexSum += uint8Arr.slice(startIndex, startIndex + endX).filter(c => c).length
+    }
+    if (piexSum) {
+      item.weight += piexSum * areaFactor
+      blocks.push(item)
+    }
+  })
+  return blocks
+}
+
+function createGrid (w, h, l, factor) {
   const grid = []
   for (let i = 0; i < h; i = i + l) {
     for (let j = 0; j < w; j = j + l) {
-      let block = new Block(j, i, l)
+      let block = new Block(j, i, l, 0, factor)
       grid.push(block)
       if (j + l >= w) {
         block.lastOne = true
@@ -163,5 +166,7 @@ export default {
   drawImageBackground,
   Block,
   transfromStringToMatrix,
-  getBlocks
+  getImageData,
+  getBlocks,
+  createGrid
 }

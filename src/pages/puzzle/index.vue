@@ -2,6 +2,7 @@
   <div class="cvs-wrap">
     <canvas class="cvs cvs-bg" canvas-id="puzzle-bg"></canvas>
     <canvas class="cvs" canvas-id="puzzle"></canvas>
+    <canvas class="operation" canvas-id="operation" @touchstart="touchStartHandle" @touchmove="touchMoveHandle" @touchend="touchEndHandle"></canvas>
   </div>
 </template>
 
@@ -11,9 +12,13 @@ import card from '@/components/card'
 import puzzle from './draw'
 import svgJson from '@/images/stencil/svg.json'
 
-const {drawColorBackground, drawSVGPath, getImageData, getBlocks, createGrid} = puzzle
+const {drawColorBackground, getSVGPath, getImageData, getBlocks, createGrid, radiusPath, requestAnimationFrame} = puzzle
 let stencilUnit8 = null
 let min = 6
+var maxLineWidth = 20
+var maxRadius = 160
+let drawTime = null
+let operatTime = null
 export default {
   components: {
     card
@@ -23,31 +28,70 @@ export default {
     return {
       ctx: null,
       bgCtx: null,
+      OpCtx: null,
       viewW: 0,
       viewH: 0,
       stencil: '',
       calcCount: 0,
       images: [],
       blocks: [],
-      lineWidth: 2
+      lineWidth: 2,
+      svgActions: [],
+      lineColor: '#fff',
+      radius: 0,
+      changeLine: false,
+      changeRadius: false,
+      lWidth: 0,
+      rWidth: 0
     }
   },
   methods: {
+    touchStartHandle (ev) {
+      var lX = this.viewW * 0.2 + this.lWidth
+      var rX = this.viewW * 0.2 + this.rWidth
+      if (ev.x > lX - 20 && ev.x < lX + 20 && ev.y > 60 - 20 && ev.y < 60 + 20) {
+        this.changeLine = true
+      }
+      if (ev.x > rX - 20 && ev.x < rX + 20 && ev.y > 100 - 20 && ev.y < 100 + 20) {
+        this.changeRadius = true
+      }
+    },
+    touchEndHandle () {
+      this.changeLine = false
+      this.changeRadius = false
+    },
+    touchMoveHandle (ev) {
+      if (this.changeRadius) {
+        this.rWidth = ev.x - this.viewW * 0.2
+        this.radius = this.rWidth / this.viewW * maxRadius
+      }
+      if (this.changeLine) {
+        this.lWidth = ev.x - this.viewW * 0.2
+        this.lineWidth = this.lWidth / (this.viewW * 0.6) * maxLineWidth
+      }
+    },
     cvsInit () {
       this.ctx = wx.createCanvasContext('puzzle')
       this.bgCtx = wx.createCanvasContext('puzzle-bg')
+      this.OpCtx = wx.createCanvasContext('operation')
+      this.ctx.setLineJoin('round')
+      this.ctx.setLineCap('round')
+      this.ctx.setFillStyle('#fff')
       try {
         const res = wx.getSystemInfoSync()
         this.viewW = res.windowWidth
         this.viewH = res.windowHeight
+        this.lWidth = this.lineWidth / maxLineWidth * this.viewW * 0.6
+        this.rWidth = this.lineWidth / maxRadius * this.viewW * 0.6
       } catch (e) {
         // Do something when catch error
       }
     },
     drawStencil (fill) {
+      console.log('draw stencil')
       this.setSvgPath(fill)
-      this.ctx.draw(true, () => {
-        console.time('计算')
+      this.ctx.draw(false, () => {
+        this.drawOperation()
         this.createImageContainer()
       })
     },
@@ -59,18 +103,21 @@ export default {
       var width = s / height
       var top = (this.viewH - height) / 2
       var left = (this.viewW - width) / 2
-      drawSVGPath(this.ctx, svgData, left, top, width, height, !!fill)
+      this.svgActions = getSVGPath(this.ctx, svgData, left, top, width, height)
+      this.ctx.beginPath()
+      this.svgActions.forEach((item) => {
+        this.ctx[item.action].apply(this.ctx, item.args)
+      })
+      this.ctx.fill()
     },
     createImageContainer () {
       console.log('create grid')
       getImageData(this.viewW, this.viewH, 'puzzle')
         .then((data) => {
           // this.ctx.clearRect(0, 0, this.viewW, this.viewH)
-          console.log('get')
           stencilUnit8 = data
           this.s = stencilUnit8.filter(n => n).length / 4
           this.calculateFitBlock(min)
-          console.timeEnd('计算')
         })
         .catch(() => {})
     },
@@ -79,7 +126,6 @@ export default {
       var l = Math.sqrt(this.s / count / 1.5) | 0
       var grid = createGrid(this.viewW, this.viewH, l, 0)
       var block = getBlocks(grid, stencilUnit8, this.viewW, 1)
-      console.log(block)
       // var fitLength = block.filter(item => item.weight > l * l * 0.4).length
       this.sortBlocks(block)
       // if (this.calcCount > 5) {
@@ -109,25 +155,77 @@ export default {
     },
     drawImages () {
       this.calcCount = 0
-      this.ctx.clearRect(0, 0, this.viewW, this.viewH)
       this.ctx.setLineWidth(this.lineWidth)
-      this.setSvgPath()
+      this.ctx.setStrokeStyle('#fff')
+      this.ctx.setFillStyle('#fff')
+      this.ctx.beginPath()
+      this.svgActions.forEach(item => {
+        this.ctx[item.action].apply(this.ctx, item.args)
+      })
+      this.ctx.stroke()
       this.ctx.fill()
       this.ctx.clip()
-      this.blocks.forEach((item, index) => {
-        this.ctx.setStrokeStyle('#fff')
-        this.ctx.setFillStyle('green')
-        this.ctx.beginPath()
-        this.ctx.save()
-        this.ctx.arc((item.x + item.l / 2), (item.y + item.l / 2), item.l / 2.1, 0, 2 * Math.PI)
-        // this.ctx.strokeRect(item.x, item.y, item.l, item.l)
-        this.ctx.stroke()
-        this.ctx.clip()
-        // this.ctx.fillText(index, item.x + (item.l / 2), item.y + (item.l / 2))
-        this.ctx.drawImage(this.images[index % this.images.length], item.x, item.y, item.l, item.l)
-        this.ctx.restore()
-      })
-      this.ctx.draw(true)
+      if (this.images.length) {
+        this.blocks.forEach((item, index) => {
+          this.ctx.setStrokeStyle(this.lineColor)
+          this.ctx.save()
+          radiusPath(this.ctx, item.x, item.y, item.l, this.radius)
+          // this.ctx.arc((item.x + item.l / 2), (item.y + item.l / 2), item.l / 2.1, 0, 2 * Math.PI)
+          // this.ctx.strokeRect(item.x, item.y, item.l, item.l)
+          this.ctx.stroke()
+          this.ctx.clip()
+          // this.ctx.fillText(index, item.x + (item.l / 2), item.y + (item.l / 2))
+          this.ctx.drawImage(this.images[index % this.images.length], item.x, item.y, item.l, item.l)
+          this.ctx.restore()
+        })
+      }
+      this.ctx.draw()
+      this.ctx.clearActions()
+      requestAnimationFrame(this.drawImages)
+    },
+    drawOperation () {
+      var width = this.viewW * 0.6
+      var left = this.viewW * 0.2
+      var top = 60
+      var top2 = 100
+      var ctx = this.OpCtx
+      var lWidth = this.lWidth
+      var rWidth = this.rWidth// this.radius / maxRadius * width
+      ctx.save()
+      ctx.setFillStyle('#000')
+      ctx.setGlobalAlpha(0.2)
+      ctx.fillRect(0, 0, this.viewW, this.viewH * 0.3)
+      ctx.beginPath()
+      ctx.restore()
+      ctx.setLineCap('round')
+      ctx.setLineWidth(10)
+      ctx.setStrokeStyle('#888')
+      ctx.moveTo(left, top)
+      ctx.lineTo(left + width, top)
+      ctx.stroke()
+      ctx.moveTo(left, top2)
+      ctx.lineTo(left + width, top2)
+      ctx.stroke()
+      ctx.beginPath()
+
+      ctx.setStrokeStyle('#fea9ac')
+      ctx.moveTo(left, top)
+      ctx.lineTo(left + lWidth, top)
+      ctx.stroke()
+      ctx.moveTo(left, top2)
+      ctx.lineTo(left + rWidth, top2)
+      ctx.stroke()
+      ctx.beginPath()
+
+      ctx.setFillStyle('#fff')
+      ctx.arc(left + lWidth, top, 10, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.beginPath()
+      ctx.arc(left + rWidth, top2, 10, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.draw()
+
+      requestAnimationFrame(this.drawOperation)
     }
   },
   created () {
@@ -136,14 +234,18 @@ export default {
   onLoad (options) {
     this.stencil = options.name
     this.images = wx.getStorageSync('images') || []
-    console.log(this.stencil, this.images)
   },
   mounted () {
     this.cvsInit()
     this.drawStencil(true)
-    console.log(drawColorBackground)
     drawColorBackground(this.bgCtx, {x: 0, y: this.viewH}, {x: this.viewW, y: 0}, this.viewW, this.viewH, null, true, () => {})
     // drawImageBackground(this.bgCtx, '/static/stencil/timg.jpg', 'puzzle-bg', 0, 200, 150)
+    // setInterval(this.drawOperation, 50)
+  },
+  onHide () {
+    console.log('stop')
+    clearInterval(operatTime)
+    clearInterval(drawTime)
   }
 }
 </script>
@@ -162,6 +264,13 @@ export default {
   }
   .cvs-bg{
     filter: blur(2px);
+  }
+  .operation{
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 30vh;
+    width: 100vw;
   }
 }
 </style>

@@ -6,31 +6,55 @@ const actions = {
   Z: 'closePath'
 }
 
-function drawSVGPath (ctx, svg, x, y, width, height, isFill) {
+function radiusPath (ctx, x, y, l, deg) {
+  ctx.beginPath()
+  if (!deg) {
+    ctx.rect(x, y, l, l)
+    return
+  }
+  const pi = Math.PI
+  const ox = x + l / 2
+  const oy = y + l / 2
+  if (deg >= 90) {
+    deg = deg > 160 ? 160 : deg
+    const r = l / 2 * (1 - Math.atan(pi / 180 * (deg - 90)))
+    ctx.arc(ox, oy, r, 0, pi * 2)
+    return
+  }
+  deg = pi / 180 * deg
+  const sR = (pi / 2 - deg) / 2
+  const eR = (pi / 2 + deg) / 2
+  const h = Math.tan(sR)
+  const r = l / (2 * Math.cos(sR))
+  ctx.arc(ox, oy, r, sR, eR)
+  ctx.lineTo(ox - h, y + l)
+  ctx.arc(ox, oy, r, pi / 2 + sR, pi / 2 + eR)
+  ctx.lineTo(x, oy - h)
+  ctx.arc(ox, oy, r, pi + sR, pi + eR)
+  ctx.lineTo(ox + h, y)
+  ctx.arc(ox, oy, r, pi * 3 / 2 + sR, pi * 3 / 2 + eR)
+  ctx.lineTo(x + l, oy + h)
+  ctx.closePath()
+}
+function getSVGPath (ctx, svg, x, y, width, height) {
   const sX = width / svg.width
   const sY = height / svg.height
   var transMatrix = matrix3(sX, 0, 0, sY, x, y)
   if (svg.transform) {
-    transfromStringToMatrix(svg.transform, transMatrix, sX, sY)
+    transformStringToMatrix(svg.transform, transMatrix, sX, sY)
   }
-  ctx.beginPath()
   const pathArr = svg.path.split(/\s(?=[a-zA-Z])/g)
-  pathArr.forEach((p) => {
+  return pathArr.map((p) => {
     var action = p.slice(0, 1)
     var args = p.slice(1).split(/,|\s/g)
-    ctx[actions[action]].apply(ctx, coordsTransform(transMatrix, args))
-    // console.log('ctx.' + actions[action] + '(' + args.toString() + ')')
+    return {
+      action: [actions[action]],
+      args: coordsTransform(transMatrix, args)
+    }
   })
-  if (isFill) {
-    ctx.setFillStyle('#fff')
-    ctx.fill()
-  } else {
-    ctx.setStrokeStyle('#fff')
-    ctx.stroke()
-  }
 }
 
-function transfromStringToMatrix (str, matrix, scaleX, scaleY) {
+function transformStringToMatrix (str, matrix, scaleX, scaleY) {
   const match = str.match(/translate\((.*?)\)/)
   if (!match) return
   const translate = match[1].split(' ')
@@ -160,13 +184,23 @@ function createGrid (w, h, l, factor) {
   }
   return grid
 }
+
+function requestAnimationFrame (callback) {
+  var id = setTimeout(() => {
+    callback && callback()
+  }, 50)
+  return id
+}
+
 export default {
-  drawSVGPath,
+  getSVGPath,
   drawColorBackground,
   drawImageBackground,
   Block,
-  transfromStringToMatrix,
+  transformStringToMatrix,
   getImageData,
   getBlocks,
-  createGrid
+  createGrid,
+  radiusPath,
+  requestAnimationFrame
 }

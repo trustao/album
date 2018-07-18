@@ -171,9 +171,9 @@ function getBlocks (grid, uint8Arr, viewW, areaFactor) {
   return blocks
 }
 
-function createGrid (w, h, l, factor) {
+function createGrid (startY, endY, w, h, l, factor) {
   const grid = []
-  for (let i = 0; i < h; i = i + l) {
+  for (let i = startY; i < endY; i = i + l) {
     for (let j = 0; j < w; j = j + l) {
       let block = new Block(j, i, l, 0, factor)
       grid.push(block)

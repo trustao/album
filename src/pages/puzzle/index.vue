@@ -14,7 +14,7 @@ import svgJson from '@/images/stencil/svg.json'
 
 const {drawColorBackground, getSVGPath, getImageData, getBlocks, createGrid, radiusPath, requestAnimationFrame} = puzzle
 let stencilUnit8 = null
-let min = 6
+let min = 25
 var maxLineWidth = 20
 var maxRadius = 160
 let drawTime = null
@@ -117,30 +117,31 @@ export default {
           // this.ctx.clearRect(0, 0, this.viewW, this.viewH)
           stencilUnit8 = data
           this.s = stencilUnit8.filter(n => n).length / 4
-          this.calculateFitBlock(min)
+          var startIndex = stencilUnit8.indexOf(255) / 4
+          this.calculateFitBlock(min / 2, startIndex, stencilUnit8.lastIndexOf(255) / 4)
         })
         .catch(() => {})
     },
-    calculateFitBlock (count) {
+    calculateFitBlock (count, startIndex, endIndex) {
+      console.log('CALCULATE')
       this.calcCount++
-      var l = Math.sqrt(this.s / count / 1.5) | 0
-      var grid = createGrid(this.viewW, this.viewH, l, 0)
+      var l = Math.sqrt(this.s / count) | 0
+      var grid = createGrid(startIndex / this.viewW | 0, endIndex / this.viewW | 0, this.viewW, this.viewH, l, 0)
       var block = getBlocks(grid, stencilUnit8, this.viewW, 1)
-      // var fitLength = block.filter(item => item.weight > l * l * 0.4).length
-      this.sortBlocks(block)
-      // if (this.calcCount > 5) {
-      //   console.log('no', fitLength)
-      //   this.drawImages(block)
-      //   return
-      // }
-      // if (fitLength < min + 2) {
-      //   this.calculateFitBlock(count + 2)
-      // } else if (fitLength > min * 1.4) {
-      //   this.calculateFitBlock(count - 2)
-      // } else {
-      //   console.log(fitLength)
-      //   this.drawImages(block)
-      // }
+      var fitLength = block.filter(item => item.weight > l * l * 0.1).length
+      if (this.calcCount > 30) {
+        console.log('no', fitLength)
+        this.sortBlocks(block)
+        return
+      }
+      if (fitLength < min) {
+        this.calculateFitBlock(count + 1, startIndex, endIndex)
+      } else if (fitLength > min * 1.1) {
+        this.calculateFitBlock(count - 1, startIndex, endIndex)
+      } else {
+        console.log('get', fitLength, min, this.calcCount)
+        this.sortBlocks(block)
+      }
     },
     sortBlocks (data) {
       data.forEach(block => {
@@ -151,10 +152,10 @@ export default {
         })
       })
       this.blocks = data.sort((a, b) => b.weight - a.weight)
+      this.calcCount = 0
       this.drawImages()
     },
     drawImages () {
-      this.calcCount = 0
       this.ctx.setLineWidth(this.lineWidth)
       this.ctx.setStrokeStyle('#fff')
       this.ctx.setFillStyle('#fff')
@@ -164,18 +165,20 @@ export default {
       })
       this.ctx.stroke()
       this.ctx.fill()
+      // this.ctx.globalCompositeOperation = 'source-atop'
       this.ctx.clip()
       if (this.images.length) {
+        this.ctx.setLineWidth(2)
         this.blocks.forEach((item, index) => {
           this.ctx.setStrokeStyle(this.lineColor)
           this.ctx.save()
-          radiusPath(this.ctx, item.x, item.y, item.l, this.radius)
+          radiusPath(this.ctx, item.x, item.y, item.l - this.lineWidth / 2, this.radius)
           // this.ctx.arc((item.x + item.l / 2), (item.y + item.l / 2), item.l / 2.1, 0, 2 * Math.PI)
           // this.ctx.strokeRect(item.x, item.y, item.l, item.l)
           this.ctx.stroke()
           this.ctx.clip()
           // this.ctx.fillText(index, item.x + (item.l / 2), item.y + (item.l / 2))
-          this.ctx.drawImage(this.images[index % this.images.length], item.x, item.y, item.l, item.l)
+          this.ctx.drawImage(this.images[index % this.images.length], item.x, item.y, item.l - this.lineWidth / 2, item.l - this.lineWidth / 2)
           this.ctx.restore()
         })
       }

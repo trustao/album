@@ -6,34 +6,30 @@ const actions = {
   Z: 'closePath'
 }
 
-function radiusPath (ctx, x, y, l, deg) {
+function radiusPath (ctx, x, y, w, h, r) {
   ctx.beginPath()
-  if (!deg) {
-    ctx.rect(x, y, l, l)
+  if (!r) {
+    ctx.rect(x, y, w, h)
     return
   }
   const pi = Math.PI
-  const ox = x + l / 2
-  const oy = y + l / 2
-  if (deg >= 90) {
-    deg = deg > 160 ? 160 : deg
-    const r = l / 2 * (1 - Math.atan(pi / 180 * (deg - 90)))
-    ctx.arc(ox, oy, r, 0, pi * 2)
+  const ox = x + w / 2
+  const oy = y + h / 2
+  const l = w > h ? h : w
+  if (r >= l / 2) {
+    const R = l - r > 1 ? l - r : 1
+    ctx.arc(ox, oy, R, 0, pi * 2)
     return
   }
-  deg = pi / 180 * deg
-  const sR = (pi / 2 - deg) / 2
-  const eR = (pi / 2 + deg) / 2
-  const h = Math.tan(sR)
-  const r = l / (2 * Math.cos(sR))
-  ctx.arc(ox, oy, r, sR, eR)
-  ctx.lineTo(ox - h, y + l)
-  ctx.arc(ox, oy, r, pi / 2 + sR, pi / 2 + eR)
-  ctx.lineTo(x, oy - h)
-  ctx.arc(ox, oy, r, pi + sR, pi + eR)
-  ctx.lineTo(ox + h, y)
-  ctx.arc(ox, oy, r, pi * 3 / 2 + sR, pi * 3 / 2 + eR)
-  ctx.lineTo(x + l, oy + h)
+  ctx.moveTo(x + w, y + h - r)
+  ctx.quadraticCurveTo(x + w, y + h, w + x - r, y + h)
+  ctx.lineTo(x + r, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.lineTo(x + w - r, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+  ctx.lineTo(x + w, y + w - r)
   ctx.closePath()
 }
 function getSVGPath (ctx, svg, x, y, width, height) {
@@ -83,7 +79,7 @@ function drawColorBackground (ctx, start, end, width, height, colors, noGradient
 
 function drawImageBackground (ctx, path, cvsId, blur, width, height) {
   ctx.drawImage(path, 0, 0, width, height)
-  ctx.draw(true, function () {
+  ctx.draw(false, function () {
     if (!blur) return
     wx.canvasGetImageData({
       canvasId: cvsId,
@@ -151,7 +147,8 @@ function getImageData (viewW, viewH, cvsId) {
 
 function getBlocks (grid, uint8Arr, viewW, areaFactor) {
   const blocks = []
-  grid.forEach((item, index) => {
+  for (let i = 0; i < grid.length; i++) {
+    const item = grid[i]
     let endX = ''
     let piexSum = 0
     if (item.lastOne) {
@@ -167,17 +164,17 @@ function getBlocks (grid, uint8Arr, viewW, areaFactor) {
       item.weight += piexSum * areaFactor
       blocks.push(item)
     }
-  })
+  }
   return blocks
 }
 
-function createGrid (startY, endY, w, h, l, factor) {
+function createGrid (range, l, factor) {
   const grid = []
-  for (let i = startY; i < endY; i = i + l) {
-    for (let j = 0; j < w; j = j + l) {
+  for (let i = range.start.y; i < range.end.y; i = i + l) {
+    for (let j = range.start.x; j < range.end.x; j = j + l) {
       let block = new Block(j, i, l, 0, factor)
       grid.push(block)
-      if (j + l >= w) {
+      if (j + l >= range.end.x) {
         block.lastOne = true
       }
     }

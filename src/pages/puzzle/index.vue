@@ -42,7 +42,8 @@ export default {
       changeLine: false,
       changeRadius: false,
       lWidth: 0,
-      rWidth: 0
+      rWidth: 0,
+      ios: false
     }
   },
   methods: {
@@ -83,6 +84,7 @@ export default {
       this.ctx.setFillStyle('#fff')
       try {
         const res = wx.getSystemInfoSync()
+        if (/ios/ig.test(res.system)) this.ios = true
         this.viewW = res.windowWidth
         this.viewH = res.windowHeight
         this.lWidth = this.lineWidth / maxLineWidth * this.viewW * 0.6
@@ -154,18 +156,20 @@ export default {
     },
     calculateFitBlock (count, range, area) {
       console.log('CALCULATE', count)
+      // if (!count) return
       this.calcCount++
       var l = Math.sqrt(area / count) | 0
+      maxRadius = l
       var grid = createGrid(range, l, 0)
-      // this.ctx.save()
-      // grid.forEach((item, index) => {
-      //   this.ctx.strokeRect(item.x, item.y, item.l, item.l)
-      // })
-      // this.ctx.draw(true)
-      var block = getBlocks(grid, stencilUnit8, this.viewW, 1)
-      // console.log(block)
-      // this.sortBlocks(block)
-      // if (count) return
+      this.ctx.save()
+      grid.forEach((item, index) => {
+        this.ctx.strokeRect(item.x, item.y, item.l, item.l)
+      })
+      this.ctx.draw(true)
+      var block = getBlocks(grid, stencilUnit8, this.viewW, this.viewH, 1, this.ios)
+      console.log(block)
+      this.sortBlocks(block)
+      if (count) return
       var fitLength = block.filter(item => item.weight > l * l * 0.1).length
       if (this.calcCount > 30) {
         console.log('no', fitLength)
@@ -190,20 +194,19 @@ export default {
         })
       })
       imageBlock = data.sort((a, b) => b.weight - a.weight)
-      // this.ctx.setStrokeStyle('red')
-      // imageBlock.forEach((item, index) => {
-      //   this.ctx.strokeRect(item.x, item.y, item.l, item.l)
-      //   this.ctx.fillText(index, item.x + (item.l / 2), item.y + (item.l / 2))
-      // })
-      // this.ctx.draw(true)
+      this.ctx.setStrokeStyle('red')
+      imageBlock.forEach((item, index) => {
+        this.ctx.strokeRect(item.x, item.y, item.l, item.l)
+        this.ctx.setFillStyle('blue')
+        this.ctx.fillText(index, item.x + (item.l / 2), item.y + (item.l / 2))
+      })
+      this.ctx.draw(true)
       this.calcCount = 0
-      this.drawImages()
+      // this.drawImages()
     },
     drawImages () {
-      this.ctx.clearActions()
       this.ctx.setLineWidth(this.lineWidth)
       this.ctx.setStrokeStyle('#fff')
-      this.ctx.setFillStyle('#fff')
       this.ctx.beginPath()
       for (let i = 0; i < svgActions.length; i++) {
         const item = svgActions[i]
@@ -214,7 +217,6 @@ export default {
       this.ctx.clip()
       if (this.images.length) {
         this.ctx.setLineWidth(2)
-        this.ctx.setStrokeStyle(this.lineColor)
         // this.ctx.arc((item.x + item.l / 2), (item.y + item.l / 2), item.l / 2.1, 0, 2 * Math.PI)
         // this.ctx.strokeRect(item.x, item.y, item.l, item.l)
         // this.ctx.clip()
@@ -230,8 +232,9 @@ export default {
           this.ctx.restore()
         }
       }
-      this.ctx.draw()
-      requestAnimationFrame(this.drawImages)
+      this.ctx.draw(false, () => {
+        requestAnimationFrame(this.drawImages)
+      })
     },
     drawOperation () {
       var width = this.viewW * 0.6
@@ -295,6 +298,7 @@ export default {
   onLoad (options) {
     this.stencil = options.name
     this.images = wx.getStorageSync('images') || []
+    min = 40// this.images.length
   },
   mounted () {
     this.cvsInit()

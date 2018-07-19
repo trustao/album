@@ -145,7 +145,7 @@ function getImageData (viewW, viewH, cvsId) {
   })
 }
 
-function getBlocks (grid, uint8Arr, viewW, areaFactor) {
+function getBlocks (grid, uint8Arr, viewW, viewH, areaFactor, ios) {
   const blocks = []
   for (let i = 0; i < grid.length; i++) {
     const item = grid[i]
@@ -157,7 +157,7 @@ function getBlocks (grid, uint8Arr, viewW, areaFactor) {
       endX = item.l * 4
     }
     for (let i = 0; i < item.l; i++) {
-      const startIndex = ((item.y + i) * viewW + item.x) * 4 | 0
+      const startIndex = ios ? (((viewH - item.y - i) * viewW + item.x) * 4 | 0) : (((item.y + i) * viewW + item.x) * 4 | 0)
       piexSum += uint8Arr.slice(startIndex, startIndex + endX).filter(c => c).length
     }
     if (piexSum) {
@@ -185,7 +185,7 @@ function createGrid (range, l, factor) {
 function requestAnimationFrame (callback) {
   var id = setTimeout(() => {
     callback && callback()
-  }, 50)
+  }, 60)
   return id
 }
 

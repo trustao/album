@@ -4,7 +4,7 @@
     <canvas class="cvs" canvas-id="puzzle"></canvas>
     <canvas class="operation"
             canvas-id="operation"
-            @click="clickHandle"
+            @tap="clickHandle"
             @touchstart="touchStartHandle"
             @touchmove="touchMoveHandle"
             @touchend="touchEndHandle"
@@ -41,7 +41,7 @@ export default {
       stencil: '',
       calcCount: 0,
       images: [],
-      lineWidth: 2,
+      lineWidth: 5,
       lineColor: '#fff',
       radius: 0,
       changeLine: false,
@@ -50,8 +50,14 @@ export default {
       rWidth: 0,
       ios: false,
       stopRender: false,
+      stopRenderBg: false,
       pixelRatio: 1,
       range: null
+    }
+  },
+  watch: {
+    stopRenderBg (val) {
+      if (!val) this.drawBackground()
     }
   },
   methods: {
@@ -61,6 +67,10 @@ export default {
       console.log(ev.x, y)
       if (ev.x > this.viewW / 2 - 30 && ev.x < this.viewW / 2 + 30 && y > 135 && y < 155) {
         console.log('save')
+        wx.showLoading({
+          title: '图片生成中',
+          mask: true
+        })
         this.saveImage()
       }
     },
@@ -69,14 +79,18 @@ export default {
       var rX = this.viewW * 0.2 + this.rWidth
       if (ev.x > lX - 20 && ev.x < lX + 20 && ev.y > 60 - 20 && ev.y < 60 + 20) {
         this.changeLine = true
+        this.stopRenderBg = false
       }
       if (ev.x > rX - 20 && ev.x < rX + 20 && ev.y > 100 - 20 && ev.y < 100 + 20) {
         this.changeRadius = true
+        this.stopRender = false
       }
     },
     touchEndHandle (ev) {
       this.changeLine = false
       this.changeRadius = false
+      this.stopRender = true
+      this.stopRenderBg = true
     },
     touchMoveHandle (ev) {
       if (this.changeRadius) {
@@ -89,7 +103,7 @@ export default {
         this.lWidth = ev.x - this.viewW * 0.2
         if (this.lWidth > this.viewW * 0.6) this.lWidth = this.viewW * 0.6
         if (this.lWidth < 0) this.lWidth = 0
-        this.lineWidth = this.lWidth / (this.viewW * 0.6) * maxLineWidth
+        this.lineWidth = (this.lWidth < 5 ? 5 : this.lWidth) / (this.viewW * 0.6) * maxLineWidth
       }
     },
     cvsInit () {
@@ -167,6 +181,7 @@ export default {
           stencilUnit8 = data
           var maxArea = (range.end.y - range.start.y) * (range.end.x - range.start.x)
           var minArea = stencilUnit8.filter(n => n).length / 4 | 0
+          if (!min) return
           var maxL = Math.sqrt(maxArea / min) | 0
           var minL = Math.sqrt(minArea / min) | 0
           this.calculateFitBlock(range, maxL, minL)
@@ -176,7 +191,6 @@ export default {
     calculateFitBlock (range, maxL, minL) {
       var l = Math.round((maxL + minL) / 2)
       console.log(l, maxL, minL)
-      // if (!count) return
       this.calcCount++
       var grid = createGrid(range, l, 0)
       var block = getBlocks(grid, stencilUnit8, this.viewW, this.viewH, 1, this.ios)
@@ -210,12 +224,17 @@ export default {
       imageBlock = data
       this.calcCount = 0
       console.timeEnd('计算')
-      this.drawSvg(this.bgCtx, true)
-      this.bgCtx.draw(true)
-      this.drawImages()
+      this.drawBackground(() => {
+        this.stopRenderBg = true
+      })
+      this.drawImages(() => {
+        this.stopRender = true
+        wx.hideLoading()
+      })
     },
     drawSvg (ctx, fill) {
       ctx.setFillStyle('#fff')
+      ctx.setStrokeStyle('#fff')
       ctx.beginPath()
       for (let i = 0; i < svgActions.length; i++) {
         const item = svgActions[i]
@@ -228,17 +247,18 @@ export default {
       }
     },
     drawImages (cb) {
-      this.ctx.setLineWidth(this.lineWidth)
+      requestAnimationFrame(this.drawImages)
+      if (this.stopRender) return
+      this.ctx.setLineWidth(0)
       this.ctx.setStrokeStyle('#fff')
       this.ctx.beginPath()
       for (let i = 0; i < svgActions.length; i++) {
         const item = svgActions[i]
         this.ctx[item.action].apply(this.ctx, item.args)
       }
-      this.ctx.stroke()
+      this.ctx.closePath()
       this.ctx.clip()
       if (this.images.length) {
-        this.ctx.setLineWidth(0)
         for (let index = 0; index < imageBlock.length; index++) {
           const item = imageBlock[index]
           this.ctx.save()
@@ -250,9 +270,18 @@ export default {
           this.ctx.restore()
         }
       }
-      this.ctx.draw(this.stopRender, () => {
-        if (!this.stopRender) requestAnimationFrame(this.drawImages)
+      this.ctx.draw(false, () => {
         cb && cb()
+      })
+    },
+    drawBackground (cb) {
+      this.bgCtx.setLineWidth(this.lineWidth)
+      drawColorBackground(this.bgCtx, {x: 0, y: this.viewH}, {x: this.viewW, y: 0}, this.viewW, this.viewH, null, true, () => {})
+      this.drawSvg(this.bgCtx)
+      this.bgCtx.fill()
+      this.bgCtx.draw(false, () => {
+        cb && cb()
+        if (!this.stopRenderBg) requestAnimationFrame(this.drawBackground)
       })
     },
     drawOperation () {
@@ -312,10 +341,6 @@ export default {
     },
     saveImage () {
       this.stopRender = true
-      // const x = this.range.start.x
-      // const y = this.range.start.y
-      // const width = this.range.end.x - x
-      // const height = this.range.end.y - y
       this.bgCtx.setLineWidth(this.lineWidth)
       wx.canvasToTempFilePath({
         canvasId: 'puzzle',
@@ -330,16 +355,6 @@ export default {
           console.log(err)
         }
       })
-      // this.ctx.save()
-      // this.fillSvg(this.ctx)
-      // this.ctx.globalCompositeOperation = 'xor'
-      // drawColorBackground(this.ctx, {x: 0, y: this.viewH}, {x: this.viewW, y: 0}, this.viewW, this.viewH, null, true, () => {})
-      // this.ctx.draw(true, () => {
-      //   this.ctx.restore()
-      //   this.drawImages(() => {
-      //     this.cvsToPhoto()
-      //   })
-      // })
     },
     cvsToPhoto () {
       console.log('to photo')
@@ -349,7 +364,21 @@ export default {
           wx.saveImageToPhotosAlbum({
             filePath: res.tempFilePath,
             success: function (res) {
-              console.log(res)
+              wx.hideLoading()
+              wx.showToast({
+                title: '成功',
+                icon: 'success',
+                mask: true,
+                duration: 1000
+              })
+            },
+            fail () {
+              wx.showToast({
+                title: '保存失败',
+                icon: 'none',
+                mask: true,
+                duration: 1000
+              })
             }
           })
         },
@@ -365,17 +394,17 @@ export default {
   onLoad (options) {
     this.stencil = options.name
     this.images = wx.getStorageSync('images') || []
-    min = 9// this.images.length
+    min = this.images.length
   },
   mounted () {
+    wx.showLoading({
+      title: '',
+      mask: true
+    })
     this.cvsInit()
     this.drawStencil(true)
-    console.log(drawColorBackground)
     drawColorBackground(this.bgCtx, {x: 0, y: this.viewH}, {x: this.viewW, y: 0}, this.viewW, this.viewH, null, true, () => {})
     this.bgCtx.draw()
-    // drawImageBackground(this.bgCtx, '/static/stencil/timg.jpg', 'puzzle-bg', 0, 200, 150)
-    // setInterval(this.drawOperation, 50)
-    getApp().ctx = this.ctx
   },
   onHide () {
     console.log('stop')

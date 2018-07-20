@@ -5,7 +5,7 @@
         <img :src="img" class="img" alt="">
       </li>
     </ul>
-    <div class="footer-btn">
+    <div class="footer-btn" :class="{iphoneX: iphoneX}">
       <button @click="chooseImages">继续选择</button>
       <button @click="chooseComplete">选择完成</button>
     </div>
@@ -17,7 +17,8 @@
     data () {
       return {
         images: [],
-        stencil: ''
+        stencil: '',
+        iphoneX: false
       }
     },
     methods: {
@@ -44,7 +45,16 @@
       this.stencil = options.name
     },
     mounted () {
-
+      try {
+        var res = wx.getSystemInfoSync()
+        console.log(res)
+        if (res.model.indexOf('iPhone X') >= 0) {
+          this.iphoneX = true
+        }
+      } catch (e) {
+        // Do something when catch error
+      }
+      this.chooseImages()
     }
   }
 </script>
@@ -74,9 +84,29 @@
     text-align: center;
     width: 100vw;
     height: 100rpx;
+    background: #fff;
+    padding-bottom:  20rpx;
+  &.iphoneX{
+        padding-bottom:  60rpx;
+     }
     button{
       display: inline-block;
-      width: 200rpx;
+      appearance: none;
+      outline: none;
+      box-sizing: border-box;
+      border: 1px solid;
+      border-radius: 44rpx;
+      width: 42vw;
+      height: 90rpx;
+      line-height: 90rpx;
+      font-size: 32rpx;
+      background: #FFE200;
+      &:last-child{
+          margin-left: 5vw;
+       }
+      &:after{
+        display: none;
+       }
     }
   }
 </style>

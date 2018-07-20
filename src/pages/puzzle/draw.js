@@ -55,7 +55,7 @@ function transformStringToMatrix (str, matrix, scaleX, scaleY) {
   if (!match) return
   const translate = match[1].split(' ')
   matrix[2] += Number(translate[0]) * scaleX
-  matrix[5] += Number(translate[1] || translate[0])
+  matrix[5] += translate[1] ? Number(translate[1]) * scaleY : 0
 }
 
 function drawColorBackground (ctx, start, end, width, height, colors, noGradient, cb) {
@@ -74,7 +74,6 @@ function drawColorBackground (ctx, start, end, width, height, colors, noGradient
   // Fill with gradient
   ctx.setFillStyle(grd)
   ctx.fillRect(0, 0, width, height)
-  ctx.draw(false, cb)
 }
 
 function drawImageBackground (ctx, path, cvsId, blur, width, height) {
@@ -96,18 +95,22 @@ function drawImageBackground (ctx, path, cvsId, blur, width, height) {
 }
 
 function drawImageFromU8 (imgData, cvsId, width, height) {
-  wx.canvasPutImageData({
-    canvasId: cvsId,
-    x: 0,
-    y: 0,
-    width: width,
-    height: height,
-    data: imgData,
-    success (res) {
-    },
-    fail (er) {
-      console.log('drawImageFromU8 failed', er)
-    }
+  return new Promise((resolve, reject) => {
+    wx.canvasPutImageData({
+      canvasId: cvsId,
+      x: 0,
+      y: 0,
+      width: width,
+      height: height,
+      data: imgData,
+      success (res) {
+        resolve(res)
+      },
+      fail (er) {
+        console.log('drawImageFromU8 failed', er)
+        reject(er)
+      }
+    })
   })
 }
 
@@ -199,5 +202,6 @@ export default {
   getBlocks,
   createGrid,
   radiusPath,
-  requestAnimationFrame
+  requestAnimationFrame,
+  drawImageFromU8
 }

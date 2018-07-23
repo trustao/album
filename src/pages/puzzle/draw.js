@@ -29,7 +29,7 @@ function radiusPath (ctx, x, y, w, h, r) {
   ctx.quadraticCurveTo(x, y, x + r, y)
   ctx.lineTo(x + w - r, y)
   ctx.quadraticCurveTo(x + w, y, x + w, y + r)
-  ctx.lineTo(x + w, y + w - r)
+  ctx.lineTo(x + w, y + h - r)
   ctx.closePath()
 }
 function getSVGPath (ctx, svg, x, y, width, height) {
@@ -129,14 +129,14 @@ class Block {
   }
 }
 
-function getImageData (viewW, viewH, cvsId) {
+function getImageData (range, cvsId) {
   return new Promise((resolve, reject) => {
     wx.canvasGetImageData({
       canvasId: cvsId,
-      x: 0,
-      y: 0,
-      width: viewW,
-      height: viewH,
+      x: range.start.x,
+      y: range.start.y,
+      width: range.end.x - range.start.x,
+      height: range.end.y - range.start.y,
       success (res) {
         resolve(res.data)
       },
@@ -148,19 +148,25 @@ function getImageData (viewW, viewH, cvsId) {
   })
 }
 
-function getBlocks (grid, uint8Arr, viewW, viewH, areaFactor, ios) {
+function getBlocks (grid, uint8Arr, range, areaFactor, ios) {
   const blocks = []
+  const width = range.end.x - range.start.x
   for (let i = 0; i < grid.length; i++) {
     const item = grid[i]
     let endX = ''
     let piexSum = 0
     if (item.lastOne) {
-      endX = ((viewW - item.x) * 4 | 0)
+      endX = (range.end.x - item.x) * 4
     } else {
       endX = item.l * 4
     }
     for (let i = 0; i < item.l; i++) {
-      const startIndex = ios ? (((viewH - item.y - i) * viewW + item.x) * 4 | 0) : (((item.y + i) * viewW + item.x) * 4 | 0)
+      let startIndex = 0
+      if (ios) {
+        startIndex = ((range.end.y - item.y - i) * width + (item.x - range.start.x)) * 4
+      } else {
+        startIndex = ((item.y - range.start.y + i) * width + (item.x - range.start.x)) * 4
+      }
       piexSum += uint8Arr.slice(startIndex, startIndex + endX).filter(c => c).length
     }
     if (piexSum) {

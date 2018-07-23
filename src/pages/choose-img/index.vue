@@ -30,6 +30,7 @@
           success: (res) => {
             // 返回选定照片的本地文件路径列表，tempFilePath可以作为img标签的src属性显示图片
             var tempFilePaths = res.tempFilePaths
+            console.log(tempFilePaths)
             this.images = Array.from(new Set(this.images.concat(tempFilePaths)))
           }
         })
@@ -43,6 +44,10 @@
     },
     onLoad (options) {
       this.stencil = options.name
+      this.images = []
+      wx.setStorageSync('images', [])
+    },
+    created () {
     },
     mounted () {
       try {
@@ -69,8 +74,8 @@
     background: #fff;
     padding-bottom: 120rpx;
     .img-item {
-      width: 32.8vw;
-      height: 32.8vw;
+      width: 20vw;
+      height: 20vw;
       img{
         width: 100%;
         height: 100%;

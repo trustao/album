@@ -41,6 +41,7 @@ export default {
   methods: {
     bindViewTap (stencil) {
       const url = '../choose-img/main?name=' + stencil
+      // const url = '../choose-img/main?name=' + stencil
       wx.navigateTo({
         url
       })

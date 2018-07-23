@@ -4,7 +4,6 @@
     <canvas class="cvs" canvas-id="puzzle"></canvas>
     <canvas class="operation"
             canvas-id="operation"
-            @tap="clickHandle"
             @touchstart="touchStartHandle"
             @touchmove="touchMoveHandle"
             @touchend="touchEndHandle"
@@ -26,6 +25,9 @@ let maxRadius = 20
 let imageBlock = []
 let svgActions = []
 let textWidth = 0
+let time = 0
+let stopRenderAll = false
+// let pattern = []
 export default {
   components: {
     card
@@ -52,7 +54,8 @@ export default {
       stopRender: false,
       stopRenderBg: false,
       pixelRatio: 1,
-      range: null
+      range: null,
+      userHide: false
     }
   },
   watch: {
@@ -62,10 +65,9 @@ export default {
   },
   methods: {
     clickHandle (ev) {
-      console.log(ev)
-      var y = ev.y - ev.target.offsetTop
-      console.log(ev.x, y)
-      if (ev.x > this.viewW / 2 - 30 && ev.x < this.viewW / 2 + 30 && y > 135 && y < 155) {
+      var y = ev.mp.changedTouches[0].y
+      var x = ev.mp.changedTouches[0].x
+      if (x > this.viewW / 2 - 70 && x < this.viewW / 2 + 70 && y > 130 && y < 185) {
         console.log('save')
         wx.showLoading({
           title: '图片生成中',
@@ -75,11 +77,13 @@ export default {
       }
     },
     touchStartHandle (ev) {
+      time = Date.now()
       var lX = this.viewW * 0.2 + this.lWidth
       var rX = this.viewW * 0.2 + this.rWidth
       if (ev.x > lX - 20 && ev.x < lX + 20 && ev.y > 60 - 20 && ev.y < 60 + 20) {
         this.changeLine = true
         this.stopRenderBg = false
+        console.log('render')
       }
       if (ev.x > rX - 20 && ev.x < rX + 20 && ev.y > 100 - 20 && ev.y < 100 + 20) {
         this.changeRadius = true
@@ -87,6 +91,10 @@ export default {
       }
     },
     touchEndHandle (ev) {
+      console.log(ev)
+      if (Date.now() - time < 500) {
+        this.clickHandle(ev)
+      }
       this.changeLine = false
       this.changeRadius = false
       this.stopRender = true
@@ -113,6 +121,7 @@ export default {
       this.ctx.setLineJoin('round')
       this.ctx.setLineCap('round')
       this.ctx.setFillStyle('#fff')
+      this.bgCtx.setFontSize(16)
       textWidth = this.bgCtx.measureText('保存').width
       try {
         const res = wx.getSystemInfoSync()
@@ -162,7 +171,14 @@ export default {
         this.ctx[item.action].apply(this.ctx, item.args)
       }
       this.ctx.fill()
-      return {
+      if (width < height) {
+        left = left - (height - width) / 2
+        width = height
+      } else {
+        top = top - (width - height) / 2
+        height = width
+      }
+      var range = {
         start: {
           x: left | 0,
           y: top | 0
@@ -172,64 +188,90 @@ export default {
           y: top + height | 0
         }
       }
+      return range
     },
     createImageContainer (range) {
       console.log('create grid')
-      getImageData(this.viewW, this.viewH, 'puzzle')
+      getImageData(range, 'puzzle')
         .then((data) => {
           // this.ctx.clearRect(0, 0, this.viewW, this.viewH)
           stencilUnit8 = data
           var maxArea = (range.end.y - range.start.y) * (range.end.x - range.start.x)
           var minArea = stencilUnit8.filter(n => n).length / 4 | 0
-          if (!min) return
+          if (!min) {
+            wx.hideLoading()
+            return
+          }
+          console.log(stencilUnit8.length / 4)
+          console.log(maxArea)
           var maxL = Math.sqrt(maxArea / min) | 0
           var minL = Math.sqrt(minArea / min) | 0
-          this.calculateFitBlock(range, maxL, minL)
+          console.log(maxL, minL)
+          this.calculateFitBlock(range, maxL + 1, minL - 1)
         })
         .catch(() => {})
     },
+    drawItem (ctx, arr, color) {
+      ctx.save()
+      var c = (this.calcCount < 14 ? (14 - this.calcCount) : 0).toString(16)
+      ctx.setStrokeStyle(color || ('#' + c + c + c))
+      ctx.setLineWidth(2)
+      arr.forEach(item => {
+        ctx.strokeRect(item.x, item.y, item.l, item.l)
+      })
+      ctx.draw(true)
+      ctx.restore()
+    },
     calculateFitBlock (range, maxL, minL) {
       var l = Math.round((maxL + minL) / 2)
-      console.log(l, maxL, minL)
+      console.log('边长：', l)
       this.calcCount++
       var grid = createGrid(range, l, 0)
-      var block = getBlocks(grid, stencilUnit8, this.viewW, this.viewH, 1, this.ios)
-      var fitLength = block.length // filter(item => item.weight > l * l * 0.1).length
+      var block = getBlocks(grid, stencilUnit8, range, 1, this.ios)
+      var fitLength = block.filter(item => item.weight > l * l * 0.3).length
       console.log('CALCULATE', fitLength, min)
-      if (l >= maxL || l < minL) {
-        console.log('no', fitLength)
-        maxRadius = l
+      // this.drawItem(this.ctx, grid)
+      if (this.calcCount > 20) {
+        console.log('no', fitLength, min, this.calcCount)
+        maxRadius = l / 2
+        this.radius = l * 0.2
         this.sortBlocks(block)
         return
       }
       if (fitLength < min) {
         this.calculateFitBlock(range, l, minL)
-      } else if (fitLength > (min * 1.1 | 0)) {
+      } else if (fitLength > min * 1.1) {
         this.calculateFitBlock(range, maxL, l)
       } else {
         console.log('get', fitLength, min, this.calcCount)
-        maxRadius = l
+        maxRadius = l / 2
+        this.radius = l * 0.2
         this.sortBlocks(block)
       }
     },
     sortBlocks (data) {
-      data.forEach(block => {
-        block.factor = 1
-        block.calcluateWeight({
-          x: this.viewW / 2,
-          y: this.viewH / 2
-        })
-      })
-      // imageBlock = data.sort((a, b) => b.weight - a.weight)
+      // data.forEach(block => {
+      //   block.factor = 1
+      //   block.calcluateWeight({
+      //     x: this.viewW / 2,
+      //     y: this.viewH / 2
+      //   })
+      // })
+      imageBlock = data.sort((a, b) => b.weight - a.weight)
       imageBlock = data
+      // data.forEach(item => {
+      //   this.ctx.fillRect(item.x, item.y, item.l, item.l)
+      // })
+      // this.ctx.draw(true)
       this.calcCount = 0
       console.timeEnd('计算')
+      // pattern = this.createPattern(this.ctx, this.images)
       this.drawBackground(() => {
         this.stopRenderBg = true
-      })
-      this.drawImages(() => {
-        this.stopRender = true
-        wx.hideLoading()
+        this.drawImages(() => {
+          this.stopRender = true
+          wx.hideLoading()
+        })
       })
     },
     drawSvg (ctx, fill) {
@@ -247,7 +289,7 @@ export default {
       }
     },
     drawImages (cb) {
-      requestAnimationFrame(this.drawImages)
+      if (!stopRenderAll) requestAnimationFrame(this.drawImages)
       if (this.stopRender) return
       this.ctx.setLineWidth(0)
       this.ctx.setStrokeStyle('#fff')
@@ -262,11 +304,11 @@ export default {
         for (let index = 0; index < imageBlock.length; index++) {
           const item = imageBlock[index]
           this.ctx.save()
-          const l = item.l - this.lineWidth / 2
+          var l = item.l - this.lineWidth / 2
           radiusPath(this.ctx, item.x, item.y, l, l, this.radius)
           this.ctx.fill()
           this.ctx.globalCompositeOperation = 'source-atop'
-          this.ctx.drawImage(this.images[index % this.images.length], item.x, item.y, item.l - this.lineWidth / 2, item.l - this.lineWidth / 2)
+          this.ctx.drawImage(this.images[index % this.images.length], item.x, item.y, l, l)
           this.ctx.restore()
         }
       }
@@ -289,6 +331,7 @@ export default {
       var left = this.viewW * 0.2
       var top = 60
       var top2 = 100
+      var btnTop = 120
       var ctx = this.OpCtx
       var lWidth = this.lWidth
       var rWidth = this.rWidth
@@ -299,7 +342,7 @@ export default {
       ctx.fillRect(0, 0, this.viewW, this.viewH * 0.3)
       ctx.beginPath()
       ctx.restore()
-
+      //
       ctx.setLineCap('round')
       ctx.setLineWidth(10)
       ctx.setStrokeStyle('#888')
@@ -328,16 +371,18 @@ export default {
       ctx.arc(left + rWidth, top2, 10, 0, Math.PI * 2)
       ctx.fill()
       // save
-      ctx.setFillStyle('#fea9ac')
-      ctx.setFontSize(14)
-      radiusPath(ctx, this.viewW / 2 - 30, top2 + 20, 60, 30, 5)
+      ctx.setStrokeStyle('#333')
+      ctx.setFillStyle('#FFE200')
+      ctx.setFontSize(16)
+      ctx.setLineWidth(2)
+      radiusPath(ctx, this.viewW / 2 - 70, btnTop, 140, 40, 18)
+      ctx.stroke()
       ctx.fill()
-      ctx.setFillStyle('#fff')
+      ctx.setFillStyle('#333')
       ctx.setTextBaseline('middle')
-      ctx.fillText('保存', (this.viewW) / 2 - textWidth + 5, top2 + 35)
-
+      ctx.fillText('保存', (this.viewW - textWidth) / 2, btnTop + 20)
       ctx.draw()
-      requestAnimationFrame(this.drawOperation)
+      if (!stopRenderAll) requestAnimationFrame(this.drawOperation)
     },
     saveImage () {
       this.stopRender = true
@@ -363,6 +408,10 @@ export default {
         success: function (res) {
           wx.saveImageToPhotosAlbum({
             filePath: res.tempFilePath,
+            x: 0,
+            y: 130,
+            width: this.viewW,
+            height: this.viewH - 260,
             success: function (res) {
               wx.hideLoading()
               wx.showToast({
@@ -386,6 +435,21 @@ export default {
           console.log(err)
         }
       })
+    },
+    stopAll () {
+      stopRenderAll = true
+      this.stopRenderBg = true
+    },
+    restart () {
+      stopRenderAll = false
+      this.stopRenderBg = false
+      this.drawImages()
+      this.drawBackground()
+    },
+    createPattern (ctx, images) {
+      return images.map(image => {
+        return ctx.createPattern(image, 'no-repeat')
+      })
     }
   },
   created () {
@@ -395,10 +459,14 @@ export default {
     this.stencil = options.name
     this.images = wx.getStorageSync('images') || []
     min = this.images.length
+    this.stopRender = false
+    this.stopRenderBg = false
+    stopRenderAll = false
   },
   mounted () {
+    console.log('mounted')
     wx.showLoading({
-      title: '',
+      title: '图片渲染中',
       mask: true
     })
     this.cvsInit()
@@ -406,8 +474,24 @@ export default {
     drawColorBackground(this.bgCtx, {x: 0, y: this.viewH}, {x: this.viewW, y: 0}, this.viewW, this.viewH, null, true, () => {})
     this.bgCtx.draw()
   },
+  onReady () {
+    console.log('ready')
+  },
   onHide () {
-    console.log('stop')
+    console.log('hide')
+    this.userHide = true
+    this.stopAll()
+  },
+  onShow () {
+    console.log('show')
+    if (this.userHide) {
+      this.restart()
+    }
+  },
+  onUnload () {
+    console.log('unload')
+    this.stopAll()
+    this.userHide = false
   }
 }
 </script>

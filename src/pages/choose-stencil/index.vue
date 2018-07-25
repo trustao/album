@@ -88,7 +88,6 @@ export default {
         transform: translate(-50%, -50%);
         width: 80%;
         height: 80%;
-        background: #fea9ac;
         color: #fff;
       }
     }

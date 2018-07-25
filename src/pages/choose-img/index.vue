@@ -1,13 +1,15 @@
 <template>
   <div>
+    <p class="tips">温馨提醒：为保证拼图效果，请上传40张图以上；不足40张图，系统将自动做重复处理，请知晓。</p>
     <ul class="images-container">
       <li v-for="(img, index) in images" class="img-item" :key="index">
         <img :src="img" class="img" alt="">
+        <icon class="delete-img" type="clear" size="20" color="#000" @click="deleteImg(img)"/>
       </li>
     </ul>
     <div class="footer-btn" :class="{iphoneX: iphoneX}">
-      <button @click="chooseImages">继续选择</button>
-      <button @click="chooseComplete">选择完成</button>
+      <button @click="chooseImages">继续选图</button>
+      <button @click="chooseComplete">完成</button>
     </div>
   </div>
 </template>
@@ -21,6 +23,13 @@
         iphoneX: false
       }
     },
+    computed: {
+      pathArr () {
+        return this.images.map(item => {
+          return item.split('.').slice(-2).join('.').slice(12)
+        })
+      }
+    },
     methods: {
       chooseImages () {
         wx.chooseImage({
@@ -30,8 +39,11 @@
           success: (res) => {
             // 返回选定照片的本地文件路径列表，tempFilePath可以作为img标签的src属性显示图片
             var tempFilePaths = res.tempFilePaths
-            console.log(tempFilePaths)
-            this.images = Array.from(new Set(this.images.concat(tempFilePaths)))
+            tempFilePaths.forEach(item => {
+              if (this.pathArr.indexOf(item.split('.').slice(-2).join('.').slice(12)) < 0) {
+                this.images.push(item)
+              }
+            })
           }
         })
       },
@@ -40,6 +52,9 @@
         wx.navigateTo({
           url: '../puzzle/main?name=' + this.stencil
         })
+      },
+      deleteImg (img) {
+        this.images.splice(this.images.indexOf(img), 1)
       }
     },
     onLoad (options) {
@@ -65,6 +80,12 @@
 </script>
 
 <style lang="less" scoped>
+  .tips{
+    background:  #3D4042;
+    color: #fff;
+    padding: 12px;
+    font-size: 14px;
+  }
   .images-container {
     display: flex;
     flex-direction: row;
@@ -74,8 +95,19 @@
     background: #fff;
     padding-bottom: 120rpx;
     .img-item {
+      box-sizing: border-box;
+      position: relative;
+      border: 1rpx solid #fff;
       width: 20vw;
       height: 20vw;
+      .delete-img{
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: #fff;
+        border-radius: 50%;
+        opacity: .65;
+      }
       img{
         width: 100%;
         height: 100%;
@@ -89,9 +121,8 @@
     text-align: center;
     width: 100vw;
     height: 100rpx;
-    background: #fff;
     padding-bottom:  20rpx;
-  &.iphoneX{
+    &.iphoneX{
         padding-bottom:  60rpx;
      }
     button{
@@ -108,6 +139,7 @@
       background: #FFE200;
       &:last-child{
           margin-left: 5vw;
+          background: #DEDEDE;
        }
       &:after{
         display: none;

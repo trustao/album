@@ -458,7 +458,7 @@ export default {
   onLoad (options) {
     this.stencil = options.name
     this.images = wx.getStorageSync('images') || []
-    min = this.images.length
+    min = this.images.length < 40 ? 40 : this.images.length
     this.stopRender = false
     this.stopRenderBg = false
     stopRenderAll = false

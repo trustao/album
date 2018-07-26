@@ -17,7 +17,10 @@ import card from '@/components/card'
 import puzzle from './draw'
 import svgJson from '@/images/stencil/svg.json'
 
-const {drawColorBackground, getSVGPath, getImageData, getBlocks, createGrid, radiusPath, requestAnimationFrame, Trigger, tapHelper} = puzzle
+const {drawColorBackground,
+  getSVGPath, getImageData, getBlocks,
+  createGrid, radiusPath, requestAnimationFrame, CvsDiv,
+  tapHelper} = puzzle
 let stencilUnit8 = null
 let min = 25
 let maxLineWidth = 20
@@ -68,23 +71,15 @@ export default {
       var y = ev.mp.changedTouches[0].y
       var x = ev.mp.changedTouches[0].x
       tapHelper(x, y)
-      if (x > this.viewW / 2 - 70 && x < this.viewW / 2 + 70 && y > 130 && y < 185) {
-        console.log('save')
-        wx.showLoading({
-          title: '图片生成中',
-          mask: true
-        })
-        this.saveImage()
-      }
     },
     touchStartHandle (ev) {
       time = Date.now()
       var lX = this.viewW * 0.2 + this.lWidth
       var rX = this.viewW * 0.2 + this.rWidth
+      if (ev) return
       if (ev.x > lX - 20 && ev.x < lX + 20 && ev.y > 60 - 20 && ev.y < 60 + 20) {
         this.changeLine = true
         this.stopRenderBg = false
-        console.log('render')
       }
       if (ev.x > rX - 20 && ev.x < rX + 20 && ev.y > 100 - 20 && ev.y < 100 + 20) {
         this.changeRadius = true
@@ -142,7 +137,7 @@ export default {
       const res = this.setSvgPath(fill)
       this.range = res
       this.ctx.draw(false, () => {
-        this.drawOperation()
+        // this.drawOperation()
         this.createImageContainer(res)
       })
     },
@@ -259,7 +254,6 @@ export default {
       //   })
       // })
       imageBlock = data.sort((a, b) => b.weight - a.weight)
-      imageBlock = data
       // data.forEach(item => {
       //   this.ctx.fillRect(item.x, item.y, item.l, item.l)
       // })
@@ -327,6 +321,222 @@ export default {
         if (!this.stopRenderBg) requestAnimationFrame(this.drawBackground)
       })
     },
+    createOperation  () {
+      const margin = (this.viewW - 100) / 4
+      const operation = [
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '模板边框',
+          x: 20,
+          y: 30,
+          fontSize: 12,
+          borderColor: '',
+          background: ''
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '无边框',
+          x: 30 + margin,
+          y: 30,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('无边框')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '小边框',
+          x: 30 + margin * 2,
+          y: 30,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('小边框')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '大边框',
+          x: 30 + margin * 3,
+          y: 30,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('大边框')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '图片间距',
+          x: 20,
+          y: 60,
+          fontSize: 12,
+          borderColor: '',
+          background: ''
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '无间距',
+          x: 30 + margin,
+          y: 60,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('无间距')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '小间距',
+          x: 30 + margin * 2,
+          y: 60,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('小间距')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '大间距',
+          x: 30 + margin * 3,
+          y: 60,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('大间距')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '图片圆角',
+          x: 20,
+          y: 90,
+          fontSize: 12,
+          borderColor: '',
+          background: ''
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '无圆角',
+          x: 30 + margin,
+          y: 90,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('无圆角')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '小圆角',
+          x: 30 + margin * 2,
+          y: 90,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('小圆角')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '大圆角',
+          x: 30 + margin * 3,
+          y: 90,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('大圆角')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '背景颜色',
+          x: 20,
+          y: 120,
+          fontSize: 12,
+          borderColor: '',
+          background: ''
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '无边框',
+          x: 30 + margin,
+          y: 120,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('无边框')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '小边框',
+          x: 30 + margin * 2,
+          y: 120,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('小边框')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '大边框',
+          x: 30 + margin * 3,
+          y: 120,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('大边框')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '大边框',
+          x: 30 + margin * 4,
+          y: 120,
+          fontSize: 10,
+          borderRadius: 5,
+          background: '#D8D8D8'
+        }).bindTapHandler(() => {
+          console.log('大边框')
+        }),
+        new CvsDiv({
+          ctx: this.OpCtx,
+          text: '重选模板',
+          x: this.viewW * 0.1,
+          y: 150,
+          w: this.viewW * 0.3,
+          h: 40,
+          fontSize: 16,
+          borderRadius: 18,
+          borderColor: '#000',
+          background: '#FFE200'
+        }).bindTapHandler(() => {
+          console.log('重选模板')
+        })
+      ]
+      operation.forEach(div => div.draw())
+      var a = new CvsDiv({
+        ctx: this.OpCtx,
+        text: '保存图片',
+        x: this.viewW * 0.6,
+        y: 150,
+        w: this.viewW * 0.3,
+        h: 40,
+        fontSize: 16,
+        borderRadius: 18,
+        borderColor: '#000',
+        background: '#FFE200'
+      }).bindTapHandler(() => {
+        console.log('保存图片')
+      })
+      a.draw()
+      console.log(a)
+      this.OpCtx.draw()
+    },
     drawOperation () {
       var width = this.viewW * 0.6
       var left = this.viewW * 0.2
@@ -386,6 +596,10 @@ export default {
       if (!stopRenderAll) requestAnimationFrame(this.drawOperation)
     },
     saveImage () {
+      wx.showLoading({
+        title: '图片生成中',
+        mask: true
+      })
       this.stopRender = true
       this.bgCtx.setLineWidth(this.lineWidth)
       wx.canvasToTempFilePath({
@@ -466,14 +680,21 @@ export default {
   },
   mounted () {
     console.log('mounted')
-    wx.showLoading({
-      title: '图片渲染中',
-      mask: true
-    })
     this.cvsInit()
-    this.drawStencil(true)
+    // this.drawStencil(true)
     drawColorBackground(this.bgCtx, {x: 0, y: this.viewH}, {x: this.viewW, y: 0}, this.viewW, this.viewH, null, true, () => {})
     this.bgCtx.draw()
+    var a = new CvsDiv({
+      text: 'hello world',
+      ctx: this.OpCtx
+    })
+    a.bindTapHandler(() => {
+      console.log(arguments)
+    })
+    a.draw()
+    console.log(a)
+    this.OpCtx.draw()
+    this.createOperation()
   },
   onReady () {
     console.log('ready')

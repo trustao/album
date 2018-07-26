@@ -253,7 +253,7 @@ class CvsDiv {
   }
   draw (ctx) {
     ctx = ctx || this.ctx
-    radiusPath(ctx, this.x, this.y, this.w, this.h, this.borderRadus || 0)
+    radiusPath(ctx, this.x, this.y, this.w, this.h, this.borderRadius || 0)
     if (this.borderColor) {
       ctx.setLineWidth(this.borderWidth)
       ctx.setStrokeStyle(this.borderColor)
@@ -264,11 +264,13 @@ class CvsDiv {
       ctx.fill()
     }
     ctx.setFillStyle(this.color)
+    ctx.setFontSize(this.fontSize)
     ctx.setTextBaseline('middle')
-    ctx.fillText(this.text, this.x + (this.w - this.textWidth) / 2, this.y + (this.h - this.fontSize) / 2)
+    ctx.fillText(this.text, this.x + (this.w - this.textWidth) / 2, this.y + this.h / 2)
   }
   bindTapHandler (cb) {
     this.trigger.bindCb(cb)
+    return this
   }
   clearTapHandler (cb) {
     if (cb) {
@@ -283,14 +285,14 @@ class CvsDiv {
     this.w = 0
     this.h = 0
     this.text = ''
-    this.padding = ''
-    this.borderColor = '#000'
+    this.padding = '5 10'
+    this.borderColor = ''
     this.borderWidth = 1
     this.color = '#000'
     this.background = '#fff'
     this.ctx = null
     this.fontSize = 14
-    this.borderRadus = 0
+    this.borderRadius = 0
     for (let key in options) {
       this[key] = options[key]
     }
@@ -302,19 +304,19 @@ class CvsDiv {
     this.trigger = new Trigger(this.x, this.y, this.w, this.h)
   }
   autoSize () {
-    if (this.ctx && this.ctx.measureText && this.text && !this.w) {
-      this.ctx.save()
-      this.ctx.setFontSize(this.fontSize)
-      this.textWidth = this.ctx.measureText(this.text).width
-      this.ctx.restore()
-      this.w = this.textWidth + this.paddingleft + this.paddingRight
+    this.ctx.save()
+    this.ctx.setFontSize(this.fontSize)
+    this.textWidth = this.ctx.measureText(this.text).width
+    this.ctx.restore()
+    if (!this.w) {
+      this.w = +this.textWidth + this.paddingleft + this.paddingRight
     }
     if (!this.h) {
-      this.h = this.fontSize + this.paddingBottom + this.paddingTop
+      this.h = +this.fontSize + this.paddingBottom + this.paddingTop
     }
   }
   initPadding () {
-    const padding = this.padding.split(' ')
+    const padding = this.padding.toString().split(' ')
     switch (padding.length) {
       case 0:
         this.setPadding(0, 0, 0, 0)
@@ -334,10 +336,10 @@ class CvsDiv {
     }
   }
   setPadding (top, right, left, bottom) {
-    this.paddingTop = top
-    this.paddingleft = left
-    this.paddingRight = right
-    this.paddingBottom = bottom
+    this.paddingTop = +top
+    this.paddingleft = +left
+    this.paddingRight = +right
+    this.paddingBottom = +bottom
   }
 }
 export default {

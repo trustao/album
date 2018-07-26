@@ -17,7 +17,7 @@ import card from '@/components/card'
 import puzzle from './draw'
 import svgJson from '@/images/stencil/svg.json'
 
-const {drawColorBackground, getSVGPath, getImageData, getBlocks, createGrid, radiusPath, requestAnimationFrame} = puzzle
+const {drawColorBackground, getSVGPath, getImageData, getBlocks, createGrid, radiusPath, requestAnimationFrame, Trigger, tapHelper} = puzzle
 let stencilUnit8 = null
 let min = 25
 let maxLineWidth = 20
@@ -67,6 +67,7 @@ export default {
     clickHandle (ev) {
       var y = ev.mp.changedTouches[0].y
       var x = ev.mp.changedTouches[0].x
+      tapHelper(x, y)
       if (x > this.viewW / 2 - 70 && x < this.viewW / 2 + 70 && y > 130 && y < 185) {
         console.log('save')
         wx.showLoading({

@@ -198,6 +198,148 @@ function requestAnimationFrame (callback) {
   return id
 }
 
+const invokeArr = []
+
+function tapHelper (x, y) {
+  invokeArr.forEach(trigger => {
+    if (trigger.inside(x, y)) trigger.invoke()
+  })
+}
+
+class Trigger {
+  constructor (x, y, w, h) {
+    if ([x, y, w, h].some(i => isNaN(i))) throw new Error('params type error.')
+    this.x = x
+    this.y = y
+    this.w = w
+    this.h = h
+    this.cbs = []
+    this.addWatch()
+  }
+
+  inside (x, y) {
+    return x >= this.x && x <= this.x + this.w && y >= this.y && y <= this.y + this.h
+  }
+
+  invoke () {
+    const callbacks = this.cbs.slice()
+    while (callbacks.length) {
+      const cb = callbacks.shift()
+      if (typeof cb === 'function') {
+        cb.call(this)
+      }
+    }
+  }
+  bindCb (cb) {
+    if (this.cbs.indexOf(cb) < 0) this.cbs.push(cb)
+    return this
+  }
+  removeCb (cb) {
+    const index = this.cbs.indexOf(cb)
+    if (index >= 0) this.cbs.splice(index, 1)
+  }
+  addWatch () {
+    if (invokeArr.indexOf(this) < 0) invokeArr.push(this)
+  }
+  clear () {
+    const index = invokeArr.indexOf(this)
+    if (index >= 0) invokeArr.splice(this, 1)
+  }
+}
+
+class CvsDiv {
+  constructor (options) {
+    this.init(options)
+  }
+  draw (ctx) {
+    ctx = ctx || this.ctx
+    radiusPath(ctx, this.x, this.y, this.w, this.h, this.borderRadus || 0)
+    if (this.borderColor) {
+      ctx.setLineWidth(this.borderWidth)
+      ctx.setStrokeStyle(this.borderColor)
+      ctx.stroke()
+    }
+    if (this.background) {
+      ctx.setFillStyle(this.background)
+      ctx.fill()
+    }
+    ctx.setFillStyle(this.color)
+    ctx.setTextBaseline('middle')
+    ctx.fillText(this.text, this.x + (this.w - this.textWidth) / 2, this.y + (this.h - this.fontSize) / 2)
+  }
+  bindTapHandler (cb) {
+    this.trigger.bindCb(cb)
+  }
+  clearTapHandler (cb) {
+    if (cb) {
+      this.trigger.removeCb(cb)
+    } else {
+      this.trigger.clear()
+    }
+  }
+  init (options) {
+    this.x = 0
+    this.y = 0
+    this.w = 0
+    this.h = 0
+    this.text = ''
+    this.padding = ''
+    this.borderColor = '#000'
+    this.borderWidth = 1
+    this.color = '#000'
+    this.background = '#fff'
+    this.ctx = null
+    this.fontSize = 14
+    this.borderRadus = 0
+    for (let key in options) {
+      this[key] = options[key]
+    }
+    this.initPadding()
+    this.autoSize()
+    this.initTrigger()
+  }
+  initTrigger () {
+    this.trigger = new Trigger(this.x, this.y, this.w, this.h)
+  }
+  autoSize () {
+    if (this.ctx && this.ctx.measureText && this.text && !this.w) {
+      this.ctx.save()
+      this.ctx.setFontSize(this.fontSize)
+      this.textWidth = this.ctx.measureText(this.text).width
+      this.ctx.restore()
+      this.w = this.textWidth + this.paddingleft + this.paddingRight
+    }
+    if (!this.h) {
+      this.h = this.fontSize + this.paddingBottom + this.paddingTop
+    }
+  }
+  initPadding () {
+    const padding = this.padding.split(' ')
+    switch (padding.length) {
+      case 0:
+        this.setPadding(0, 0, 0, 0)
+        break
+      case 1:
+        this.setPadding(padding[0], padding[0], padding[0], padding[0])
+        break
+      case 2:
+        this.setPadding(padding[0], padding[1], padding[1], padding[0])
+        break
+      case 3:
+        this.setPadding(padding[0], padding[1], padding[1], padding[2])
+        break
+      case 4:
+        this.setPadding(padding[0], padding[1], padding[2], padding[3])
+        break
+    }
+  }
+  setPadding (top, right, left, bottom) {
+    this.paddingTop = top
+    this.paddingleft = left
+    this.paddingRight = right
+    this.paddingBottom = bottom
+  }
+}
 export default {
   getSVGPath,
   drawColorBackground,
@@ -209,5 +351,8 @@ export default {
   createGrid,
   radiusPath,
   requestAnimationFrame,
-  drawImageFromU8
+  drawImageFromU8,
+  Trigger,
+  tapHelper,
+  CvsDiv
 }

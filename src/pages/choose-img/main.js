@@ -6,6 +6,9 @@ app.$mount()
 
 export default {
   config: {
-    navigationBarTitleText: '选择图片'
+    navigationBarTitleText: '选择图片',
+    usingComponents: {
+      'container': '/static/container/container'
+    }
   }
 }

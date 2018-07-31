@@ -1,28 +1,14 @@
 <template>
-  <div class="container" @click="clickHandle('test click', $event)">
-    <div class="userinfo" @click="bindViewTap">
-      <img class="userinfo-avatar" v-if="userInfo.avatarUrl" :src="userInfo.avatarUrl" background-size="cover" />
-      <div class="userinfo-nickname">
-        <card :text="userInfo.nickName"></card>
-      </div>
-    </div>
-
-    <div class="usermotto">
-      <div class="user-motto">
-        <card :text="motto"></card>
-      </div>
-    </div>
-
-    <form class="form-container">
-      <input type="text" class="form-control" v-model="motto" placeholder="v-model" />
-      <input type="text" class="form-control" v-model.lazy="motto" placeholder="v-model.lazy" />
-    </form>
+  <div class="container">
+    <canvas canvas-id="old"></canvas>
+    <canvas canvas-id="new"></canvas>
   </div>
 </template>
 
 <script>
 import card from '@/components/card'
-
+import draw from  '../puzzle/draw'
+const {drawImageBackgroundB, drawImageBackground} = draw
 export default {
   data () {
     return {
@@ -54,33 +40,35 @@ export default {
     },
     clickHandle (msg, ev) {
       console.log('clickHandle:', msg, ev)
+    },
+    drawImage (path) {
+      var oCtx = wx.createCanvasContext('old')
+      var nCtx = wx.createCanvasContext('new')
+      // (ctx, path, cvsId, blur, width, height)
+      console.time('start')
+      drawImageBackground(oCtx, path[0], 'old', 5, 100, 100)
+      // drawImageBackgroundB(nCtx, path[0], 'new', 5, 100, 100)
+      // oCtx.drawImage(path[0], 0, 0, 100, 100)
+      // nCtx.drawImage(path[0], 0, 0, 100, 100)
+      // oCtx.draw(true)
+      console.timeEnd('start')
+      // nCtx.draw()
     }
   },
 
   created () {
     // 调用应用实例的方法获取全局数据
-    this.getUserInfo()
-    wx.getImageInfo({
-      src: '/static/stencil/ballet.png',
-      success: (res) => {
-        console.log(res)
-      },
-      fail: (res) => {
-        console.log(res)
-      }
-    })
   },
   mounted () {
     wx.chooseImage({
       count: 1, // 默认9
       sizeType: ['original', 'compressed'], // 可以指定是原图还是压缩图，默认二者都有
       sourceType: ['album', 'camera'], // 可以指定来源是相册还是相机，默认二者都有
-      success: function (res) {
+      success: (res) => {
         // 返回选定照片的本地文件路径列表，tempFilePath可以作为img标签的src属性显示图片
         var tempFilePaths = res.tempFilePaths
-        wx.saveImageToPhotosAlbum({
-          filePath: tempFilePaths[0]
-        })
+        console.log(tempFilePaths)
+        this.drawImage(tempFilePaths)
       }
     })
   }

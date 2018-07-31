@@ -6,6 +6,9 @@ app.$mount()
 
 export default {
   config: {
-    navigationBarTitleText: '拼图相册'
+    navigationBarTitleText: '拼图相册',
+    usingComponents: {
+      'container': '/static/container/container'
+    }
   }
 }

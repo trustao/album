@@ -6,6 +6,9 @@ app.$mount()
 
 export default {
   config: {
-    navigationBarTitleText: ''
+    navigationBarTitleText: '',
+    usingComponents: {
+      'container': '/static/container/container'
+    }
   }
 }

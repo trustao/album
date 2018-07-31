@@ -1,0 +1,8 @@
+<view class="container {{iphoneX ? 'iphoneX' : ''}} {{noBackground ? 'no-header' : '' }}">
+  <view class="main">
+    <slot></slot>
+  </view>
+  <view class="header" style="{{'background:' + background}}" id="header">
+    <canvas class="header-cvs" canvas-id="head-cvs" bindtap="back"></canvas>
+  </view>
+</view>

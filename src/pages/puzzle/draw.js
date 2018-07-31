@@ -1,4 +1,4 @@
-import {blurUint8, coordsTransform, matrix3} from './calculate'
+import {blurUint8, blurUint8Array, coordsTransform, matrix3} from './calculate'
 const actions = {
   M: 'moveTo',
   C: 'bezierCurveTo',
@@ -89,6 +89,23 @@ function drawImageBackground (ctx, path, cvsId, blur, width, height) {
       success: (res) => {
         ctx.clearRect(0, 0, width, height)
         drawImageFromU8(blurUint8(res.data, width, height, blur), cvsId, width, height, blur)
+      }
+    })
+  })
+}
+function drawImageBackgroundB (ctx, path, cvsId, blur, width, height) {
+  ctx.drawImage(path, 0, 0, width, height)
+  ctx.draw(false, function () {
+    if (!blur) return
+    wx.canvasGetImageData({
+      canvasId: cvsId,
+      x: 0,
+      y: 0,
+      width: width,
+      height: height,
+      success: (res) => {
+        ctx.clearRect(0, 0, width, height)
+        drawImageFromU8(blurUint8Array(res.data, width, height, blur), cvsId, width, height, blur)
       }
     })
   })
@@ -206,6 +223,9 @@ function tapHelper (x, y) {
   })
 }
 
+function clearTapHelper () {
+  invokeArr.splice(0, invokeArr.length)
+}
 class Trigger {
   constructor (x, y, w, h) {
     if ([x, y, w, h].some(i => isNaN(i))) throw new Error('params type error.')
@@ -254,19 +274,40 @@ class CvsDiv {
   draw (ctx) {
     ctx = ctx || this.ctx
     radiusPath(ctx, this.x, this.y, this.w, this.h, this.borderRadius || 0)
-    if (this.borderColor) {
+    if (this.borderColor && this.borderColor !== 'none') {
       ctx.setLineWidth(this.borderWidth)
       ctx.setStrokeStyle(this.borderColor)
       ctx.stroke()
     }
-    if (this.background) {
+    if (!this.lineGradient && this.background && this.background !== 'none') {
       ctx.setFillStyle(this.background)
       ctx.fill()
     }
-    ctx.setFillStyle(this.color)
-    ctx.setFontSize(this.fontSize)
-    ctx.setTextBaseline('middle')
-    ctx.fillText(this.text, this.x + (this.w - this.textWidth) / 2, this.y + this.h / 2)
+    if (this.lineGradient && typeof this.lineGradient === 'object') {
+      let start = {x: 0, y: this.y}
+      let end = {x: 0, y: this.y + this.h}
+      let colors = null
+      if (Array.isArray(this.lineGradient)) {
+        colors = this.lineGradient
+      } else {
+        start = this.lineGradient.start
+        end = this.lineGradient.end
+        colors = this.lineGradient.colors
+      }
+      var grd = ctx.createLinearGradient(start.x, start.y, end.x, end.y)
+      colors.forEach((color, i) => {
+        grd.addColorStop(i / (colors.length - 1), color)
+      })
+      // Fill with gradient
+      ctx.setFillStyle(grd)
+      ctx.fill()
+    }
+    if (this.text) {
+      ctx.setFillStyle(this.color)
+      ctx.setFontSize(this.fontSize)
+      ctx.setTextBaseline('middle')
+      ctx.fillText(this.text, this.x + (this.w - this.textWidth) / 2, this.y + this.h / 2)
+    }
   }
   bindTapHandler (cb) {
     this.trigger.bindCb(cb)
@@ -290,9 +331,10 @@ class CvsDiv {
     this.borderWidth = 1
     this.color = '#000'
     this.background = '#fff'
-    this.ctx = null
     this.fontSize = 14
     this.borderRadius = 0
+    this.ctx = null
+    this.lineGradient = null
     for (let key in options) {
       this[key] = options[key]
     }
@@ -346,6 +388,7 @@ export default {
   getSVGPath,
   drawColorBackground,
   drawImageBackground,
+  drawImageBackgroundB,
   Block,
   transformStringToMatrix,
   getImageData,
@@ -356,5 +399,6 @@ export default {
   drawImageFromU8,
   Trigger,
   tapHelper,
+  clearTapHelper,
   CvsDiv
 }

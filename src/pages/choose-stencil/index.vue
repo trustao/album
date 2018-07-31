@@ -1,14 +1,17 @@
 <template>
-  <div class="stencil-container">
-    <ul class="stencil-list">
-      <li class="stencil-item" v-for="item in svg.name" :key="item" @click="bindViewTap(item)">
-        <img class="stencil-img" :src="base64Svg[item]" alt="">
-      </li>
-    </ul>
-  </div>
+  <container title="拼图相册Pintu">
+    <div class="stencil-container">
+      <ul class="stencil-list">
+        <li class="stencil-item" v-for="item in svg.name" :key="item" @click="bindViewTap(item)">
+          <img class="stencil-img" :src="base64Svg[item]" alt="">
+        </li>
+      </ul>
+    </div>
+  </container>
 </template>
 
 <script>
+/* global getCurrentPages */
 import svg from '@/images/stencil/svg.json'
 import ballet from '@/images/stencil/ballet.svg'
 import cat from '@/images/stencil/cat.svg'
@@ -33,24 +36,42 @@ export default {
         wedding2,
         yoga,
         world_travel: worldTravel,
-        michael_jackson: michaelJackson
+        michael_jackson: michaelJackson,
+        rePick: false
       }
     }
   },
 
   methods: {
     bindViewTap (stencil) {
-      const url = '../choose-img/main?name=' + stencil
-      // const url = '../choose-img/main?name=' + stencil
-      wx.navigateTo({
-        url
-      })
+      console.log(this.rePick)
+      if (!this.rePick) {
+        wx.navigateTo({
+          url: '../choose-img/main?name=' + stencil
+        })
+      } else {
+        wx.redirectTo({
+          url: '../puzzle/main?name=' + stencil
+        })
+      }
     },
     clickHandle (msg, ev) {
       console.log('clickHandle:', msg, ev)
     }
   },
-
+  onLoad (options) {
+    console.log(options)
+    if (options && options.rePick === '1') {
+      this.rePick = true
+    } else {
+      this.rePick = false
+    }
+  },
+  onShow () {
+    if (getCurrentPages().length === 1) {
+      this.rePick = false
+    }
+  },
   created () {
 
   },
@@ -68,18 +89,16 @@ export default {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    /*justify-content: space-around;*/
-    border: 2vw solid #fff;
+    justify-content: space-around;
     .stencil-item{
       box-sizing: border-box;
       position: relative;
-      width: 32vw;
-      height: 32vw;
-      border: 1rpx solid #fff;
+      width: 33vw;
+      height: 33vw;
       white-space: normal;
       word-break: break-all;
       text-align: center;
-      margin-bottom: 1rpx;
+      margin-bottom: 1px;
       background: #3D4042;
       .stencil-img{
         position: absolute;

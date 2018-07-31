@@ -1,17 +1,19 @@
 <template>
-  <div>
-    <p class="tips">温馨提醒：为保证拼图效果，请上传40张图以上；不足40张图，系统将自动做重复处理，请知晓。</p>
-    <ul class="images-container">
-      <li v-for="(img, index) in images" class="img-item" :key="index">
-        <img :src="img" class="img" alt="">
-        <icon class="delete-img" type="clear" size="20" color="#000" @click="deleteImg(img)"/>
-      </li>
-    </ul>
-    <div class="footer-btn" :class="{iphoneX: iphoneX}">
-      <button @click="chooseImages">继续选图</button>
-      <button @click="chooseComplete">完成</button>
+  <container title="确认照片">
+    <div>
+      <p class="tips">温馨提醒：为保证拼图效果，请上传40张图以上；不足40张图，系统将自动做重复处理，请知晓。</p>
+      <ul class="images-container">
+        <li v-for="(img, index) in images" class="img-item" :key="index">
+          <img :src="img" class="img" alt="">
+          <icon class="delete-img" type="clear" size="20" color="#000" @click="deleteImg(img)"/>
+        </li>
+      </ul>
+      <div class="footer-btn" :class="{iphoneX: iphoneX}">
+        <button @click="chooseImages">继续选图</button>
+        <button @click="chooseComplete">完成({{count}})</button>
+      </div>
     </div>
-  </div>
+  </container>
 </template>
 
 <script>
@@ -28,6 +30,9 @@
         return this.images.map(item => {
           return item.split('.').slice(-2).join('.').slice(12)
         })
+      },
+      count () {
+        return this.images.length
       }
     },
     methods: {
@@ -59,7 +64,6 @@
     },
     onLoad (options) {
       this.stencil = options.name
-      this.images = []
       wx.setStorageSync('images', [])
     },
     created () {

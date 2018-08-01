@@ -3,8 +3,8 @@
     <div>
       <p class="tips">温馨提醒：为保证拼图效果，请上传40张图以上；不足40张图，系统将自动做重复处理，请知晓。</p>
       <ul class="images-container">
-        <li v-for="(img, index) in images" class="img-item" :key="index">
-          <img :src="img" class="img" alt="">
+        <li v-for="(img, index) in imagesData" class="img-item" :key="index">
+          <img :src="img.path" class="img" alt="">
           <icon class="delete-img" type="clear" size="20" color="#000" @click="deleteImg(img)"/>
         </li>
       </ul>
@@ -20,19 +20,19 @@
   export default {
     data () {
       return {
-        images: [],
+        imagesData: [],
         stencil: '',
         iphoneX: false
       }
     },
     computed: {
-      pathArr () {
-        return this.images.map(item => {
-          return item.split('.').slice(-2).join('.').slice(12)
+      imagesMd5 () {
+        return this.imagesData.map(item => {
+          return item.digest
         })
       },
       count () {
-        return this.images.length
+        return this.imagesData.length
       }
     },
     methods: {
@@ -44,27 +44,52 @@
           success: (res) => {
             // 返回选定照片的本地文件路径列表，tempFilePath可以作为img标签的src属性显示图片
             var tempFilePaths = res.tempFilePaths
-            tempFilePaths.forEach(item => {
-              if (this.pathArr.indexOf(item.split('.').slice(-2).join('.').slice(12)) < 0) {
-                this.images.push(item)
-              }
-            })
+            this.checkRepeat(tempFilePaths)
           }
         })
       },
+      checkRepeat (imagesList) {
+        Promise.all(imagesList.map(img => {
+          return new Promise((resolve, reject) => {
+            wx.getFileInfo({
+              filePath: img,
+              success (res) {
+                resolve({
+                  digest: res.digest,
+                  path: img
+                })
+              },
+              fail (er) {
+                reject(er)
+              }
+            })
+          })
+        }))
+          .then((imagesData) => {
+            imagesData.forEach(item => {
+              if (this.imagesMd5.indexOf(item.digest) < 0) {
+                this.imagesData.push(item)
+              }
+            })
+          }).catch(() => {
+            wx.showToast({
+              title: '操作失败',
+              duration: 2000
+            })
+        })
+      },
       chooseComplete () {
-        wx.setStorageSync('images', this.images)
+        wx.setStorageSync('images', this.imagesData.map(item => item.path))
         wx.navigateTo({
           url: '../puzzle/main?name=' + this.stencil
         })
       },
       deleteImg (img) {
-        this.images.splice(this.images.indexOf(img), 1)
+        this.imagesData.splice(this.imagesData.indexOf(img), 1)
       }
     },
     onLoad (options) {
       this.stencil = options.name
-      wx.setStorageSync('images', [])
     },
     created () {
     },

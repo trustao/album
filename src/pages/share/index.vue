@@ -1,5 +1,5 @@
 <template>
-  <container title="拼图相册Pintu">
+  <container title="保存">
     <div class="wrap">
       <swiper
         :indicator-dots="true"
@@ -9,16 +9,16 @@
         :interval="5000"
         class="banner"
       >
-        <template v-for="(item, index) in imgUrls">
+        <template v-for="item in imgUrls">
           <swiper-item>
-            <img class="img" :src="item"/>
+            <img class="img" :src="item.url" :style="{height: item.height + 'px'}"/>
           </swiper-item>
         </template>
       </swiper>
       <div class="bottom">
-        <button class="btn" @click="bindViewTap">开始制作</button>
-        <p>拼图功能对性能有一定要求</p>
-        <p>请尽量使用较好配置的手机</p>
+        <button class="btn" @click="save">save</button>
+        <button class="btn share" open-type="share" @click="share">share</button>
+        <p @click="backHome">回到首页</p>
       </div>
     </div>
   </container>
@@ -31,9 +31,22 @@ export default {
   data () {
     return {
       imgUrls: [
-        'http://img02.tooopen.com/images/20150928/tooopen_sy_143912755726.jpg',
-        'http://img06.tooopen.com/images/20160818/tooopen_sy_175866434296.jpg',
-        'http://img06.tooopen.com/images/20160818/tooopen_sy_175833047715.jpg'
+        {
+          url: 'http://img02.tooopen.com/images/20150928/tooopen_sy_143912755726.jpg',
+          height: 240
+        },
+        {
+          url: 'http://img06.tooopen.com/images/20160818/tooopen_sy_175866434296.jpg',
+          height: 240
+        },
+        {
+          url: 'http://img06.tooopen.com/images/20160818/tooopen_sy_175833047715.jpg',
+          height: 320
+        },
+        {
+          url: 'https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=1873627548,2118672923&fm=27&gp=0.jpg',
+          height: 400
+        }
       ]
     }
   },
@@ -43,24 +56,17 @@ export default {
   },
 
   methods: {
-    bindViewTap () {
+    save () {
       const url = '../choose-stencil/main'
       wx.navigateTo({ url })
     },
-    getUserInfo () {
-      // 调用登录接口
-      wx.login({
-        success: () => {
-          wx.getUserInfo({
-            success: (res) => {
-              this.userInfo = res.userInfo
-            }
-          })
-        }
-      })
+    share () {
+      const url = '../choose-stencil/main'
+      wx.navigateTo({ url })
     },
-    clickHandle (msg, ev) {
-      console.log('clickHandle:', msg, ev)
+    backHome () {
+      const url = '../index/main'
+      wx.reLaunch({ url })
     }
   },
 
@@ -68,6 +74,12 @@ export default {
     // 调用应用实例的方法获取全局数据
   },
   mounted () {
+  },
+  onShareAppMessage() {
+    return {
+      title: '自定义转发标题',
+      path: '/pages/index/main'
+    }
   }
 }
 </script>
@@ -81,11 +93,15 @@ export default {
     .banner{
       width: 100%;
       height: 800rpx;
-      border-radius: 20rpx;
       overflow: hidden;
       .img{
+        position: relative;
         width: 100%;
-        height: 100%;
+        height: auto;
+        top: 50%;
+        left: 0;
+        border-radius: 20rpx;
+        transform: translateY(-50%);
       }
     }
     .bottom{
@@ -106,9 +122,13 @@ export default {
         line-height: 90rpx;
         font-size: 32rpx;
         background: #FFE200;
+        &.share{
+          margin-left: 30rpx;
+          background: #DEDEDE;
+        }
       }
       p{
-        font-size: 20rpx;
+        font-size: 26rpx;
         color: #aaa;
       }
     }

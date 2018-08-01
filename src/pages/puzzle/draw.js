@@ -215,25 +215,33 @@ function requestAnimationFrame (callback) {
   return id
 }
 
-const invokeArr = []
+let helperId = 0
+class TapHelper {
+  constructor () {
+    helperId++
+    this.id = '_help_id_' + helperId
+    this.invokeArr = []
+  }
 
-function tapHelper (x, y) {
-  invokeArr.forEach(trigger => {
-    if (trigger.inside(x, y)) trigger.invoke()
-  })
+  invoke (x, y) {
+    this.invokeArr.forEach(trigger => {
+      if (trigger.inside(x, y)) trigger.invoke()
+    })
+  }
+  clearTapHelper () {
+    this.invokeArr.splice(0, this.invokeArr.length)
+  }
 }
 
-function clearTapHelper () {
-  invokeArr.splice(0, invokeArr.length)
-}
 class Trigger {
-  constructor (x, y, w, h) {
+  constructor (x, y, w, h, invokeArr) {
     if ([x, y, w, h].some(i => isNaN(i))) throw new Error('params type error.')
     this.x = x
     this.y = y
     this.w = w
     this.h = h
     this.cbs = []
+    this.invokeArr = invokeArr
     this.addWatch()
   }
 
@@ -259,11 +267,16 @@ class Trigger {
     if (index >= 0) this.cbs.splice(index, 1)
   }
   addWatch () {
-    if (invokeArr.indexOf(this) < 0) invokeArr.push(this)
+    if (!this.invokeArr) {
+      console.err('add watch failed')
+      return
+    }
+    if (this.invokeArr.indexOf(this) < 0) this.invokeArr.push(this)
   }
   clear () {
-    const index = invokeArr.indexOf(this)
-    if (index >= 0) invokeArr.splice(this, 1)
+    if (!this.invokeArr) return
+      const index = this.invokeArr.indexOf(this)
+    if (index >= 0) this.invokeArr.splice(this, 1)
   }
 }
 
@@ -340,10 +353,10 @@ class CvsDiv {
     }
     this.initPadding()
     this.autoSize()
-    this.initTrigger()
+    this.initTrigger(options.invokeArr)
   }
-  initTrigger () {
-    this.trigger = new Trigger(this.x, this.y, this.w, this.h)
+  initTrigger (invokeArr) {
+    this.trigger = new Trigger(this.x, this.y, this.w, this.h, invokeArr)
   }
   autoSize () {
     this.ctx.save()
@@ -398,7 +411,6 @@ export default {
   requestAnimationFrame,
   drawImageFromU8,
   Trigger,
-  tapHelper,
-  clearTapHelper,
+  TapHelper,
   CvsDiv
 }

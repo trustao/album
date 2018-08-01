@@ -22,7 +22,7 @@ import svgJson from '@/images/stencil/svg.json'
 const {drawColorBackground,
   getSVGPath, getImageData, getBlocks,
   createGrid, radiusPath, CvsDiv, // requestAnimationFrame,
-  tapHelper, clearTapHelper} = puzzle
+  TapHelper} = puzzle
 let stencilUnit8 = null
 let min = 25
 let maxLineWidth = 20
@@ -33,6 +33,7 @@ let time = 0
 let throttle = null
 // let stopRenderAll = false
 // let pattern = []
+let tapHelper = new TapHelper()
 export default {
   components: {
     'v-header': header
@@ -83,7 +84,7 @@ export default {
     clickHandle (ev) {
       var y = ev.mp.changedTouches[0].y
       var x = ev.mp.changedTouches[0].x
-      tapHelper(x, y)
+      tapHelper.invoke(x, y)
     },
     touchStartHandle (ev) {
       time = Date.now()
@@ -703,6 +704,7 @@ export default {
         }
       ]
       return operation.map(item => {
+        item.invokeArr = tapHelper.invokeArr
         var div = new CvsDiv(item)
         if (item.bind) {
           div.bindTapHandler(item.bind)

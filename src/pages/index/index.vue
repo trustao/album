@@ -10,7 +10,7 @@
         class="banner"
       >
         <template v-for="(item, index) in imgUrls">
-          <swiper-item>
+          <swiper-item class="s-item">
             <img class="img" :src="item"/>
           </swiper-item>
         </template>
@@ -19,6 +19,7 @@
         <button class="btn" @click="bindViewTap">开始制作</button>
         <p>拼图功能对性能有一定要求</p>
         <p>请尽量使用较好配置的手机</p>
+        <button class="contact" open-type="contact">联系客服</button>
       </div>
     </div>
   </container>
@@ -26,14 +27,14 @@
 
 <script>
 import card from '@/components/card'
-
+import  img1 from '@/images/1.jpg'
+import  img2 from '@/images/2.jpg'
+import  img3 from '@/images/3.jpg'
 export default {
   data () {
     return {
       imgUrls: [
-        'http://img02.tooopen.com/images/20150928/tooopen_sy_143912755726.jpg',
-        'http://img06.tooopen.com/images/20160818/tooopen_sy_175866434296.jpg',
-        'http://img06.tooopen.com/images/20160818/tooopen_sy_175833047715.jpg'
+        img1, img2, img3
       ]
     }
   },
@@ -73,24 +74,33 @@ export default {
 </script>
 
 <style lang="less" scoped>
+  @import "../../less/mixin.less";
   .wrap{
     box-sizing: border-box;
     width: 100%;
     height: 100%;
-    padding: 20rpx 60rpx;
+    overflow:hidden;
     .banner{
-      width: 100%;
-      height: 800rpx;
+      margin: 40rpx 80rpx 0;
+      width: 79%;
+      height: 62.8%;
       border-radius: 20rpx;
       overflow: hidden;
-      .img{
+      .s-item{
+        box-sizing: border-box;
         width: 100%;
         height: 100%;
+        padding: 0 10rpx;
+      }
+      .img{
+        width: 100%;
+        height: 91.88%;
+        border-radius: 20rpx;
       }
     }
     .bottom{
       position: fixed;
-      bottom: 30rpx;
+      bottom: 32rpx;
       left: 0;
       width: 100%;
       text-align: center;
@@ -107,9 +117,25 @@ export default {
         font-size: 32rpx;
         background: #FFE200;
       }
+      .contact{
+        appearance: none;
+        outline: none;
+        box-sizing: border-box;
+        border: none;
+        width: 42vw;
+        height: 34rpx;
+        line-height: 34rpx;
+        font-size: 24rpx;
+        color: #FF2600;
+        margin-top: 30rpx;
+        background: transparent;
+        &:after{
+          display: none;
+         }
+      }
       p{
         font-size: 20rpx;
-        color: #aaa;
+        color: #868686;
       }
     }
   }

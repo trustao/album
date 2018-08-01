@@ -6,7 +6,7 @@ Component({
   properties: {
     background: {
       type: String,
-      value: '#fff'
+      value: '#FAFAFA'
     },
     title: {
       type: String,

@@ -316,7 +316,8 @@ export default {
           radiusPath(this.ctx, item.x, item.y, l, l, this.radius)
           this.ctx.fill()
           this.ctx.globalCompositeOperation = 'source-atop'
-          this.ctx.drawImage(this.images[index % this.images.length], item.x, item.y, l, l)
+          const img = this.images[index % this.images.length]
+          this.ctx.drawImage(img.path, item.x, item.y, l, l)
           this.ctx.restore()
         }
       }
@@ -856,7 +857,7 @@ export default {
   onLoad (options) {
     this.stencil = wx.getStorageSync('stencil') || 'heart'
     this.images = wx.getStorageSync('images') || []
-    min = this.images.length // < 40 ? 40 : this.images.length
+    min = this.images.length < 27 ? 27 : this.images.length
     this.stopRender = false
     this.stopRenderBg = false
     // stopRenderAll = false

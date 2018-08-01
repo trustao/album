@@ -4,7 +4,7 @@
       <p class="tips">温馨提醒：为保证拼图效果，请上传40张图以上；不足40张图，系统将自动做重复处理，请知晓。</p>
       <ul class="images-container">
         <li v-for="(img, index) in imagesData" class="img-item" :key="index">
-          <img :src="img.path" class="img" alt="">
+          <img :src="img.path" mode="aspectFill" class="img">
           <icon class="delete-img" type="clear" size="20" color="#000" @click="deleteImg(img)"/>
         </li>
       </ul>
@@ -69,6 +69,22 @@
             imagesData.forEach(item => {
               if (this.imagesMd5.indexOf(item.digest) < 0) {
                 this.imagesData.push(item)
+                wx.getImageInfo({
+                  src: item.path,
+                  success: function (res) {
+                    var w = res.width
+                    var h = res.height
+                    if (w > h) {
+                        item.x = (w - h) / 2
+                        item.y = 0
+                        item.l = h
+                    } else {
+                      item.x = 0
+                      item.y = (h - w) / 2
+                      item.l = w
+                    }
+                  }
+                })
               }
             })
           }).catch(() => {
@@ -79,7 +95,7 @@
         })
       },
       chooseComplete () {
-        wx.setStorageSync('images', this.imagesData.map(item => item.path))
+        wx.setStorageSync('images', this.imagesData)
         wx.navigateTo({
           url: '../puzzle/main?name=' + this.stencil
         })
@@ -121,7 +137,6 @@
     justify-content: flex-start;
     flex-wrap: wrap;
     width: 100vw;
-    background: #fff;
     padding-bottom: 120rpx;
     .img-item {
       box-sizing: border-box;

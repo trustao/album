@@ -216,6 +216,7 @@ export default {
           }
           var maxL = Math.sqrt(maxArea / min) | 0
           var minL = Math.sqrt(minArea / min) | 0
+          console.log(maxL, minL)
           this.calculateFitBlock(range, maxL + 1, minL - 1)
         })
         .catch(() => {})
@@ -237,7 +238,7 @@ export default {
       this.calcCount++
       var grid = createGrid(range, l, 0)
       var block = getBlocks(grid, stencilUnit8, range, 1, this.ios)
-      var fitLength = block.filter(item => item.weight > l * l * 0.3).length
+      var fitLength = block.filter(item => item.weight > l * l * 0.5).length
       console.log('CALCULATE', fitLength, min)
       // this.drawItem(this.ctx, grid)
       if (this.calcCount > 20) {
@@ -853,9 +854,9 @@ export default {
 
   },
   onLoad (options) {
-    this.stencil = options.name || 'heart'
+    this.stencil = wx.getStorageSync('stencil') || 'heart'
     this.images = wx.getStorageSync('images') || []
-    min = this.images.length < 40 ? 40 : this.images.length
+    min = this.images.length // < 40 ? 40 : this.images.length
     this.stopRender = false
     this.stopRenderBg = false
     // stopRenderAll = false
@@ -905,7 +906,7 @@ export default {
     left: 0;
     top: 0;
     width: 100%;
-    height: 80%;
+    height: 120%;
   }
   .cvs-bg{
     filter: blur(2px);

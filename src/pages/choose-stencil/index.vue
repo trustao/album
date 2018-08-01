@@ -44,6 +44,7 @@ export default {
 
   methods: {
     bindViewTap (stencil) {
+      wx.setStorageSync('stencil', stencil)
       console.log(this.rePick)
       if (!this.rePick) {
         wx.navigateTo({

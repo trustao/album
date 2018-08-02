@@ -8,6 +8,7 @@
           <icon class="delete-img" type="clear" size="20" color="#000" @click="deleteImg(img)"/>
         </li>
       </ul>
+      <canvas class="compress-img" canvas-id="compress"></canvas>
       <div class="footer-btn" :class="{iphoneX: iphoneX}">
         <button @click="chooseImages">继续选图</button>
         <button @click="chooseComplete">完成({{count}})</button>
@@ -17,6 +18,9 @@
 </template>
 
 <script>
+  import TaskQueue from './taskQueue'
+
+  let compressTask = null
   export default {
     data () {
       return {
@@ -71,18 +75,24 @@
                 this.imagesData.push(item)
                 wx.getImageInfo({
                   src: item.path,
-                  success: function (res) {
+                  success: (res) => {
                     var w = res.width
                     var h = res.height
+                    var targetL = 100
                     if (w > h) {
-                        item.x = (w - h) / 2
-                        item.y = 0
-                        item.l = h
+                      item.w = w / h * targetL
+                      item.h = targetL
+                      item.l = targetL
+                      item.clipX = (item.w - item.h) / 2
+                      item.clipY = 0
                     } else {
-                      item.x = 0
-                      item.y = (h - w) / 2
-                      item.l = w
+                      item.w = targetL
+                      item.h = h / w * targetL
+                      item.l = targetL
+                      item.clipX = 0
+                      item.clipY = (item.h - item.w) / 2
                     }
+                    this.compressImg(item)
                   }
                 })
               }
@@ -94,8 +104,41 @@
             })
         })
       },
+      compressImg(img) {
+        compressTask.addTask(() => {
+          return new Promise((resolve, reject) => {
+            const ctx = wx.createCanvasContext('compress')
+            ctx.drawImage(img.path, 0, 0, img.w, img.h)
+            ctx.draw(false, () => {
+              wx.canvasToTempFilePath({
+                canvasId: 'compress',
+                x: img.clipX,
+                y: img.clipY,
+                width: img.l,
+                height: img.l,
+                success: (res) => {
+                  img.compressImg = res.tempFilePath
+                  resolve()
+                },
+                fail (err) {
+                  reject(err)
+                }
+              })
+            })
+          })
+        })
+      },
       chooseComplete () {
+        if (compressTask.invoking) {
+          wx.showLoading({
+            title: '请稍候,图片处理中...',
+            mask: true
+          })
+          compressTask.setQueueEmptyCb(this.chooseComplete)
+          return
+        }
         wx.setStorageSync('images', this.imagesData)
+        wx.hideLoading()
         wx.navigateTo({
           url: '../puzzle/main?name=' + this.stencil
         })
@@ -110,6 +153,8 @@
     created () {
     },
     mounted () {
+      compressTask = new TaskQueue()
+      console.log(compressTask)
       try {
         var res = wx.getSystemInfoSync()
         console.log(res)
@@ -189,5 +234,13 @@
         display: none;
        }
     }
+  }
+  .compress-img{
+    position: fixed;
+    width: 200px;
+    height: 200px;
+    top: -300px;
+    left: -300px;
+    opacity: 0;
   }
 </style>

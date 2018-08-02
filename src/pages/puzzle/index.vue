@@ -2,13 +2,9 @@
   <div class="cvs-wrap">
     <canvas class="cvs cvs-bg" canvas-id="puzzle-bg"></canvas>
     <canvas class="cvs" canvas-id="puzzle"></canvas>
-    <canvas class="operation"
-            canvas-id="operation"
-            @touchstart="touchStartHandle"
-            @touchmove="touchMoveHandle"
-            @touchend="touchEndHandle"
-    ></canvas>
     <canvas class="header-cvs" canvas-id="head-cvs" :class="{'iphoneX': iphoneX}" @tap="back"></canvas>
+    <div class="cvs-background"></div>
+    <div class="cvs-operation"></div>
   </div>
 </template>
 
@@ -149,6 +145,7 @@ export default {
     drawStencil (fill) {
       console.log('draw stencil')
       const res = this.setSvgPath(fill)
+      return
       this.range = res
       this.ctx.draw(false, () => {
         this.drawOperation()
@@ -175,12 +172,12 @@ export default {
         top = (this.viewH * 0.7 - height) / 2
       }
       svgActions = getSVGPath(this.ctx, svgData, left, top, width, height)
-      this.ctx.beginPath()
-      for (let i = 0; i < svgActions.length; i++) {
-        const item = svgActions[i]
-        this.ctx[item.action].apply(this.ctx, item.args)
-      }
-      this.ctx.fill()
+      this.drawSvg(this.bgCtx, true)
+      this.bgCtx.draw()
+      this.ctx.strokeRect(left, top, width, height)
+      this.ctx.draw()
+      wx.hideLoading()
+      return
       if (width < height) {
         left = left - (height - width) / 2
         width = height
@@ -317,7 +314,7 @@ export default {
           this.ctx.fill()
           this.ctx.globalCompositeOperation = 'source-atop'
           const img = this.images[index % this.images.length]
-          this.ctx.drawImage(img.path, item.x, item.y, l, l)
+          this.ctx.drawImage(img.compressImg, item.x, item.y, l, l)
           this.ctx.restore()
         }
       }
@@ -855,7 +852,7 @@ export default {
 
   },
   onLoad (options) {
-    this.stencil = wx.getStorageSync('stencil') || 'heart'
+    this.stencil = 'michael_jackson'
     this.images = wx.getStorageSync('images') || []
     min = this.images.length < 27 ? 27 : this.images.length
     this.stopRender = false
@@ -869,9 +866,8 @@ export default {
     })
     this.cvsInit()
     this.drawHeader()
-    this.drawStencil(true)
     drawColorBackground(this.bgCtx, {x: 0, y: this.viewH}, {x: this.viewW, y: 0}, this.viewW, this.viewH, this.colors, false, () => {})
-    this.bgCtx.draw(true)
+    this.drawStencil(true)
   },
   onReady () {
     console.log('ready')
@@ -909,15 +905,14 @@ export default {
     width: 100%;
     height: 120%;
   }
-  .cvs-bg{
-    filter: blur(2px);
-  }
-  .operation{
+
+  .cvs-operation{
     position: absolute;
     left: 0;
     bottom: 0;
     height: 30vh;
     width: 100%;
+    background: #666;
   }
 }
 </style>

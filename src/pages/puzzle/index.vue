@@ -1,10 +1,59 @@
 <template>
-  <div class="cvs-wrap">
-    <canvas class="cvs cvs-bg" canvas-id="puzzle-bg"></canvas>
-    <canvas class="cvs" canvas-id="puzzle"></canvas>
+  <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
+    <canvas class="cvs cvs-bg" canvas-id="puzzle-bg" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
+    <canvas class="cvs" canvas-id="puzzle" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
     <canvas class="header-cvs" canvas-id="head-cvs" :class="{'iphoneX': iphoneX}" @tap="back"></canvas>
     <div class="cvs-background"></div>
-    <div class="cvs-operation"></div>
+    <div class="cvs-operation">
+      <div class="operation-item location">
+        <div class="h-item">
+          <p>边框</p>
+          <div class="choose-wrap">
+            <div class="choose-item">无</div>
+            <div class="choose-item active">小</div>
+            <div class="choose-item">大</div>
+          </div>
+        </div>
+        <div class="h-item">
+          <p>边框</p>
+          <div class="choose-wrap">
+            <div class="choose-item">无</div>
+            <div class="choose-item active">小</div>
+            <div class="choose-item">大</div>
+          </div>
+        </div>
+        <div class="h-item">
+          <p>边框</p>
+          <div class="choose-wrap">
+            <div class="choose-item">无</div>
+            <div class="choose-item active">小</div>
+            <div class="choose-item">大</div>
+          </div>
+        </div>
+      </div>
+      <div class="operation-item">
+        <p>颜色</p>
+        <scroll-view scroll-x class="scroll-wrap">
+          <div class="choose-item"></div>        
+          <div class="choose-item active"></div>
+          <div class="choose-item"></div>
+          <div class="choose-item"></div>
+          <div class="choose-item"></div>
+          <div class="choose-item"></div>
+          <div class="choose-item"></div>
+          <div class="choose-item"></div>
+          <div class="choose-item"></div>
+          <div class="choose-item"></div>
+          <div class="choose-item"></div>
+          <div class="choose-item"></div>
+          <div class="choose-item"></div>
+        </scroll-view>
+      </div>
+       <div class="operation-item complete">
+          <div class="choose-stencil" @click="chooseStencil">换模板</div>
+          <div class="submit" @click="saveImage">生成拼图</div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -68,7 +117,9 @@ export default {
       range: null,
       userHide: false,
       imgMargin: 3,
-      colors: null
+      colors: null,
+      cvsW: 0,
+      cvsH: 0
     }
   },
   watch: {
@@ -77,49 +128,22 @@ export default {
     }
   },
   methods: {
-    clickHandle (ev) {
-      var y = ev.mp.changedTouches[0].y
-      var x = ev.mp.changedTouches[0].x
-      tapHelper.invoke(x, y)
-    },
-    touchStartHandle (ev) {
-      time = Date.now()
-      // var lX = this.viewW * 0.2 + this.lWidth
-      // var rX = this.viewW * 0.2 + this.rWidth
-      // if (ev.x > lX - 20 && ev.x < lX + 20 && ev.y > 60 - 20 && ev.y < 60 + 20) {
-      //   this.changeLine = true
-      //   this.stopRenderBg = false
-      // }
-      // if (ev.x > rX - 20 && ev.x < rX + 20 && ev.y > 100 - 20 && ev.y < 100 + 20) {
-      //   this.changeRadius = true
-      //   this.stopRender = false
-      // }
-    },
-    touchEndHandle (ev) {
-      if (Date.now() - time < 500) {
-        if (throttle) clearTimeout(throttle)
-        throttle = setTimeout(() => {
-          this.clickHandle(ev)
-        }, 100)
+    getSysInfo () {
+      try {
+        const res = wx.getSystemInfoSync()
+        if (/ios/ig.test(res.system)) this.ios = true
+        this.viewW = res.windowWidth
+        this.pixelRatio = res.pixelRatio
+        this.viewH = res.windowHeight // canvas全屏覆盖不全
+        this.lWidth = this.lineWidth / maxLineWidth * this.viewW * 0.6
+        this.rWidth = this.lineWidth / maxRadius * this.viewW * 0.6
+        console.log('w h p', this.viewW, this.viewH, this.pixelRatio)
+        var rpx = this.viewW / 750
+        this.cvsW = this.viewW - 60 * rpx
+        this.cvsH = this.viewH - 372 * rpx - (this.iphoneX ? 176 * rpx: 128 * rpx) - 60 * rpx
+      } catch (e) {
+        // Do something when catch error
       }
-      // this.changeLine = false
-      // this.changeRadius = false
-      // this.stopRender = true
-      // this.stopRenderBg = true
-    },
-    touchMoveHandle (ev) {
-      // if (this.changeRadius) {
-      //   this.rWidth = ev.x - this.viewW * 0.2
-      //   if (this.rWidth > this.viewW * 0.6) this.rWidth = this.viewW * 0.6
-      //   if (this.rWidth < 0) this.rWidth = 0
-      //   this.radius = this.rWidth / (this.viewW * 0.6) * maxRadius
-      // }
-      // if (this.changeLine) {
-      //   this.lWidth = ev.x - this.viewW * 0.2
-      //   if (this.lWidth > this.viewW * 0.6) this.lWidth = this.viewW * 0.6
-      //   if (this.lWidth < 0) this.lWidth = 0
-      //   this.lineWidth = (this.lWidth < 5 ? 5 : this.lWidth) / (this.viewW * 0.6) * maxLineWidth
-      // }
     },
     cvsInit () {
       this.ctx = wx.createCanvasContext('puzzle')
@@ -129,55 +153,42 @@ export default {
       this.ctx.setLineCap('round')
       this.ctx.setFillStyle('#fff')
       this.bgCtx.setFontSize(16)
-      try {
-        const res = wx.getSystemInfoSync()
-        if (/ios/ig.test(res.system)) this.ios = true
-        this.viewW = res.windowWidth
-        this.pixelRatio = res.pixelRatio
-        this.viewH = res.windowHeight * 1.2 | 0 // canvas全屏覆盖不全
-        this.lWidth = this.lineWidth / maxLineWidth * this.viewW * 0.6
-        this.rWidth = this.lineWidth / maxRadius * this.viewW * 0.6
-        console.log('w h p', this.viewW, this.viewH, this.pixelRatio)
-      } catch (e) {
-        // Do something when catch error
-      }
     },
     drawStencil (fill) {
       console.log('draw stencil')
       const res = this.setSvgPath(fill)
-      return
       this.range = res
+      this.drawSvg(this.ctx, true)
       this.ctx.draw(false, () => {
-        this.drawOperation()
         this.createImageContainer(res)
       })
     },
     setSvgPath (fill) {
       console.time('计算')
       var svgData = svgJson.data[this.stencil]
-      var baseW = this.viewW - 60
-      var baseH = this.viewH * 0.7 - 100 | 0
+      var baseW = this.cvsW - 10
+      var baseH = this.cvsH - 10
       var ratio = svgData.width / svgData.height
       var h1 = baseW / ratio
       var w1 = baseH * ratio
       if (h1 > baseH) {
         var width = w1
         var height = baseH
-        var left = (this.viewW - width) / 2
-        var top = 85
+        var left = (baseW - width) / 2 + 5
+        var top = 5
       } else {
         width = baseW
         height = h1
-        left = 30
-        top = (this.viewH * 0.7 - height) / 2
+        left = 5
+        top = (baseH - height) / 2 + 5
       }
-      svgActions = getSVGPath(this.ctx, svgData, left, top, width, height)
-      this.drawSvg(this.bgCtx, true)
-      this.bgCtx.draw()
-      this.ctx.strokeRect(left, top, width, height)
-      this.ctx.draw()
-      wx.hideLoading()
-      return
+      svgActions = getSVGPath(svgData, left, top, width, height)
+      // this.drawSvg(this.bgCtx, true)
+      // this.bgCtx.draw()
+      // this.ctx.strokeRect(left, top, width, height)
+      // this.ctx.draw()
+      // wx.hideLoading()
+      // return
       if (width < height) {
         left = left - (height - width) / 2
         width = height
@@ -198,12 +209,9 @@ export default {
       return range
     },
     createImageContainer (range) {
-      console.log('create grid')
+      console.log('create grid', range)
       getImageData(range, 'puzzle')
         .then((data) => {
-          // this.ctx.clearRect(0, 0, this.viewW, this.viewH)
-          // this.ctx.clearRect(0, 0, this.viewW, this.viewH)
-          // this.ctx.clearRect(0, 0, this.viewW, this.viewH)
           stencilUnit8 = data
           var maxArea = (range.end.y - range.start.y) * (range.end.x - range.start.x)
           var minArea = stencilUnit8.filter(n => n).length / 4 | 0
@@ -726,6 +734,11 @@ export default {
       this.OpCtx.draw()
       // if (!stopRenderAll) requestAnimationFrame(this.drawOperation)
     },
+    chooseStencil () {
+      wx.redirectTo({
+        url: '../choose-stencil/main?rePick=1'
+      })
+    },
     saveImage () {
       wx.showLoading({
         title: '图片生成中',
@@ -737,11 +750,11 @@ export default {
         canvasId: 'puzzle',
         x: 0,
         y: 0,
-        width: this.viewW,
-        height: this.viewH,
+        width: this.cvsW,
+        height: this.cvsH,
         success: (res) => {
           console.log(res)
-          this.bgCtx.drawImage(res.tempFilePath, 0, 0, this.viewW, this.viewH)
+          this.bgCtx.drawImage(res.tempFilePath, 0, 0, this.cvsW, this.cvsH)
           this.bgCtx.draw(true, () => {
             this.cvsToPhoto()
           })
@@ -849,10 +862,10 @@ export default {
     }
   },
   created () {
-
+    this.getSysInfo()
   },
   onLoad (options) {
-    this.stencil = 'michael_jackson'
+    this.stencil = 'ballet'
     this.images = wx.getStorageSync('images') || []
     min = this.images.length < 27 ? 27 : this.images.length
     this.stopRender = false
@@ -892,27 +905,139 @@ export default {
 }
 </script>
 
-<style lang="less">
+<style lang="less" scoped>
 .cvs-wrap{
+  box-sizing: border-box;
   position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
+  
   .cvs{
     position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 120%;
+    left: 50%;
+    top: 158rpx;
+    transform: translateX(-50%);
+    z-index: 9;
   }
-
+  &.iphoneX{
+    .cvs{
+      top: 206rpx;
+    }
+  }
   .cvs-operation{
     position: absolute;
+    box-sizing: border-box;
     left: 0;
     bottom: 0;
-    height: 30vh;
+    height: 372rpx;
     width: 100%;
+    padding: 20rpx;
     background: #666;
+    z-index: 10;
+    .operation-item{
+      position: relative;
+      height: 110rpx;
+      &.location{
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        .choose-item{
+          background: #fff;
+          color: #5F5F5F;
+          &.active{
+            background: #FFE200;
+            &:after {
+              display: none;
+            }
+          }
+        }
+      }
+      &.complete{
+        height: 120rpx;
+      }
+      p{
+        font-size: 24rpx;
+        line-height: 44rpx;
+        color: #dedede;
+      }
+      .scroll-wrap{
+        position: relative;
+        width:100%;
+        height: 70rpx;
+        white-space:nowrap;
+      }
+      .choose-item{
+        display: inline-block;
+        position: relative;
+        width: 48rpx;
+        height: 48rpx;
+        border-radius: 12rpx;
+        background: pink;
+        text-align: center;
+        line-height: 48rpx;
+        margin-right: 20rpx;
+        font-size: 20rpx;
+        &.active:after{
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: -16rpx;
+          width: 48rpx;
+          height: 8rpx;
+          border-radius: 4rpx;
+          background: #FFE200;
+        }
+      }
+      .choose-stencil{
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 120rpx;
+        height: 60rpx;
+        line-height: 60rpx;
+        text-align: center;
+        font-size: 24rpx;
+        background: transparent;
+        color: #fff;
+        border-radius: 30rpx; 
+        border: 1px solid #fff;
+      }
+      .submit{
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 240rpx;
+        height: 64rpx;
+        line-height: 64rpx;
+        text-align: center;
+        font-size: 24rpx;
+        background: #FFE200;
+        color: #000;
+        border-radius: 32rpx; 
+      }
+    }
+  }
+  .header-cvs {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 128rpx;
+    z-index: 99;
+    &.iphoneX{
+      height: 176rpx;
+    }
+  }
+  .cvs-background{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: pink;
+    z-index: 2;
   }
 }
 </style>

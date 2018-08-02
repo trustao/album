@@ -32,7 +32,7 @@ function radiusPath (ctx, x, y, w, h, r) {
   ctx.lineTo(x + w, y + h - r)
   ctx.closePath()
 }
-function getSVGPath (ctx, svg, x, y, width, height) {
+function getSVGPath (svg, x, y, width, height) {
   const sX = width / svg.width
   const sY = height / svg.height
   var transMatrix = matrix3(sX, 0, 0, sY, x, y)

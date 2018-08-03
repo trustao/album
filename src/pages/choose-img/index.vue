@@ -1,7 +1,7 @@
 <template>
-  <container title="确认照片">
+  <container title="确认照片" beforeBack="imgBack">
     <div>
-      <p class="tips">温馨提醒：为保证拼图效果，请上传40张图以上；不足40张图，系统将自动做重复处理，请知晓。</p>
+      <!--<p class="tips">温馨提醒：为保证拼图效果，请上传40张图以上；不足40张图，系统将自动做重复处理，请知晓。</p>-->
       <ul class="images-container">
         <li v-for="(img, index) in imagesData" class="img-item" :key="index">
           <img :src="img.path" mode="aspectFill" class="img">
@@ -19,6 +19,7 @@
 
 <script>
   import TaskQueue from './taskQueue'
+  import events from '../../../static/events'
 
   let compressTask = null
   export default {
@@ -145,6 +146,21 @@
       },
       deleteImg (img) {
         this.imagesData.splice(this.imagesData.indexOf(img), 1)
+      },
+      beforeBack (next) {
+        wx.showModal({
+          title: '提示',
+          content: '该操作将清空已选图片',
+          success: (res) => {
+            if (res.confirm) {
+              console.log('用户点击确定')
+              this.imagesData.splice(0)
+              next()
+            } else if (res.cancel) {
+              console.log('用户点击取消')
+            }
+          }
+        })
       }
     },
     onLoad (options) {
@@ -165,6 +181,8 @@
         // Do something when catch error
       }
       this.chooseImages()
+      events.$off('imgBack')
+      events.$on('imgBack', this.beforeBack.bind(this))
     }
   }
 </script>

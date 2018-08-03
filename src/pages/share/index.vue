@@ -9,8 +9,8 @@
         :interval="5000"
         class="banner"
       >
-        <template v-for="item in imgUrls">
-          <swiper-item>
+        <template v-for="(item, index) in imgUrls">
+          <swiper-item class="s-item">
             <img class="img" :src="item.url" :style="{height: item.height + 'px'}"/>
           </swiper-item>
         </template>
@@ -72,6 +72,7 @@ export default {
 
   created () {
     // 调用应用实例的方法获取全局数据
+    this.images = wx.getStorageSync('result') || []
   },
   mounted () {
   },
@@ -86,14 +87,20 @@ export default {
 
 <style lang="less" scoped>
   .wrap{
-    box-sizing: border-box;
     width: 100%;
     height: 100%;
-    padding: 20rpx 60rpx;
     .banner{
-      width: 100%;
-      height: 800rpx;
+      margin: 40rpx 80rpx 0;
+      width: 79%;
+      height: 62.8%;
+      border-radius: 20rpx;
       overflow: hidden;
+      .s-item{
+        box-sizing: border-box;
+        width: 100%;
+        height: 100%;
+        padding: 0 10rpx;
+      }
       .img{
         position: relative;
         width: 100%;

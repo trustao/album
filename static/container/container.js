@@ -1,4 +1,6 @@
 // components/container.js
+import events from '../events.js'
+
 Component({
   /**
    * 组件的属性列表
@@ -11,6 +13,9 @@ Component({
     title: {
       type: String,
       value: ''
+    },
+    beforeBack: {
+      type: String
     }
   },
 
@@ -33,6 +38,12 @@ Component({
       var x = ev.detail.x
       var y = ev.detail.y
       if (x > 5 && x < 25 && y > this.data.size.h - 30) {
+        if (this.data.beforeBack) {
+          events.$emit(this.data.beforeBack, () => {
+            wx.navigateBack()
+          })
+          return
+        }
         wx.navigateBack()
       }
     },
@@ -95,5 +106,6 @@ Component({
   },
   ready () {
     this.drawHeader()
+    console.log(this.data.beforeBack)
   }
 })

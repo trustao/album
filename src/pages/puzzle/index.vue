@@ -3,50 +3,56 @@
     <canvas class="cvs cvs-bg" canvas-id="puzzle-bg" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
     <canvas class="cvs" canvas-id="puzzle" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
     <canvas class="header-cvs" canvas-id="head-cvs" :class="{'iphoneX': iphoneX}" @tap="back"></canvas>
-    <div class="cvs-background"></div>
+    <canvas class="to-images" canvas-id="to-images"></canvas>
+    <div class="cvs-background" :style="{background: gradientStr[colorIndex]}"></div>
     <div class="cvs-operation">
       <div class="operation-item location">
         <div class="h-item">
           <p>边框</p>
           <div class="choose-wrap">
-            <div class="choose-item">无</div>
-            <div class="choose-item active">小</div>
-            <div class="choose-item">大</div>
+            <div class="choose-item"
+                 v-for="(item, index) in borderOptions"
+                 :class="{active: lineWidth === item}"
+                 v-text="chooseText[index]"
+                 @click="pickBorder(item)"
+            ></div>
           </div>
         </div>
         <div class="h-item">
-          <p>边框</p>
+          <p>边距</p>
           <div class="choose-wrap">
-            <div class="choose-item">无</div>
-            <div class="choose-item active">小</div>
-            <div class="choose-item">大</div>
+            <div class="choose-item"
+                 v-for="(item, index) in marginOptions"
+                 :class="{active: imgMargin === item}"
+                 v-text="chooseText[index]"
+                 @click="pickMargin(item)"
+            ></div>
           </div>
         </div>
         <div class="h-item">
-          <p>边框</p>
+          <p>圆角</p>
           <div class="choose-wrap">
-            <div class="choose-item">无</div>
-            <div class="choose-item active">小</div>
-            <div class="choose-item">大</div>
+            <div class="choose-item"
+                 v-for="(item, index) in radiusOptions"
+                 :class="{active: radius === item}"
+                 v-text="chooseText[index]"
+                 @click="pickRadius(item)"
+            ></div>
           </div>
         </div>
       </div>
       <div class="operation-item">
         <p>颜色</p>
+        <!--<movable-area>-->
+          <!--<movable-view direction="horizontal" inertia>-->
+          <!--</movable-view>-->
+        <!--</movable-area>-->
         <scroll-view scroll-x class="scroll-wrap">
-          <div class="choose-item"></div>        
-          <div class="choose-item active"></div>
-          <div class="choose-item"></div>
-          <div class="choose-item"></div>
-          <div class="choose-item"></div>
-          <div class="choose-item"></div>
-          <div class="choose-item"></div>
-          <div class="choose-item"></div>
-          <div class="choose-item"></div>
-          <div class="choose-item"></div>
-          <div class="choose-item"></div>
-          <div class="choose-item"></div>
-          <div class="choose-item"></div>
+          <div class="choose-item"
+               v-for="(item, index) in colorOptions"
+               :class="{active: index === colorIndex}"
+               :style="{background: gradientStr[index]}"
+               @click="pickColors(item)"></div>
         </scroll-view>
       </div>
        <div class="operation-item complete">
@@ -63,22 +69,18 @@
 import header from '@/components/header'
 import puzzle from './draw'
 import svgJson from '@/images/stencil/svg.json'
+import TaskQueue from '../choose-img/taskQueue'
 
-const {drawColorBackground,
+const {
+  drawColorBackground,
   getSVGPath, getImageData, getBlocks,
-  createGrid, radiusPath, CvsDiv, // requestAnimationFrame,
-  TapHelper} = puzzle
+  createGrid, radiusPath, // requestAnimationFrame,
+} = puzzle
 let stencilUnit8 = null
 let min = 25
-let maxLineWidth = 20
-let maxRadius = 20
 let imageBlock = []
 let svgActions = []
-let time = 0
-let throttle = null
-// let stopRenderAll = false
-// let pattern = []
-let tapHelper = new TapHelper()
+let imageQueue = new TaskQueue()
 export default {
   components: {
     'v-header': header
@@ -88,7 +90,6 @@ export default {
     const pages = getCurrentPages()
     const curPage = pages[pages.length - 1]
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
-    console.log(iphoneX)
     return {
       iphoneX,
       noBack: true,
@@ -103,41 +104,87 @@ export default {
       stencil: '',
       calcCount: 0,
       images: [],
-      lineWidth: 5,
       lineColor: '#fff',
-      radius: 0,
       changeLine: false,
       changeRadius: false,
-      lWidth: 0,
-      rWidth: 0,
       ios: false,
-      stopRender: false,
-      stopRenderBg: false,
       pixelRatio: 1,
       range: null,
       userHide: false,
-      imgMargin: 3,
-      colors: null,
       cvsW: 0,
-      cvsH: 0
+      cvsH: 0,
+      chooseText: ['无', '小', '大'],
+      lineWidth: 5,
+      borderOptions: [0, 5, 10],
+      imgMargin: 3,
+      marginOptions: [0, 3, 6],
+      radius: 0,
+      radiusOptions: [0, 5, 10],
+      colors: null,
+      colorOptions: [
+        ['#F7D6CC','#FAA3A7'],
+        ['#ffecd2','#fcb69f'],
+        ['#FFF1A6','#FDDF6D'],
+        ['#fdfcfb','#e2d1c3'],
+        ['#89f7fe','#66a6ff'],
+        ['#96deda','#50c9c3'],
+        ['#868f96','#596164'],
+        ['#B7F8DB','#50A7C2'],
+        ['#cfd9df','#e2ebf0'],
+        ['#fdfbfb','#ebedee']
+      ]
     }
   },
-  watch: {
-    stopRenderBg (val) {
-      if (!val) this.drawBackground()
+  computed: {
+    gradientStr () {
+      return this.colorOptions.map(item => {
+        if (Array.isArray(item)) {
+          if (item.length > 1) {
+            return item.reduce((a, b, index) => {
+              return a + b + ' ' + (index / (item.length - 1) * 100 | 0) + '%' + (index !== item.length - 1 ? ', ' : ')')
+            }, 'linear-gradient(to bottom, ')
+          } else {
+            return item[0] || ''
+          }
+        }
+      })
+    },
+    colorIndex () {
+      return this.colorOptions.indexOf(this.colors)
     }
   },
   methods: {
+    pickColors (colors) {
+      this.colors = colors
+    },
+    pickRadius (item) {
+      if (item === this.radius) return
+      wx.showLoading({
+        title: '重新渲染中'
+      })
+      this.radius = item
+      this.drawImages()
+    },
+    pickBorder (item) {
+      if (item === this.lineWidth) return
+      this.lineWidth = item
+      this.drawBackground()
+    },
+    pickMargin (item) {
+      if (item === this.imgMargin) return
+      wx.showLoading({
+        title: '重新渲染中'
+      })
+      this.imgMargin = item
+      this.drawImages()
+    },
     getSysInfo () {
       try {
         const res = wx.getSystemInfoSync()
         if (/ios/ig.test(res.system)) this.ios = true
         this.viewW = res.windowWidth
         this.pixelRatio = res.pixelRatio
-        this.viewH = res.windowHeight // canvas全屏覆盖不全
-        this.lWidth = this.lineWidth / maxLineWidth * this.viewW * 0.6
-        this.rWidth = this.lineWidth / maxRadius * this.viewW * 0.6
-        console.log('w h p', this.viewW, this.viewH, this.pixelRatio)
+        this.viewH = res.windowHeight
         var rpx = this.viewW / 750
         this.cvsW = this.viewW - 60 * rpx
         this.cvsH = this.viewH - 372 * rpx - (this.iphoneX ? 176 * rpx: 128 * rpx) - 60 * rpx
@@ -146,6 +193,9 @@ export default {
       }
     },
     cvsInit () {
+      this.stencil = wx.getStorageSync('stencil') || 'heart'
+      this.images = wx.getStorageSync('images') || []
+      min = this.images.length < 27 ? 27 : this.images.length
       this.ctx = wx.createCanvasContext('puzzle')
       this.bgCtx = wx.createCanvasContext('puzzle-bg')
       this.OpCtx = wx.createCanvasContext('operation')
@@ -189,6 +239,12 @@ export default {
       // this.ctx.draw()
       // wx.hideLoading()
       // return
+      this.imgZone = {
+        x: left,
+        y: top,
+        w: width,
+        h: height
+      }
       if (width < height) {
         left = left - (height - width) / 2
         width = height
@@ -209,7 +265,6 @@ export default {
       return range
     },
     createImageContainer (range) {
-      console.log('create grid', range)
       getImageData(range, 'puzzle')
         .then((data) => {
           stencilUnit8 = data
@@ -221,34 +276,18 @@ export default {
           }
           var maxL = Math.sqrt(maxArea / min) | 0
           var minL = Math.sqrt(minArea / min) | 0
-          console.log(maxL, minL)
           this.calculateFitBlock(range, maxL + 1, minL - 1)
         })
         .catch(() => {})
     },
-    drawItem (ctx, arr, color) {
-      ctx.save()
-      var c = (this.calcCount < 14 ? (14 - this.calcCount) : 0).toString(16)
-      ctx.setStrokeStyle(color || ('#' + c + c + c))
-      ctx.setLineWidth(2)
-      arr.forEach(item => {
-        ctx.strokeRect(item.x, item.y, item.l, item.l)
-      })
-      ctx.draw(true)
-      ctx.restore()
-    },
     calculateFitBlock (range, maxL, minL) {
       var l = Math.round((maxL + minL) / 2)
-      console.log('边长：', l)
       this.calcCount++
       var grid = createGrid(range, l, 0)
       var block = getBlocks(grid, stencilUnit8, range, 1, this.ios)
       var fitLength = block.filter(item => item.weight > l * l * 0.5).length
-      console.log('CALCULATE', fitLength, min)
-      // this.drawItem(this.ctx, grid)
       if (this.calcCount > 20) {
-        console.log('no', fitLength, min, this.calcCount)
-        maxRadius = l / 2
+        this.radiusOptions = [0, l * 0.2, l / 2 * 0.9]
         this.radius = l * 0.2
         this.sortBlocks(block)
         return
@@ -259,7 +298,7 @@ export default {
         this.calculateFitBlock(range, maxL, l)
       } else {
         console.log('get', fitLength, min, this.calcCount)
-        maxRadius = l / 2
+        this.radiusOptions = [0, l * 0.2, l / 2 * 0.9]
         this.radius = l * 0.2
         this.sortBlocks(block)
       }
@@ -273,17 +312,10 @@ export default {
       //   })
       // })
       imageBlock = data.sort((a, b) => b.weight - a.weight)
-      // data.forEach(item => {
-      //   this.ctx.fillRect(item.x, item.y, item.l, item.l)
-      // })
-      // this.ctx.draw(true)
       this.calcCount = 0
       console.timeEnd('计算')
-      // pattern = this.createPattern(this.ctx, this.images)
       this.drawBackground(() => {
-        // this.stopRenderBg = true
         this.drawImages(() => {
-          // this.stopRender = true
         })
       })
     },
@@ -302,8 +334,6 @@ export default {
       }
     },
     drawImages (cb) {
-      // if (!stopRenderAll) requestAnimationFrame(this.drawImages)
-      // if (this.stopRender) return
       this.ctx.setLineWidth(0)
       this.ctx.setStrokeStyle('#fff')
       this.ctx.beginPath()
@@ -333,406 +363,12 @@ export default {
     },
     drawBackground (cb) {
       this.bgCtx.setLineWidth(this.lineWidth)
-      drawColorBackground(this.bgCtx, {x: 0, y: 0}, {x: 0, y: this.viewH}, this.viewW, this.viewH, this.colors, false, () => {})
+      // drawColorBackground(this.bgCtx, {x: 0, y: 0}, {x: 0, y: this.viewH}, this.viewW, this.viewH, this.colors, false, () => {})
       this.drawSvg(this.bgCtx)
       this.bgCtx.fill()
       this.bgCtx.draw(false, () => {
         cb && cb()
-        // if (!this.stopRenderBg) requestAnimationFrame(this.drawBackground)
       })
-    },
-    createOperation  () {
-      const viewH = this.viewH * 5 / 6
-      let aH = this.iphoneX ? viewH * 0.3 - 70 : viewH * 0.3 - 60
-      const yM = aH / 5.5
-      const margin = (this.viewW - 100) / 4
-      const cS = 30 + margin
-      const cM = (this.viewW - cS - 30) / 5
-      const cW = margin * 3 / 5
-      // const dS = cS
-      // const dM = (this.viewW - dS - 30) / 3
-      const operation = [
-        {
-          ctx: this.OpCtx,
-          text: '模板边框',
-          x: 20,
-          y: aH - yM * 5,
-          fontSize: 12,
-          borderColor: '',
-          background: ''
-        },
-        {
-          ctx: this.OpCtx,
-          text: '无边框',
-          x: 30 + margin,
-          y: aH - yM * 5,
-          fontSize: 10,
-          borderRadius: 5,
-          background: '#D8D8D8',
-          bind: () => {
-            this.lineWidth = 0
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '小边框',
-          x: 30 + margin * 2,
-          y: aH - yM * 5,
-          fontSize: 10,
-          borderRadius: 5,
-          background: '#D8D8D8',
-          bind: () => {
-            console.log('小边框')
-            this.lineWidth = 5
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '大边框',
-          x: 30 + margin * 3,
-          y: aH - yM * 5,
-          fontSize: 10,
-          borderRadius: 5,
-          background: '#D8D8D8',
-          bind: () => {
-            console.log('大边框')
-            this.lineWidth = 10
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '图片间距',
-          x: 20,
-          y: aH - yM * 4,
-          fontSize: 12,
-          borderColor: '',
-          background: ''
-        },
-        {
-          ctx: this.OpCtx,
-          text: '无间距',
-          x: 30 + margin,
-          y: aH - yM * 4,
-          fontSize: 10,
-          borderRadius: 5,
-          background: '#D8D8D8',
-          bind: () => {
-            console.log('无间距')
-            wx.showLoading({
-              title: '渲染中',
-              mask: true
-            })
-            this.imgMargin = 0
-            this.drawImages()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '小间距',
-          x: 30 + margin * 2,
-          y: aH - yM * 4,
-          fontSize: 10,
-          borderRadius: 5,
-          background: '#D8D8D8',
-          bind: () => {
-            console.log('小间距')
-            wx.showLoading({
-              title: '渲染中',
-              mask: true
-            })
-            this.imgMargin = 3
-            this.drawImages()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '大间距',
-          x: 30 + margin * 3,
-          y: aH - yM * 4,
-          fontSize: 10,
-          borderRadius: 6,
-          background: '#D8D8D8',
-          bind: () => {
-            console.log('大间距')
-            wx.showLoading({
-              title: '渲染中',
-              mask: true
-            })
-            this.imgMargin = 5
-            this.drawImages()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '图片圆角',
-          x: 20,
-          y: aH - yM * 3,
-          fontSize: 12,
-          borderColor: '',
-          background: ''
-        },
-        {
-          ctx: this.OpCtx,
-          text: '无圆角',
-          x: 30 + margin,
-          y: aH - yM * 3,
-          fontSize: 10,
-          borderRadius: 5,
-          background: '#D8D8D8',
-          bind: () => {
-            console.log('无圆角')
-            wx.showLoading({
-              title: '渲染中',
-              mask: true
-            })
-            this.radius = 0
-            this.drawImages()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '小圆角',
-          x: 30 + margin * 2,
-          y: aH - yM * 3,
-          fontSize: 10,
-          borderRadius: 5,
-          background: '#D8D8D8',
-          bind: () => {
-            console.log('小圆角')
-            wx.showLoading({
-              title: '渲染中',
-              mask: true
-            })
-            this.radius = 6
-            this.drawImages()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '大圆角',
-          x: 30 + margin * 3,
-          y: aH - yM * 3,
-          fontSize: 10,
-          borderRadius: 5,
-          background: '#D8D8D8',
-          bind: () => {
-            console.log('大圆角')
-            wx.showLoading({
-              title: '渲染中',
-              mask: true
-            })
-            this.radius = maxRadius * 0.9
-            this.drawImages()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '背景颜色',
-          x: 20,
-          y: aH - yM * 2,
-          fontSize: 12,
-          borderColor: '',
-          background: ''
-        },
-        {
-          ctx: this.OpCtx,
-          text: '',
-          x: 30 + margin,
-          y: aH - yM * 2,
-          w: cW,
-          fontSize: 10,
-          borderRadius: 5,
-          lineGradient: ['#F7D6CC', '#FAA3A7'],
-          bind: () => {
-            this.colors = ['#F7D6CC', '#FAA3A7']
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '',
-          x: cS + cM,
-          y: aH - yM * 2,
-          w: cW,
-          fontSize: 10,
-          borderRadius: 5,
-          lineGradient: ['#ffecd2', '#fcb69f'],
-          bind: () => {
-            this.colors = ['#ffecd2', '#fcb69f']
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '',
-          x: cS + cM * 2,
-          y: aH - yM * 2,
-          w: cW,
-          fontSize: 10,
-          borderRadius: 5,
-          lineGradient: ['#FFF1A6', '#FDDF6D'],
-          bind: () => {
-            this.colors = ['#FFF1A6', '#FDDF6D']
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '',
-          x: cS + cM * 3,
-          y: aH - yM * 2,
-          w: cW,
-          fontSize: 10,
-          borderRadius: 5,
-          lineGradient: ['#fdfcfb', '#e2d1c3'],
-          bind: () => {
-            this.colors = ['#fdfcfb', '#e2d1c3']
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '',
-          x: cS + cM * 4,
-          y: aH - yM * 2,
-          w: cW,
-          fontSize: 10,
-          borderRadius: 5,
-          lineGradient: ['#89f7fe', '#66a6ff'],
-          bind: () => {
-            this.colors = ['#89f7fe', '#66a6ff']
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '',
-          x: 30 + margin,
-          y: aH - yM,
-          w: cW,
-          fontSize: 10,
-          borderRadius: 5,
-          lineGradient: ['#96deda', '#50c9c3'],
-          bind: () => {
-            this.colors = ['#96deda', '#50c9c3']
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '',
-          x: cS + cM,
-          y: aH - yM,
-          w: cW,
-          fontSize: 10,
-          borderRadius: 5,
-          lineGradient: ['#868f96', '#596164'],
-          bind: () => {
-            this.colors = ['#868f96', '#596164']
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '',
-          x: cS + cM * 2,
-          y: aH - yM,
-          w: cW,
-          fontSize: 10,
-          borderRadius: 5,
-          lineGradient: ['#B7F8DB', '#50A7C2'],
-          bind: () => {
-            this.colors = ['#B7F8DB', '#50A7C2']
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '',
-          x: cS + cM * 3,
-          y: aH - yM,
-          w: cW,
-          fontSize: 10,
-          borderRadius: 5,
-          lineGradient: ['#cfd9df', '#e2ebf0'],
-          bind: () => {
-            this.colors = ['#cfd9df', '#e2ebf0']
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '',
-          x: cS + cM * 4,
-          y: aH - yM,
-          w: cW,
-          fontSize: 10,
-          borderRadius: 5,
-          lineGradient: ['#fdfbfb', '#ebedee'],
-          bind: () => {
-            this.colors = ['#fdfbfb', '#ebedee']
-            this.drawBackground()
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '重选模板',
-          x: this.viewW * 0.1,
-          y: viewH * 0.3 - 60,
-          w: this.viewW * 0.3,
-          h: 40,
-          fontSize: 16,
-          borderRadius: 18,
-          borderColor: '#000',
-          background: '#FFE200',
-          bind: () => {
-            wx.redirectTo({
-              url: '../choose-stencil/main?rePick=1'
-            })
-          }
-        },
-        {
-          ctx: this.OpCtx,
-          text: '保存图片',
-          x: this.viewW * 0.6,
-          y: viewH * 0.3 - 60,
-          w: this.viewW * 0.3,
-          h: 40,
-          fontSize: 16,
-          borderRadius: 18,
-          borderColor: '#000',
-          background: '#FFE200',
-          bind: () => {
-            this.saveImage()
-          }
-        }
-      ]
-      return operation.map(item => {
-        item.invokeArr = tapHelper.invokeArr
-        var div = new CvsDiv(item)
-        if (item.bind) {
-          div.bindTapHandler(item.bind)
-        }
-        div.draw()
-        return div
-      })
-    },
-    drawOperation () {
-      var ctx = this.OpCtx
-      // 背景
-      ctx.save()
-      ctx.setFillStyle('#3D4042')
-      ctx.setGlobalAlpha(0.42)
-      ctx.fillRect(0, 0, this.viewW, this.viewH * 0.3)
-      ctx.beginPath()
-      ctx.restore()
-      // 按钮
-      this.createOperation()
-      this.OpCtx.draw()
-      // if (!stopRenderAll) requestAnimationFrame(this.drawOperation)
     },
     chooseStencil () {
       wx.redirectTo({
@@ -744,74 +380,124 @@ export default {
         title: '图片生成中',
         mask: true
       })
-      // this.stopRender = true
       this.bgCtx.setLineWidth(this.lineWidth)
+      const {x, y, w, h} = this.imgZone
       wx.canvasToTempFilePath({
         canvasId: 'puzzle',
-        x: 0,
-        y: 0,
-        width: this.cvsW,
-        height: this.cvsH,
+        x,
+        y,
+        width: w,
+        height: h,
         success: (res) => {
-          console.log(res)
-          this.bgCtx.drawImage(res.tempFilePath, 0, 0, this.cvsW, this.cvsH)
-          this.bgCtx.draw(true, () => {
-            this.cvsToPhoto()
-          })
+          this.cvsToImages(res.tempFilePath)
         },
         fail (err) {
           console.log(err)
         }
       })
     },
-    cvsToPhoto () {
-      console.log('to photo')
-      wx.canvasToTempFilePath({
-        canvasId: 'puzzle-bg',
-        x: 0,
-        y: 0,
-        width: this.viewW,
-        height: this.range.end.y + this.range.start.y,
-        success: function (res) {
-          wx.saveImageToPhotosAlbum({
-            filePath: res.tempFilePath,
+    cvsToImages (puzzlePath) {
+      const variety = [
+        {
+          name: 'share',
+          puzzleX: 40,
+          puzzleY: 118,
+          puzzleW: 295,
+          puzzleH: 420,
+          imgW: 375,
+          imgH: 656,
+          QRCode: '/static/QRCode.png',
+          QRX: 168,
+          QRY: 600,
+          QRL: 40
+        },
+        {
+          name: 'wallpaper',
+          puzzleX: 40,
+          puzzleY: 118,
+          puzzleW: 295,
+          puzzleH: 420,
+          imgW: 375,
+          imgH: 656,
+        },
+        {
+          name: 'cover',
+          puzzleX: 48,
+          puzzleY: 78,
+          puzzleW: 279,
+          puzzleH: 279,
+          imgW: 375,
+          imgH: 375,
+        },
+        {
+          name: 'avatar',
+          puzzleX: 48,
+          puzzleY: 48,
+          puzzleW: 279,
+          puzzleH: 279,
+          imgW: 375,
+          imgH: 375,
+        }
+      ]
+      variety.forEach(imgData => {
+        const {w, h} = this.imgZone
+        const scale = w / h
+        if (scale > 1) {
+          const height = imgData.puzzleW / scale
+          imgData.puzzleY += (imgData.puzzleH - height) / 2
+          imgData.puzzleH = height
+        } else {
+          const width = imgData.puzzleH * scale
+          imgData.puzzleX += (imgData.puzzleW - width) / 2
+          imgData.puzzleW = width
+        }
+        imageQueue.addTask(this.makeImage.bind(this, puzzlePath, imgData))
+      })
+      imageQueue.setQueueEmptyCb(() => {
+        wx.setStorageSync('result', variety)
+        wx.hideLoading()
+        wx.navigateTo({
+          url: '../share/main'
+        })
+      })
+    },
+    makeImage (puzzlePath, imgData) {
+      return new Promise((resolve, reject) => {
+        const newSvgActions = getSVGPath(svgJson.data[this.stencil], imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
+        let temp = svgActions
+        svgActions = newSvgActions
+        var ctx = wx.createCanvasContext('to-images')
+        ctx.beginPath()
+        ctx.save()
+        drawColorBackground(ctx, {x: 0, y: 0}, {x: 0, y: imgData.imgH}, imgData.imgW, imgData.imgH, this.colors, false, () => {})
+        ctx.restore()
+        ctx.setFillStyle('#fff')
+        ctx.setStrokeStyle('#fff')
+        ctx.setLineWidth(this.lineWidth)
+        this.drawSvg(ctx, false)
+        ctx.fill()
+        svgActions = temp
+        ctx.drawImage(puzzlePath, imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
+        if (imgData.QRCode) {
+          ctx.drawImage(imgData.QRCode, imgData.QRX, imgData.QRY, imgData.QRL, imgData.QRL)
+        }
+        ctx.draw(false, () => {
+          wx.canvasToTempFilePath({
+            canvasId: 'to-images',
+            x: 0,
+            y: 0,
+            width: imgData.imgW,
+            height: imgData.imgH,
             success: function (res) {
-              wx.hideLoading()
-              wx.showToast({
-                title: '成功',
-                icon: 'success',
-                mask: true,
-                duration: 1000
-              })
+              imgData.path = res.tempFilePath
+              resolve()
             },
-            fail () {
-              wx.showToast({
-                title: '保存失败',
-                icon: 'none',
-                mask: true,
-                duration: 1000
-              })
+            fail (err) {
+              console.log(err)
+              reject()
             }
           })
-        },
-        fail (err) {
-          console.log(err)
-        }
-      })
-    },
-    stopAll () {
-      // stopRenderAll = true
-      this.stopRenderBg = true
-    },
-    restart () {
-      // stopRenderAll = false
-      this.stopRenderBg = false
-      this.drawImages()
-      this.drawBackground()
-    },
-    createPattern (ctx, images) {
-      return images.map(image => {
-        return ctx.createPattern(image, 'no-repeat')
+        })
       })
     },
     // 头部
@@ -864,43 +550,15 @@ export default {
   created () {
     this.getSysInfo()
   },
-  onLoad (options) {
-    this.stencil = 'ballet'
-    this.images = wx.getStorageSync('images') || []
-    min = this.images.length < 27 ? 27 : this.images.length
-    this.stopRender = false
-    this.stopRenderBg = false
-    // stopRenderAll = false
-  },
   mounted () {
     wx.showLoading({
       title: '图片渲染中',
       mask: true
     })
+    this.pickColors(this.colorOptions[0])
     this.cvsInit()
     this.drawHeader()
-    drawColorBackground(this.bgCtx, {x: 0, y: this.viewH}, {x: this.viewW, y: 0}, this.viewW, this.viewH, this.colors, false, () => {})
     this.drawStencil(true)
-  },
-  onReady () {
-    console.log('ready')
-  },
-  onHide () {
-    console.log('hide')
-    this.userHide = true
-    // this.stopAll()
-  },
-  onShow () {
-    console.log('show')
-    // if (this.userHide) {
-    //   this.restart()
-    // }
-  },
-  onUnload () {
-    console.log('unload')
-    clearTapHelper()
-    this.stopAll()
-    this.userHide = false
   }
 }
 </script>
@@ -912,7 +570,7 @@ export default {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  
+
   .cvs{
     position: absolute;
     left: 50%;
@@ -1000,7 +658,7 @@ export default {
         font-size: 24rpx;
         background: transparent;
         color: #fff;
-        border-radius: 30rpx; 
+        border-radius: 30rpx;
         border: 1px solid #fff;
       }
       .submit{
@@ -1015,7 +673,7 @@ export default {
         font-size: 24rpx;
         background: #FFE200;
         color: #000;
-        border-radius: 32rpx; 
+        border-radius: 32rpx;
       }
     }
   }
@@ -1036,8 +694,16 @@ export default {
     left: 0;
     width: 100%;
     height: 100%;
-    background: pink;
     z-index: 2;
+  }
+
+  .to-images{
+    position: fixed;
+    left: -100vw;
+    top: -100vh;
+    width: 100vw;
+    height: 100vh;
+    opacity: 0;
   }
 }
 </style>

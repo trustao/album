@@ -34,7 +34,6 @@ Component({
    */
   methods: {
     back: function (ev) {
-      console.log(ev)
       var x = ev.detail.x
       var y = ev.detail.y
       if (x > 5 && x < 25 && y > this.data.size.h - 30) {
@@ -92,7 +91,6 @@ Component({
   },
   attached () {
     var pages = getCurrentPages()
-    console.log(pages)
     if (pages.length > 1) {
       this.setData({
         noBack: false
@@ -106,6 +104,5 @@ Component({
   },
   ready () {
     this.drawHeader()
-    console.log(this.data.beforeBack)
   }
 })

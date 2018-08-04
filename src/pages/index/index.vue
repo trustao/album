@@ -81,7 +81,7 @@ export default {
     height: 100%;
     overflow:hidden;
     .banner{
-      margin: 40rpx 80rpx 0;
+      margin: 60rpx 80rpx 0;
       width: 79%;
       height: 62.8%;
       border-radius: 20rpx;

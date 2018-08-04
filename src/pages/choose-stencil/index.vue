@@ -5,6 +5,7 @@
         <li class="stencil-item" v-for="item in svg.name" :key="item" @click="bindViewTap(item)">
           <img class="stencil-img" :src="base64Svg[item]" alt="">
         </li>
+        <li class="stencil-item"></li>
       </ul>
     </div>
   </container>
@@ -13,32 +14,79 @@
 <script>
 /* global getCurrentPages */
 import svg from '@/images/stencil/svg.json'
-import ballet from '@/images/stencil/ballet.svg'
-import cat from '@/images/stencil/cat.svg'
-import family from '@/images/stencil/family.svg'
-import heart from '@/images/stencil/heart.svg'
-import michaelJackson from '@/images/stencil/michael_jackson.svg'
-import wedding from '@/images/stencil/wedding.svg'
-import wedding2 from '@/images/stencil/wedding2.svg'
-import worldTravel from '@/images/stencil/world_travel.svg'
-import yoga from '@/images/stencil/yoga.svg'
+import svg1 from '@/images/stencil/1.svg'
+import svg2 from '@/images/stencil/2.svg'
+import svg3 from '@/images/stencil/3.svg'
+import svg4 from '@/images/stencil/4.svg'
+import svg5 from '@/images/stencil/5.svg'
+import svg6 from '@/images/stencil/6.svg'
+import svg7 from '@/images/stencil/7.svg'
+import svg8 from '@/images/stencil/8.svg'
+import svg9 from '@/images/stencil/9.svg'
+import svg10 from '@/images/stencil/10.svg'
+import svg11 from '@/images/stencil/11.svg'
+import svg12 from '@/images/stencil/12.svg'
+import svg13 from '@/images/stencil/13.svg'
+import svg14 from '@/images/stencil/14.svg'
+import svg15 from '@/images/stencil/15.svg'
+import svg16 from '@/images/stencil/16.svg'
+import svg17 from '@/images/stencil/17.svg'
+import svg18 from '@/images/stencil/18.svg'
+import svg19 from '@/images/stencil/19.svg'
+import svg20 from '@/images/stencil/20.svg'
+import svg21 from '@/images/stencil/21.svg'
+import svg22 from '@/images/stencil/22.svg'
+import svg23 from '@/images/stencil/23.svg'
+import svg24 from '@/images/stencil/24.svg'
+import svg25 from '@/images/stencil/25.svg'
+import svg26 from '@/images/stencil/26.svg'
+import svg27 from '@/images/stencil/27.svg'
+import svg28 from '@/images/stencil/28.svg'
+import svg29 from '@/images/stencil/29.svg'
+import svg30 from '@/images/stencil/30.svg'
+import svg31 from '@/images/stencil/31.svg'
+import svg32 from '@/images/stencil/32.svg'
+
 
 export default {
   data () {
     return {
       svg,
       base64Svg: {
-        ballet,
-        cat,
-        family,
-        heart,
-        wedding,
-        wedding2,
-        yoga,
-        world_travel: worldTravel,
-        michael_jackson: michaelJackson,
+        '1': svg1,
+        '2': svg2,
+        '3': svg3,
+        '4': svg4,
+        '5': svg5,
+        '6': svg6,
+        '7': svg7,
+        '8': svg8,
+        '9': svg9,
+        '10': svg10,
+        '11': svg11,
+        '12': svg12,
+        '13': svg13,
+        '14': svg14,
+        '15': svg15,
+        '16': svg16,
+        '17': svg17,
+        '18': svg18,
+        '19': svg19,
+        '20': svg20,
+        '21': svg21,
+        '22': svg22,
+        '23': svg23,
+        '24': svg24,
+        '25': svg25,
+        '26': svg26,
+        '27': svg27,
+        '28': svg28,
+        '29': svg29,
+        '30': svg30,
+        '31': svg31,
+        '32': svg32
+      },
         rePick: false
-      }
     }
   },
 

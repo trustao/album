@@ -122,6 +122,14 @@ export default {
       radiusOptions: [0, 5, 10],
       colors: null,
       colorOptions: [
+        ['#e6b980', '#eacda3'],
+        ['#bdc2e8', '#e6dee9'],
+        ['#F3D1AE', '#C8DE7F', '#4FBDCF'],
+        ['#9CBABF', '#FDF1DA'],
+        ['#FECD9B', '#FFE8C7'],
+        ['#D7B3B2', '#E9C9BE'],
+        ['#C0B59B', '#866D5C '],
+        ['#ABAD71', '#CEB085'],
         ['#F7D6CC','#FAA3A7'],
         ['#ffecd2','#fcb69f'],
         ['#FFF1A6','#FDDF6D'],
@@ -399,7 +407,7 @@ export default {
     cvsToImages (puzzlePath) {
       const variety = [
         {
-          name: 'share',
+          name: '朋友圈分享图',
           puzzleX: 40,
           puzzleY: 118,
           puzzleW: 295,
@@ -412,7 +420,7 @@ export default {
           QRL: 40
         },
         {
-          name: 'wallpaper',
+          name: '手机壁纸',
           puzzleX: 40,
           puzzleY: 118,
           puzzleW: 295,
@@ -421,18 +429,18 @@ export default {
           imgH: 656,
         },
         {
-          name: 'cover',
+          name: '微信头像',
           puzzleX: 48,
-          puzzleY: 78,
+          puzzleY: 48,
           puzzleW: 279,
           puzzleH: 279,
           imgW: 375,
           imgH: 375,
         },
         {
-          name: 'avatar',
+          name: '朋友圈封面',
           puzzleX: 48,
-          puzzleY: 48,
+          puzzleY: 78,
           puzzleW: 279,
           puzzleH: 279,
           imgW: 375,
@@ -555,6 +563,7 @@ export default {
       title: '图片渲染中',
       mask: true
     })
+    svgActions = []
     this.pickColors(this.colorOptions[0])
     this.cvsInit()
     this.drawHeader()

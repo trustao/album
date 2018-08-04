@@ -1,7 +1,11 @@
 <template>
   <container title="确认照片" beforeBack="imgBack">
     <div>
-      <!--<p class="tips">温馨提醒：为保证拼图效果，请上传40张图以上；不足40张图，系统将自动做重复处理，请知晓。</p>-->
+      <p class="tips">
+        1.微信一次性只支持选9张图；<br>
+        2.为保证拼图效果，请选择27-99张图；<br>
+        3.不足27张图，系统自动作重复处理。<br>
+      </p>
       <ul class="images-container">
         <li v-for="(img, index) in imagesData" class="img-item" :key="index">
           <img :src="img.path" mode="aspectFill" class="img">

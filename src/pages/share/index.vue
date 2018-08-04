@@ -7,17 +7,19 @@
         :circular="true"
         indicator-active-color="#FFE200"
         :interval="5000"
+        @change="swiperChange"
         class="banner"
       >
-        <template v-for="(item, index) in imgUrls">
+        <template v-for="(item, index) in imgData">
           <swiper-item class="s-item">
-            <img class="img" :src="item.url" :style="{height: item.height + 'px'}"/>
+            <p class="title">{{item.name}}</p>
+            <img class="img" :src="item.path" :style="{width: item.imgW + 'rpx', height: item.imgH + 'rpx'}"/>
           </swiper-item>
         </template>
       </swiper>
       <div class="bottom">
-        <button class="btn" @click="save">save</button>
-        <button class="btn share" open-type="share" @click="share">share</button>
+        <button class="btn" @click="save">保存拼图</button>
+        <button class="btn share" open-type="share">推荐给朋友</button>
         <p @click="backHome">回到首页</p>
       </div>
     </div>
@@ -47,22 +49,48 @@ export default {
           url: 'https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=1873627548,2118672923&fm=27&gp=0.jpg',
           height: 400
         }
-      ]
+      ],
+      images: [],
+      current: 0
     }
   },
 
   components: {
     card
   },
-
+  computed: {
+     imgData () {
+         return this.images.map(item => {
+             if (item.imgW === item.imgH) {
+                 item.imgW = item.imgH = 598
+             } else {
+                 item.imgH = 375 / 480 * 656 *2
+                 item.imgW = 480
+             }
+             return item
+         })
+     }
+  },
   methods: {
-    save () {
-      const url = '../choose-stencil/main'
-      wx.navigateTo({ url })
+    swiperChange (ev) {
+       this.current = ev.target.current
     },
-    share () {
-      const url = '../choose-stencil/main'
-      wx.navigateTo({ url })
+    save () {
+      wx.showLoading({
+          title: '图片储存中'
+      })
+      this.imgData.forEach(item => {
+        wx.saveImageToPhotosAlbum({
+          filePath: item.path,
+          success (res) {
+            wx.hideLoading()
+          },
+          fail () {
+            wx.hideLoading()
+          }
+        })
+      })
+
     },
     backHome () {
       const url = '../index/main'
@@ -72,13 +100,15 @@ export default {
 
   created () {
     // 调用应用实例的方法获取全局数据
-    this.images = wx.getStorageSync('result') || []
+
   },
   mounted () {
+    this.images = wx.getStorageSync('result') || []
+    console.log(this.images)
   },
   onShareAppMessage() {
     return {
-      title: '自定义转发标题',
+      title: '形状拼图',
       path: '/pages/index/main'
     }
   }
@@ -90,25 +120,34 @@ export default {
     width: 100%;
     height: 100%;
     .banner{
-      margin: 40rpx 80rpx 0;
-      width: 79%;
-      height: 62.8%;
+      margin: 0 80rpx;
+      width: 80.26%;
+      height: 1080rpx;
       border-radius: 20rpx;
+      padding-top: 1px;
       overflow: hidden;
       .s-item{
+        position: relative;
         box-sizing: border-box;
         width: 100%;
         height: 100%;
-        padding: 0 10rpx;
+        padding: 90rpx 10rpx;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        .title{
+          position: absolute;
+          top: 20rpx;
+          font-size: 32rpx;
+          left: 50%;
+          transform: translateX(-50%);
+        }
       }
       .img{
-        position: relative;
         width: 100%;
         height: auto;
-        top: 50%;
-        left: 0;
         border-radius: 20rpx;
-        transform: translateY(-50%);
       }
     }
     .bottom{

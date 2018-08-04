@@ -2,7 +2,10 @@
   <view class="main">
     <slot></slot>
   </view>
-  <view class="header" style="{{'background:' + background}}" id="header">
-    <canvas class="header-cvs" canvas-id="head-cvs" bindtap="back"></canvas>
-  </view>
+  <cover-view class="header" style="{{'background:' + background}}" id="header">
+    <cover-view wx:if="{{!noBack}}" class="back" bindtap="back">
+      <cover-image class="back-img" src="./back.png"></cover-image>
+    </cover-view>
+    <cover-view class="title">{{title}}</cover-view>
+  </cover-view>
 </view>

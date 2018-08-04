@@ -34,59 +34,13 @@ Component({
    */
   methods: {
     back: function (ev) {
-      var x = ev.detail.x
-      var y = ev.detail.y
-      if (x > 5 && x < 25 && y > this.data.size.h - 30) {
-        if (this.data.beforeBack) {
-          events.$emit(this.data.beforeBack, () => {
-            wx.navigateBack()
-          })
-          return
-        }
-        wx.navigateBack()
-      }
-    },
-    drawHeader () {
-      this.getSize().then((size) => {
-        this.setData({
-          size: size
+      if (this.data.beforeBack) {
+        events.$emit(this.data.beforeBack, () => {
+          wx.navigateBack()
         })
-        var y = size.h - 10
-        var ctx = wx.createCanvasContext('head-cvs', this)
-        ctx.beginPath()
-        ctx.setLineCap('round')
-        ctx.setLineWidth(2)
-        ctx.setStrokeStyle('#333')
-        if (this.data.background !== 'none') {
-          console.log('draw bg')
-          ctx.setFillStyle(this.data.background)
-          ctx.fillRect(0, 0, size.w, size.h)
-        }
-        if (!this.data.noBack) {
-          ctx.moveTo(23, y)
-          ctx.lineTo(15, y - 8)
-          ctx.lineTo(23, y - 16)
-          ctx.stroke()
-        }
-        ctx.setFontSize(17)
-        ctx.setTextBaseline('bottom')
-        ctx.setFillStyle('#333')
-        var textW = ctx.measureText(this.data.title).width
-        ctx.fillText(this.data.title, (size.w - textW) / 2, y + 2)
-        ctx.draw()
-      })
-    },
-    getSize () {
-      return new Promise((resolve, reject) => {
-        wx.createSelectorQuery().in(this).select('#header').fields({
-          computedStyle: ['width', 'height']
-        }, function (res) {
-          resolve({
-            w: parseInt(res.width),
-            h: parseInt(res.height)
-          })
-        }).exec()
-      })
+        return
+      }
+      wx.navigateBack()
     }
   },
   attached () {
@@ -95,14 +49,16 @@ Component({
       this.setData({
         noBack: false
       })
+    } else {
+      this.setData({
+        noBack: true
+      })
     }
     if (this.properties.background === 'none') {
       this.setData({
         noBackground: true
       })
     }
-  },
-  ready () {
-    this.drawHeader()
+    console.log(this.data.noBack)
   }
 })

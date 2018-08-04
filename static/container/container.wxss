@@ -35,34 +35,26 @@ page{
 }
 .container .header .back{
   position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 88rpx;
+  height: 88rpx;
+}
+.container .header .back .back-img{
+  position: absolute;
+  left: 50%;
+  bottom: 16rpx;
+  width: 50rpx;
+  height: 50rpx;
+  transform: translateX(-50%);
+  z-index: 9;
+}
+.container .header .title{
+  position: absolute;
   bottom: 20rpx;
-  left: 15rpx;
-  width: 60rpx;
-  height: 60rpx;
-  transform: rotateZ(180deg);
-}
-
-.container .header .back::before{
-  content: '';
-  position: absolute;
-  top: 12rpx;
-  left: 10rpx;
-  width: 26rpx;
-  height: 4rpx;
-  background: #333;
-  transform: rotateZ(45deg);
-  border-radius: 3rpx;
-}
-.container .header .back::after{
-  content: '';
-  position: absolute;
-  top: 28rpx;
-  left: 10rpx;
-  width: 26rpx;
-  height: 4rpx;
-  background: #333;
-  transform: rotateZ(-45deg);
-  border-radius: 3rpx;
+  left: 50%;
+  font-size: 34rpx;
+  transform: translateX(-50%);
 }
 
 .container .header .back.no{

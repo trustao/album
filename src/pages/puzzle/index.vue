@@ -1,66 +1,67 @@
 <template>
-  <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
-    <canvas class="cvs cvs-bg" canvas-id="puzzle-bg" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
-    <canvas class="cvs" canvas-id="puzzle" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
-    <canvas class="header-cvs" canvas-id="head-cvs" :class="{'iphoneX': iphoneX}" @tap="back"></canvas>
-    <canvas class="to-images" canvas-id="to-images"></canvas>
-    <div class="cvs-background" :style="{background: gradientStr[colorIndex]}"></div>
-    <div class="cvs-operation">
-      <div class="operation-item location">
-        <div class="h-item">
-          <p>边框</p>
-          <div class="choose-wrap">
-            <div class="choose-item"
-                 v-for="(item, index) in borderOptions"
-                 :class="{active: lineWidth === item}"
-                 v-text="chooseText[index]"
-                 @click="pickBorder(item)"
-            ></div>
+  <container title="制作拼图" background="none">
+    <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
+      <canvas class="cvs cvs-bg" canvas-id="puzzle-bg" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
+      <canvas class="cvs" canvas-id="puzzle" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
+      <canvas class="to-images" canvas-id="to-images"></canvas>
+      <div class="cvs-background" :style="{background: gradientStr[colorIndex], height: bgH + 'px'}"></div>
+      <div class="cvs-operation" :class="{'iphoneX': iphoneX}">
+        <div class="operation-item location">
+          <div class="h-item">
+            <p>边框</p>
+            <div class="choose-wrap">
+              <div class="choose-item"
+                   v-for="(item, index) in borderOptions"
+                   :class="{active: lineWidth === item}"
+                   v-text="chooseText[index]"
+                   @click="pickBorder(item)"
+              ></div>
+            </div>
+          </div>
+          <div class="h-item">
+            <p>边距</p>
+            <div class="choose-wrap">
+              <div class="choose-item"
+                   v-for="(item, index) in marginOptions"
+                   :class="{active: marginOptions[imgMargin] === item}"
+                   v-text="chooseText[index]"
+                   @click="pickMargin(index)"
+              ></div>
+            </div>
+          </div>
+          <div class="h-item">
+            <p>圆角</p>
+            <div class="choose-wrap">
+              <div class="choose-item"
+                   v-for="(item, index) in radiusOptions"
+                   :class="{active: radiusOptions[radius] === item}"
+                   v-text="chooseText[index]"
+                   @click="pickRadius(index)"
+              ></div>
+            </div>
           </div>
         </div>
-        <div class="h-item">
-          <p>边距</p>
-          <div class="choose-wrap">
-            <div class="choose-item"
-                 v-for="(item, index) in marginOptions"
-                 :class="{active: imgMargin === item}"
-                 v-text="chooseText[index]"
-                 @click="pickMargin(item)"
-            ></div>
-          </div>
-        </div>
-        <div class="h-item">
-          <p>圆角</p>
-          <div class="choose-wrap">
-            <div class="choose-item"
-                 v-for="(item, index) in radiusOptions"
-                 :class="{active: radius === item}"
-                 v-text="chooseText[index]"
-                 @click="pickRadius(item)"
-            ></div>
-          </div>
-        </div>
-      </div>
-      <div class="operation-item">
-        <p>颜色</p>
-        <!--<movable-area>-->
+        <div class="operation-item">
+          <p>颜色</p>
+          <!--<movable-area>-->
           <!--<movable-view direction="horizontal" inertia>-->
           <!--</movable-view>-->
-        <!--</movable-area>-->
-        <scroll-view scroll-x class="scroll-wrap">
-          <div class="choose-item"
-               v-for="(item, index) in colorOptions"
-               :class="{active: index === colorIndex}"
-               :style="{background: gradientStr[index]}"
-               @click="pickColors(item)"></div>
-        </scroll-view>
-      </div>
-       <div class="operation-item complete">
+          <!--</movable-area>-->
+          <scroll-view scroll-x class="scroll-wrap">
+            <div class="choose-item"
+                 v-for="(item, index) in colorOptions"
+                 :class="{active: index === colorIndex}"
+                 :style="{background: gradientStr[index]}"
+                 @click="pickColors(item)"></div>
+          </scroll-view>
+        </div>
+        <div class="operation-item complete">
           <div class="choose-stencil" @click="chooseStencil">换模板</div>
           <div class="submit" @click="saveImage">生成拼图</div>
+        </div>
       </div>
     </div>
-  </div>
+  </container>
 </template>
 
 <script>
@@ -70,6 +71,7 @@ import header from '@/components/header'
 import puzzle from './draw'
 import svgJson from '@/images/stencil/svg.json'
 import TaskQueue from '../choose-img/taskQueue'
+import events from '../../../static/events'
 
 const {
   drawColorBackground,
@@ -77,10 +79,11 @@ const {
   createGrid, radiusPath, // requestAnimationFrame,
 } = puzzle
 let stencilUnit8 = null
-let min = 25
+let photoCount = 25
 let imageBlock = []
 let svgActions = []
 let imageQueue = new TaskQueue()
+let pageInit = true
 export default {
   components: {
     'v-header': header
@@ -90,6 +93,26 @@ export default {
     const pages = getCurrentPages()
     const curPage = pages[pages.length - 1]
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
+    const colorOptions = [
+      ['#e6b980', '#eacda3'],
+      ['#bdc2e8', '#e6dee9'],
+      ['#F3D1AE', '#C8DE7F', '#4FBDCF'],
+      ['#9CBABF', '#FDF1DA'],
+      ['#FECD9B', '#FFE8C7'],
+      ['#D7B3B2', '#E9C9BE'],
+      ['#C0B59B', '#866D5C'],
+      ['#ABAD71', '#CEB085'],
+      ['#F7D6CC','#FAA3A7'],
+      ['#ffecd2','#fcb69f'],
+      ['#FFF1A6','#FDDF6D'],
+      ['#fdfcfb','#e2d1c3'],
+      ['#89f7fe','#66a6ff'],
+      ['#96deda','#50c9c3'],
+      ['#868f96','#596164'],
+      ['#B7F8DB','#50A7C2'],
+      ['#cfd9df','#e2ebf0'],
+      ['#fdfbfb','#ebedee']
+    ]
     return {
       iphoneX,
       noBack: true,
@@ -101,6 +124,7 @@ export default {
       OpCtx: null,
       viewW: 0,
       viewH: 0,
+      bgH: 500,
       stencil: '',
       calcCount: 0,
       images: [],
@@ -115,32 +139,13 @@ export default {
       cvsH: 0,
       chooseText: ['无', '小', '大'],
       lineWidth: 5,
+      imgMargin: 1,
+      radius: 1,
       borderOptions: [0, 5, 10],
-      imgMargin: 3,
       marginOptions: [0, 3, 6],
-      radius: 0,
       radiusOptions: [0, 5, 10],
-      colors: null,
-      colorOptions: [
-        ['#e6b980', '#eacda3'],
-        ['#bdc2e8', '#e6dee9'],
-        ['#F3D1AE', '#C8DE7F', '#4FBDCF'],
-        ['#9CBABF', '#FDF1DA'],
-        ['#FECD9B', '#FFE8C7'],
-        ['#D7B3B2', '#E9C9BE'],
-        ['#C0B59B', '#866D5C '],
-        ['#ABAD71', '#CEB085'],
-        ['#F7D6CC','#FAA3A7'],
-        ['#ffecd2','#fcb69f'],
-        ['#FFF1A6','#FDDF6D'],
-        ['#fdfcfb','#e2d1c3'],
-        ['#89f7fe','#66a6ff'],
-        ['#96deda','#50c9c3'],
-        ['#868f96','#596164'],
-        ['#B7F8DB','#50A7C2'],
-        ['#cfd9df','#e2ebf0'],
-        ['#fdfbfb','#ebedee']
-      ]
+      colors: colorOptions[0],
+      colorOptions
     }
   },
   computed: {
@@ -195,7 +200,8 @@ export default {
         this.viewH = res.windowHeight
         var rpx = this.viewW / 750
         this.cvsW = this.viewW - 60 * rpx
-        this.cvsH = this.viewH - 372 * rpx - (this.iphoneX ? 176 * rpx: 128 * rpx) - 60 * rpx
+        this.cvsH = this.viewH - (this.iphoneX ? 440 * rpx : 372 * rpx) - (this.iphoneX ? 176 * rpx: 128 * rpx) - 60 * rpx
+        this.bgH = this.viewH - (this.iphoneX ? 440 * rpx : 372 * rpx) + 60
       } catch (e) {
         // Do something when catch error
       }
@@ -203,7 +209,7 @@ export default {
     cvsInit () {
       this.stencil = wx.getStorageSync('stencil') || 'heart'
       this.images = wx.getStorageSync('images') || []
-      min = this.images.length < 27 ? 27 : this.images.length
+      photoCount = this.images.length < 27 ? 27 : this.images.length
       this.ctx = wx.createCanvasContext('puzzle')
       this.bgCtx = wx.createCanvasContext('puzzle-bg')
       this.OpCtx = wx.createCanvasContext('operation')
@@ -218,7 +224,9 @@ export default {
       this.range = res
       this.drawSvg(this.ctx, true)
       this.ctx.draw(false, () => {
-        this.createImageContainer(res)
+        setTimeout(() => {
+          this.createImageContainer(res)
+        }, 500)
       })
     },
     setSvgPath (fill) {
@@ -276,14 +284,20 @@ export default {
       getImageData(range, 'puzzle')
         .then((data) => {
           stencilUnit8 = data
+          console.log('range', range)
           var maxArea = (range.end.y - range.start.y) * (range.end.x - range.start.x)
-          var minArea = stencilUnit8.filter(n => n).length / 4 | 0
-          if (!min) {
+          var minArea = 0
+          for (let i = 0; i < stencilUnit8.length; i++) {
+            if (stencilUnit8[i]) minArea++
+          }
+          minArea /= 4
+          if (!photoCount) {
             wx.hideLoading()
             return
           }
-          var maxL = Math.sqrt(maxArea / min) | 0
-          var minL = Math.sqrt(minArea / min) | 0
+          var maxL = Math.sqrt(maxArea / photoCount) | 0
+          var minL = Math.sqrt(minArea / photoCount) | 0
+          console.log('边长范围', maxL, minL)
           this.calculateFitBlock(range, maxL + 1, minL - 1)
         })
         .catch(() => {})
@@ -291,27 +305,27 @@ export default {
     calculateFitBlock (range, maxL, minL) {
       var l = Math.round((maxL + minL) / 2)
       this.calcCount++
+      console.log('边长', l, this.calcCount)
       var grid = createGrid(range, l, 0)
       var block = getBlocks(grid, stencilUnit8, range, 1, this.ios)
       var fitLength = block.filter(item => item.weight > l * l * 0.5).length
       if (this.calcCount > 20) {
         this.radiusOptions = [0, l * 0.2, l / 2 * 0.9]
-        this.radius = l * 0.2
-        this.sortBlocks(block)
+        console.log('no', fitLength, photoCount, this.calcCount)
+        this.sortBlocks(block, grid)
         return
       }
-      if (fitLength < min) {
+      if (fitLength < photoCount) {
         this.calculateFitBlock(range, l, minL)
-      } else if (fitLength > min * 1.1) {
+      } else if (fitLength > photoCount * 1.1) {
         this.calculateFitBlock(range, maxL, l)
       } else {
-        console.log('get', fitLength, min, this.calcCount)
+        console.log('get', fitLength, photoCount, this.calcCount)
         this.radiusOptions = [0, l * 0.2, l / 2 * 0.9]
-        this.radius = l * 0.2
-        this.sortBlocks(block)
+        this.sortBlocks(block, grid)
       }
     },
-    sortBlocks (data) {
+    sortBlocks (data, grid) {
       // data.forEach(block => {
       //   block.factor = 1
       //   block.calcluateWeight({
@@ -319,6 +333,18 @@ export default {
       //     y: this.viewH / 2
       //   })
       // })
+      // grid.forEach(item => {
+      //   this.ctx.setStrokeStyle('#000')
+      //   this.ctx.strokeRect(item.x, item.y, item.l, item.l)
+      // })
+      // data.forEach(item => {
+      //   this.ctx.setStrokeStyle('red')
+      //   this.ctx.strokeRect(item.x, item.y, item.l, item.l)
+      // })
+      // this.ctx.draw(true)
+      // getApp().ctx = this.ctx
+      // wx.hideLoading()
+      // return
       imageBlock = data.sort((a, b) => b.weight - a.weight)
       this.calcCount = 0
       console.timeEnd('计算')
@@ -355,8 +381,8 @@ export default {
         for (let index = 0; index < imageBlock.length; index++) {
           const item = imageBlock[index]
           this.ctx.save()
-          var l = item.l - this.imgMargin
-          radiusPath(this.ctx, item.x, item.y, l, l, this.radius)
+          var l = item.l - this.marginOptions[this.imgMargin]
+          radiusPath(this.ctx, item.x, item.y, l, l, this.radiusOptions[this.radius])
           this.ctx.fill()
           this.ctx.globalCompositeOperation = 'source-atop'
           const img = this.images[index % this.images.length]
@@ -366,8 +392,8 @@ export default {
       }
       this.ctx.draw(false, () => {
         cb && cb()
-        wx.hideLoading()
       })
+      wx.hideLoading()
     },
     drawBackground (cb) {
       this.bgCtx.setLineWidth(this.lineWidth)
@@ -379,7 +405,7 @@ export default {
       })
     },
     chooseStencil () {
-      wx.redirectTo({
+      wx.navigateTo({
         url: '../choose-stencil/main?rePick=1'
       })
     },
@@ -405,6 +431,7 @@ export default {
       })
     },
     cvsToImages (puzzlePath) {
+      console.log(puzzlePath)
       const variety = [
         {
           name: '朋友圈分享图',
@@ -449,8 +476,9 @@ export default {
       ]
       variety.forEach(imgData => {
         const {w, h} = this.imgZone
+        console.log(w, h, imgData.puzzleW, imgData.puzzleH)
         const scale = w / h
-        if (scale > 1) {
+        if (scale >= 1) {
           const height = imgData.puzzleW / scale
           imgData.puzzleY += (imgData.puzzleH - height) / 2
           imgData.puzzleH = height
@@ -459,6 +487,7 @@ export default {
           imgData.puzzleX += (imgData.puzzleW - width) / 2
           imgData.puzzleW = width
         }
+        console.log(imgData)
         imageQueue.addTask(this.makeImage.bind(this, puzzlePath, imgData))
       })
       imageQueue.setQueueEmptyCb(() => {
@@ -470,6 +499,7 @@ export default {
       })
     },
     makeImage (puzzlePath, imgData) {
+      console.log(this.colors)
       return new Promise((resolve, reject) => {
         const newSvgActions = getSVGPath(svgJson.data[this.stencil], imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
         let temp = svgActions
@@ -517,57 +547,48 @@ export default {
         wx.navigateBack()
       }
     },
-    drawHeader (cb) {
-      const title = '编辑图片'
-      this.getSize().then((size) => {
-        this.size = size
-        var y = size.h - 10
-        var ctx = wx.createCanvasContext('head-cvs', this.curPage)
-        console.log(ctx)
-        ctx.beginPath()
-        ctx.setLineCap('round')
-        ctx.setLineWidth(2)
-        ctx.setStrokeStyle('#333')
-        ctx.moveTo(23, y)
-        ctx.lineTo(15, y - 8)
-        ctx.lineTo(23, y - 16)
-        ctx.stroke()
-        ctx.setFontSize(17)
-        ctx.setTextBaseline('bottom')
-        ctx.setFillStyle('#333')
-        var textW = ctx.measureText(title).width
-        ctx.fillText(title, (size.w - textW) / 2, y + 2)
-        ctx.draw(false)
+    init () {
+      pageInit = false
+      wx.showLoading({
+        title: '图片渲染中',
+        mask: true
       })
-    },
-    getSize () {
-      console.log('size')
-      return new Promise((resolve, reject) => {
-        wx.createSelectorQuery().select('.header-cvs').fields({
-          computedStyle: ['width', 'height']
-        }, function (res) {
-          console.log('size res', res)
-          resolve({
-            w: parseInt(res.width),
-            h: parseInt(res.height)
-          })
-        }).exec()
-      })
+      svgActions = []
+      this.cvsInit()
+      this.drawStencil(true)
     }
   },
   created () {
     this.getSysInfo()
   },
   mounted () {
-    wx.showLoading({
-      title: '图片渲染中',
-      mask: true
+    this.init()
+    events.$off('cvsDataClear')
+    events.$on('cvsDataClear', () => {
+      this.lineWidth = 5
+      this.imgMargin = 1
+      this.radius = 1
+      this.colors = this.colorOptions[0]
     })
-    svgActions = []
-    this.pickColors(this.colorOptions[0])
-    this.cvsInit()
-    this.drawHeader()
-    this.drawStencil(true)
+  },
+  onShow () {
+    if (pageInit) return
+    const stencil = wx.getStorageSync('stencil')
+    if (stencil !== this.stencil) {
+      this.ctx.draw()
+      this.bgCtx.draw()
+      this.stencil = stencil
+      this.drawStencil(true)
+    } else {
+      this.drawImages()
+    }
+  },
+  onShareAppMessage() {
+    return {
+      title: '形状拼图',
+      path: '/pages/index/main',
+      imageUrl: 'http://imglf3.nosdn0.126.net/img/Qmx2R2tOVVFNcjB2UDFEZjE3MExrZjkrVTRXZEhPWnhNSTF4K0xYSnNlenJzOEp3UXluaFJRPT0.jpg?imageView&thumbnail=1680x0&quality=96&stripmeta=0&type=jpg'
+    }
   }
 }
 </script>
@@ -594,14 +615,16 @@ export default {
   }
   .cvs-operation{
     position: absolute;
-    box-sizing: border-box;
     left: 0;
     bottom: 0;
-    height: 372rpx;
-    width: 100%;
-    padding: 20rpx;
+    height: 352rpx;
+    width: 95vw;
+    padding: 2.5vw;
     background: #666;
     z-index: 10;
+    &.iphoneX{
+      padding-bottom: 88rpx;
+    }
     .operation-item{
       position: relative;
       height: 110rpx;

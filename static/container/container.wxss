@@ -14,6 +14,9 @@ page{
 .container.iphoneX {
     padding-top: 176rpx;
 }
+.container.plus {
+  padding-top: 116rpx;
+}
 .container.no-header {
   padding-top: 0!important;
 }
@@ -25,6 +28,12 @@ page{
     height: 128rpx;
     background: #fff;
     box-shadow: 0 0 2px 0 #C6C6C6;
+}
+.container.plus .header{
+  height: 116rpx;
+}
+.container.iphoneX .header{
+  height: 176rpx;
 }
 .container .header .header-cvs{
   position: absolute;
@@ -55,6 +64,7 @@ page{
   left: 50%;
   font-size: 34rpx;
   transform: translateX(-50%);
+  z-index: 9;
 }
 
 .container .header .back.no{

@@ -1,5 +1,5 @@
 <template>
-  <container title="确认照片" beforeBack="imgBack">
+  <container title="确认图片" beforeBack="imgBack">
     <div>
       <p class="tips">
         1.微信一次性只支持选9张图；<br>
@@ -104,6 +104,7 @@
             })
           }).catch(() => {
             wx.showToast({
+              icon: 'none',
               title: '操作失败',
               duration: 2000
             })
@@ -134,9 +135,16 @@
         })
       },
       chooseComplete () {
+        if (!this.imagesData.length) {
+          wx.showToast({
+            title: '请添加照片',
+            icon: 'none'
+          })
+          return
+        }
         if (compressTask.invoking) {
           wx.showLoading({
-            title: '请稍候,图片处理中...',
+            title: '图片处理中...',
             mask: true
           })
           compressTask.setQueueEmptyCb(this.chooseComplete)
@@ -152,19 +160,23 @@
         this.imagesData.splice(this.imagesData.indexOf(img), 1)
       },
       beforeBack (next) {
-        wx.showModal({
-          title: '提示',
-          content: '该操作将清空已选图片',
-          success: (res) => {
-            if (res.confirm) {
-              console.log('用户点击确定')
-              this.imagesData.splice(0)
-              next()
-            } else if (res.cancel) {
-              console.log('用户点击取消')
+        if (this.imagesData.length > 0) {
+          wx.showModal({
+            title: '提示',
+            content: '该操作将清空已选图片',
+            success: (res) => {
+              if (res.confirm) {
+                console.log('用户点击确定')
+                this.imagesData.splice(0)
+                next()
+              } else if (res.cancel) {
+                console.log('用户点击取消')
+              }
             }
-          }
-        })
+          })
+        } else {
+          next()
+        }
       }
     },
     onLoad (options) {
@@ -187,6 +199,18 @@
       this.chooseImages()
       events.$off('imgBack')
       events.$on('imgBack', this.beforeBack.bind(this))
+      events.$off('imgClear')
+      events.$on('imgClear', () => {
+        this.imagesData.splice(0)
+      })
+
+    },
+    onShareAppMessage() {
+      return {
+        title: '形状拼图',
+        path: '/pages/index/main',
+        imageUrl: 'http://imglf3.nosdn0.126.net/img/Qmx2R2tOVVFNcjB2UDFEZjE3MExrZjkrVTRXZEhPWnhNSTF4K0xYSnNlenJzOEp3UXluaFJRPT0.jpg?imageView&thumbnail=1680x0&quality=96&stripmeta=0&type=jpg'
+      }
     }
   }
 </script>
@@ -234,7 +258,7 @@
     height: 100rpx;
     padding-bottom:  20rpx;
     &.iphoneX{
-        padding-bottom:  60rpx;
+        padding-bottom:  88rpx;
      }
     button{
       display: inline-block;

@@ -1,5 +1,5 @@
 <template>
-  <container title="保存">
+  <container title="保存拼图">
     <div class="wrap">
       <swiper
         :indicator-dots="true"
@@ -10,14 +10,12 @@
         @change="swiperChange"
         class="banner"
       >
-        <template v-for="(item, index) in imgData">
-          <swiper-item class="s-item">
-            <p class="title">{{item.name}}</p>
-            <img class="img" :src="item.path" :style="{width: item.imgW + 'rpx', height: item.imgH + 'rpx'}"/>
-          </swiper-item>
-        </template>
+        <swiper-item class="s-item"  v-for="(item, index) in imgData" :key="index">
+          <p class="title">{{item.name}}</p>
+          <img class="img" :src="item.path" :style="{width: item.imgW + 'rpx', height: item.imgH + 'rpx'}"/>
+        </swiper-item>
       </swiper>
-      <div class="bottom">
+      <div class="bottom" :class="{iphoneX: iphoneX}">
         <button class="btn" @click="save">保存拼图</button>
         <button class="btn share" open-type="share">推荐给朋友</button>
         <p @click="backHome">回到首页</p>
@@ -28,28 +26,13 @@
 
 <script>
 import card from '@/components/card'
+import events from '../../../static/events'
 
 export default {
   data () {
+    const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
     return {
-      imgUrls: [
-        {
-          url: 'http://img02.tooopen.com/images/20150928/tooopen_sy_143912755726.jpg',
-          height: 240
-        },
-        {
-          url: 'http://img06.tooopen.com/images/20160818/tooopen_sy_175866434296.jpg',
-          height: 240
-        },
-        {
-          url: 'http://img06.tooopen.com/images/20160818/tooopen_sy_175833047715.jpg',
-          height: 320
-        },
-        {
-          url: 'https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=1873627548,2118672923&fm=27&gp=0.jpg',
-          height: 400
-        }
-      ],
+      iphoneX,
       images: [],
       current: 0
     }
@@ -64,7 +47,7 @@ export default {
              if (item.imgW === item.imgH) {
                  item.imgW = item.imgH = 598
              } else {
-                 item.imgH = 375 / 480 * 656 *2
+                 item.imgH = 840
                  item.imgW = 480
              }
              return item
@@ -77,22 +60,38 @@ export default {
     },
     save () {
       wx.showLoading({
-          title: '图片储存中'
+          title: '图片保存中'
       })
-      this.imgData.forEach(item => {
-        wx.saveImageToPhotosAlbum({
-          filePath: item.path,
-          success (res) {
-            wx.hideLoading()
-          },
-          fail () {
-            wx.hideLoading()
-          }
+      Promise.all(this.imgData.map(item => {
+        return new Promise((resolve, reject) => {
+          wx.saveImageToPhotosAlbum({
+            filePath: item.path,
+            success (res) {
+              resolve()
+            },
+            fail () {
+              reject()
+            }
+          })
+        })
+      })).then(() => {
+        wx.hideLoading()
+        wx.showToast({
+          title: '保存成功',
+          icon: 'success'
+        })
+      }).catch(() => {
+        wx.hideLoading()
+        wx.showToast({
+          title: '保存失败，请在右上角设置中打开权限。',
+          icon: 'none'
         })
       })
 
     },
     backHome () {
+      events.$emit('imgClear')
+      events.$emit('cvsDataClear')
       const url = '../index/main'
       wx.reLaunch({ url })
     }
@@ -106,10 +105,14 @@ export default {
     this.images = wx.getStorageSync('result') || []
     console.log(this.images)
   },
+  onUnLoad () {
+    this.images = []
+  },
   onShareAppMessage() {
     return {
       title: '形状拼图',
-      path: '/pages/index/main'
+      path: '/pages/index/main',
+      imageUrl: 'http://imglf3.nosdn0.126.net/img/Qmx2R2tOVVFNcjB2UDFEZjE3MExrZjkrVTRXZEhPWnhNSTF4K0xYSnNlenJzOEp3UXluaFJRPT0.jpg?imageView&thumbnail=1680x0&quality=96&stripmeta=0&type=jpg'
     }
   }
 }
@@ -122,7 +125,7 @@ export default {
     .banner{
       margin: 0 80rpx;
       width: 80.26%;
-      height: 1080rpx;
+      height: 1010rpx;
       border-radius: 20rpx;
       padding-top: 1px;
       overflow: hidden;
@@ -156,6 +159,9 @@ export default {
       left: 0;
       width: 100%;
       text-align: center;
+      &.iphoneX{
+        bottom: 98rpx;
+      }
       .btn {
         display: inline-block;
         appearance: none;
@@ -174,8 +180,9 @@ export default {
         }
       }
       p{
+        margin-top: 12rpx;
         font-size: 26rpx;
-        color: #aaa;
+        color: #333;
       }
     }
   }

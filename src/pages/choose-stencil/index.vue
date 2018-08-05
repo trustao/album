@@ -1,5 +1,5 @@
 <template>
-  <container title="拼图相册Pintu">
+  <container title="选择形状模板">
     <div class="stencil-container">
       <ul class="stencil-list">
         <li class="stencil-item" v-for="item in svg.name" :key="item" @click="bindViewTap(item)">
@@ -99,9 +99,7 @@ export default {
           url: '../choose-img/main?name=' + stencil
         })
       } else {
-        wx.redirectTo({
-          url: '../puzzle/main?name=' + stencil
-        })
+        wx.navigateBack()
       }
     },
     clickHandle (msg, ev) {
@@ -126,6 +124,13 @@ export default {
   },
   mounted () {
 
+  },
+  onShareAppMessage() {
+    return {
+      title: '形状拼图',
+      path: '/pages/index/main',
+      imageUrl: 'http://imglf3.nosdn0.126.net/img/Qmx2R2tOVVFNcjB2UDFEZjE3MExrZjkrVTRXZEhPWnhNSTF4K0xYSnNlenJzOEp3UXluaFJRPT0.jpg?imageView&thumbnail=1680x0&quality=96&stripmeta=0&type=jpg'
+    }
   }
 }
 </script>

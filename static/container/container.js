@@ -24,6 +24,7 @@ Component({
    */
   data: {
     iphoneX: wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0,
+    plus: wx.getSystemInfoSync().model.indexOf('Plus') >= 0,
     noBack: true,
     noBackground: false,
     size: {w: 0, h: 0}

@@ -1,4 +1,4 @@
-<view class="container {{iphoneX ? 'iphoneX' : ''}} {{noBackground ? 'no-header' : '' }}">
+<view class="container {{iphoneX ? 'iphoneX' : ''}} {{noBackground ? 'no-header' : '' }} {{plus ? 'plus' : ''}}">
   <view class="main">
     <slot></slot>
   </view>

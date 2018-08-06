@@ -5,7 +5,6 @@
         <li class="stencil-item" v-for="item in svg.name" :key="item" @click="bindViewTap(item)">
           <img class="stencil-img" :src="base64Svg[item]" alt="">
         </li>
-        <li class="stencil-item"></li>
       </ul>
     </div>
   </container>
@@ -46,7 +45,43 @@ import svg29 from '@/images/stencil/29.svg'
 import svg30 from '@/images/stencil/30.svg'
 import svg31 from '@/images/stencil/31.svg'
 import svg32 from '@/images/stencil/32.svg'
-
+import svg33 from '@/images/stencil/33.svg'
+import svg34 from '@/images/stencil/34.svg'
+import svg35 from '@/images/stencil/35.svg'
+import svg36 from '@/images/stencil/36.svg'
+// import svg37 from '@/images/stencil/37.svg'
+import svg38 from '@/images/stencil/38.svg'
+// import svg39 from '@/images/stencil/39.svg'
+import svg40 from '@/images/stencil/40.svg'
+import svg41 from '@/images/stencil/41.svg'
+import svg42 from '@/images/stencil/42.svg'
+// import svg43 from '@/images/stencil/43.svg'
+import svg44 from '@/images/stencil/44.svg'
+// import svg45 from '@/images/stencil/45.svg'
+import svg46 from '@/images/stencil/46.svg'
+import svg47 from '@/images/stencil/47.svg'
+import svg48 from '@/images/stencil/48.svg'
+import svg49 from '@/images/stencil/49.svg'
+import svg50 from '@/images/stencil/50.svg'
+import svg51 from '@/images/stencil/51.svg'
+import svg52 from '@/images/stencil/52.svg'
+import svg53 from '@/images/stencil/53.svg'
+// import svg54 from '@/images/stencil/54.svg'
+// import svg55 from '@/images/stencil/55.svg'
+import svg56 from '@/images/stencil/56.svg'
+import svg57 from '@/images/stencil/57.svg'
+// import svg58 from '@/images/stencil/58.svg'
+// import svg59 from '@/images/stencil/59.svg'
+// import svg60 from '@/images/stencil/60.svg'
+// import svg61 from '@/images/stencil/61.svg'
+// import svg62 from '@/images/stencil/62.svg'
+// import svg63 from '@/images/stencil/63.svg'
+// import svg64 from '@/images/stencil/64.svg'
+// import svg65 from '@/images/stencil/65.svg'
+// import svg66 from '@/images/stencil/66.svg'
+// import svg67 from '@/images/stencil/67.svg'
+// import svg68 from '@/images/stencil/68.svg'
+// import svg69 from '@/images/stencil/69.svg'
 
 export default {
   data () {
@@ -84,7 +119,44 @@ export default {
         '29': svg29,
         '30': svg30,
         '31': svg31,
-        '32': svg32
+        '32': svg32,
+        '33': svg33,
+        '34': svg34,
+        '35': svg35,
+        '36': svg36,
+        // '37': svg37,
+        '38': svg38,
+        // '39': svg39,
+        '40': svg40,
+        '41': svg41,
+        '42': svg42,
+        // '43': svg43,
+        '44': svg44,
+        // '45': svg45,
+        '46': svg46,
+        '47': svg47,
+        '48': svg48,
+        '49': svg49,
+        '50': svg50,
+        '51': svg51,
+        '52': svg52,
+        '53': svg53,
+        // '54': svg54,
+        // '55': svg55,
+        '56': svg56,
+        '57': svg57
+        // '58': svg58,
+        // '59': svg59,
+        // '60': svg60,
+        // '61': svg61,
+        // '62': svg62,
+        // '63': svg63,
+        // '64': svg64,
+        // '65': svg65,
+        // '66': svg66,
+        // '67': svg67,
+        // '68': svg68,
+        // '69': svg69
       },
         rePick: false
     }

@@ -25,7 +25,6 @@
 </template>
 
 <script>
-import card from '@/components/card'
 import events from '../../../static/events'
 
 export default {
@@ -34,13 +33,11 @@ export default {
     return {
       iphoneX,
       images: [],
+      showImages: [],
       current: 0
     }
   },
 
-  components: {
-    card
-  },
   computed: {
      imgData () {
          return this.showImages.map(item => {
@@ -107,7 +104,7 @@ export default {
     console.log(this.images)
   },
   onUnLoad () {
-    this.images = []
+    this.showImages = []
   },
   onShareAppMessage() {
     return {

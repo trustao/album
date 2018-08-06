@@ -58,24 +58,31 @@ function getSvgActions (svg) {
   svg.height = maxY - minY
   svg.minX = minX
   svg.minY = minY
-  // if (!svg.transform) {
-  //   svg.transform = `translate(${-minX} ${-minY})`
-  // }
-  return res.map((coord, index) => {
-    if (coord) {
-      return index % 2 ? coord - svg.minX : coord - svg.minY
-    } else {
-      return ''
-    }
-  })
+  if (!svg.transform) {
+    svg.transform = `translate(${-minX} ${-minY})`
+  }
+  // res.forEach(item => {
+  //   item.args = item.args.map((coord, index) => {
+  //     console.log(coord)
+  //     if (coord) {
+  //       return index % 2 ? (coord - minX) : (coord - minY)
+  //     } else {
+  //       return ''
+  //     }
+  //   })
+  // })
+  return res
 }
 
 function getSVGPath (svg, x, y, width, height) {
-  const actions = svg.actions
-  const transMatrix = calcTransMatrix(...arguments)
+  let actions = svg.actions
+  const transMatrix = calcTransMatrix(svg, x, y, width, height)
   return actions.map(item => {
-    item.args = coordsTransform(transMatrix, item.args)
-    return item
+    const res = {
+      action: item.action,
+      args: coordsTransform(transMatrix, item.args || [])
+    }
+    return res
   })
 }
 
@@ -85,7 +92,6 @@ function calcTransMatrix (svg, x, y, width, height) {
   var transMatrix = matrix3(sX, 0, 0, sY, x, y)
   if (svg.transform) {
     transformStringToMatrix(svg.transform, transMatrix, sX, sY)
-    console.log(sX, sY)
   }
   return transMatrix
 }

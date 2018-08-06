@@ -42,6 +42,9 @@ class TaskQueue {
     const cb = this.queue.shift()
     var res = cb()
     if (res instanceof Promise) {
+      res.catch(err => {
+        throw new Error(err)
+      })
       res.finally(() => {
         if (this.queue.length) {
           this[_invoke]()

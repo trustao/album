@@ -70,7 +70,6 @@
 <script>
 /* global getCurrentPages */
 // import { forEachmatTime } from '@/utils/index'
-import header from '@/components/header'
 import puzzle from './draw'
 import svgJson from '@/images/stencil/svg.json'
 import TaskQueue from '../choose-img/taskQueue'
@@ -90,10 +89,7 @@ let pageInit = true
 let renderTime = 0
 console.log('start js')
 export default {
-  components: {
-    'v-header': header
-  },
-
+ 
   data () {
     const pages = getCurrentPages()
     const curPage = pages[pages.length - 1]
@@ -255,7 +251,7 @@ export default {
       } else {
         width = baseW
         height = h1
-        left = 5 - svgData.minX
+        left = 5
         top = (baseH - height) / 2 + 5
       }
       svgActions = getSVGPath(svgData, left, top, width, height)
@@ -339,20 +335,20 @@ export default {
       //     y: this.viewH / 2
       //   })
       // })
-      grid.forEach(item => {
-        this.ctx.setStrokeStyle('#000')
-        this.ctx.strokeRect(item.x, item.y, item.l, item.l)
-      })
-      data.forEach(item => {
-        this.ctx.setStrokeStyle('red')
-        this.ctx.strokeRect(item.x, item.y, item.l, item.l)
-      })
-      this.ctx.setStrokeStyle('yellow')
-      this.ctx.strokeRect(this.imgZone.x, this.imgZone.y, this.imgZone.w, this.imgZone.h)
-      this.ctx.draw(true)
-      getApp().ctx = this.ctx
-      wx.hideLoading()
-      return
+      // grid.forEach(item => {
+      //   this.ctx.setStrokeStyle('#000')
+      //   this.ctx.strokeRect(item.x, item.y, item.l, item.l)
+      // })
+      // data.forEach(item => {
+      //   this.ctx.setStrokeStyle('red')
+      //   this.ctx.strokeRect(item.x, item.y, item.l, item.l)
+      // })
+      // this.ctx.setStrokeStyle('yellow')
+      // this.ctx.strokeRect(this.imgZone.x, this.imgZone.y, this.imgZone.w, this.imgZone.h)
+      // this.ctx.draw(true)
+      // getApp().ctx = this.ctx
+      // wx.hideLoading()
+      // return
       imageBlock = data.sort((a, b) => b.weight - a.weight)
       this.calcCount = 0
       console.timeEnd('计算')
@@ -493,7 +489,7 @@ export default {
         const {w, h} = this.imgZone
         console.log(w, h, imgData.puzzleW, imgData.puzzleH)
         const scale = w / h
-        if (scale >= 1) {
+        if (scale >= imgData.puzzleW / imgData.puzzleH) {
           const height = imgData.puzzleW / scale
           imgData.puzzleY += (imgData.puzzleH - height) / 2
           imgData.puzzleH = height
@@ -514,8 +510,9 @@ export default {
       })
     },
     makeImage (puzzlePath, imgData) {
-      console.log(this.colors)
       return new Promise((resolve, reject) => {
+        console.log(svgJson.data[this.stencil])
+        try {
         const newSvgActions = getSVGPath(svgJson.data[this.stencil], imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
         let temp = svgActions
         svgActions = newSvgActions
@@ -535,6 +532,7 @@ export default {
           ctx.drawImage(imgData.QRCode, imgData.QRX, imgData.QRY, imgData.QRL, imgData.QRL)
         }
         ctx.draw(false, () => {
+          console.log('draw complete')
           wx.canvasToTempFilePath({
             canvasId: 'to-images',
             x: 0,
@@ -551,6 +549,10 @@ export default {
             }
           })
         })
+        } catch (err) {
+          console.log(err)
+        }
+        
       })
     },
     // 头部
@@ -640,7 +642,6 @@ export default {
     top: 158rpx;
     transform: translateX(-50%);
     z-index: 9;
-    border: 1px solid;
   }
   &.iphoneX{
     .cvs{
@@ -765,10 +766,10 @@ export default {
 
   .to-images{
     position: fixed;
-    left: -375px;
-    top: -1334px;
-    width: 375px;
-    height: 1334px;
+    left: -100vw;
+    top: -100vh;
+    width: 100vw;
+    height: 100vh;
     opacity: 0;
   }
 }

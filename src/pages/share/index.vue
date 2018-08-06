@@ -43,7 +43,7 @@ export default {
   },
   computed: {
      imgData () {
-         return this.images.map(item => {
+         return this.showImages.map(item => {
              if (item.imgW === item.imgH) {
                  item.imgW = item.imgH = 598
              } else {
@@ -62,7 +62,7 @@ export default {
       wx.showLoading({
           title: '图片保存中'
       })
-      Promise.all(this.imgData.map(item => {
+      Promise.all(this.images.map(item => {
         return new Promise((resolve, reject) => {
           wx.saveImageToPhotosAlbum({
             filePath: item.path,
@@ -103,6 +103,7 @@ export default {
   },
   mounted () {
     this.images = wx.getStorageSync('result') || []
+    this.showImages = this.images.filter(item => item.name !== 'fx')
     console.log(this.images)
   },
   onUnLoad () {

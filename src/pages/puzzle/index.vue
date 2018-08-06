@@ -1,5 +1,5 @@
 <template>
-  <container title="制作拼图" background="none">
+  <container title="编辑拼图" background="none">
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <canvas class="cvs cvs-bg" canvas-id="puzzle-bg" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
       <canvas class="cvs" canvas-id="puzzle" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
@@ -26,6 +26,7 @@
                    :class="{active: marginOptions[imgMargin] === item}"
                    v-text="chooseText[index]"
                    @click="pickMargin(index)"
+                   :key="index"
               ></div>
             </div>
           </div>
@@ -37,6 +38,7 @@
                    :class="{active: radiusOptions[radius] === item}"
                    v-text="chooseText[index]"
                    @click="pickRadius(index)"
+                   :key="index"
               ></div>
             </div>
           </div>
@@ -51,6 +53,7 @@
             <div class="choose-item"
                  v-for="(item, index) in colorOptions"
                  :class="{active: index === colorIndex}"
+                 :key="index"
                  :style="{background: gradientStr[index]}"
                  @click="pickColors(item)"></div>
           </scroll-view>
@@ -74,7 +77,7 @@ import TaskQueue from '../choose-img/taskQueue'
 import events from '../../../static/events'
 
 const {
-  drawColorBackground,
+  drawColorBackground, getSvgActions,
   getSVGPath, getImageData, getBlocks,
   createGrid, radiusPath, // requestAnimationFrame,
 } = puzzle
@@ -84,6 +87,8 @@ let imageBlock = []
 let svgActions = []
 let imageQueue = new TaskQueue()
 let pageInit = true
+let renderTime = 0
+console.log('start js')
 export default {
   components: {
     'v-header': header
@@ -92,7 +97,8 @@ export default {
   data () {
     const pages = getCurrentPages()
     const curPage = pages[pages.length - 1]
-    const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
+    const model = wx.getSystemInfoSync().model
+    const iphoneX = model.indexOf('iPhone X') >= 0
     const colorOptions = [
       ['#e6b980', '#eacda3'],
       ['#bdc2e8', '#e6dee9'],
@@ -225,6 +231,7 @@ export default {
       this.drawSvg(this.ctx, true)
       this.ctx.draw(false, () => {
         setTimeout(() => {
+          clearTimeout(renderTime)
           this.createImageContainer(res)
         }, 500)
       })
@@ -232,12 +239,15 @@ export default {
     setSvgPath (fill) {
       console.time('计算')
       var svgData = svgJson.data[this.stencil]
+      svgData.actions = getSvgActions(svgData)
       var baseW = this.cvsW - 10
       var baseH = this.cvsH - 10
       var ratio = svgData.width / svgData.height
+      var cvsRatio = this.cvsW / this.cvsH
       var h1 = baseW / ratio
       var w1 = baseH * ratio
-      if (h1 > baseH) {
+      console.log(svgData)
+      if (ratio < cvsRatio) {
         var width = w1
         var height = baseH
         var left = (baseW - width) / 2 + 5
@@ -245,16 +255,12 @@ export default {
       } else {
         width = baseW
         height = h1
-        left = 5
+        left = 5 - svgData.minX
         top = (baseH - height) / 2 + 5
       }
       svgActions = getSVGPath(svgData, left, top, width, height)
       // this.drawSvg(this.bgCtx, true)
       // this.bgCtx.draw()
-      // this.ctx.strokeRect(left, top, width, height)
-      // this.ctx.draw()
-      // wx.hideLoading()
-      // return
       this.imgZone = {
         x: left,
         y: top,
@@ -309,7 +315,7 @@ export default {
       var grid = createGrid(range, l, 0)
       var block = getBlocks(grid, stencilUnit8, range, 1, this.ios)
       var fitLength = block.filter(item => item.weight > l * l * 0.5).length
-      if (this.calcCount > 20) {
+      if (this.calcCount > 10) {
         this.radiusOptions = [0, l * 0.2, l / 2 * 0.9]
         console.log('no', fitLength, photoCount, this.calcCount)
         this.sortBlocks(block, grid)
@@ -333,18 +339,20 @@ export default {
       //     y: this.viewH / 2
       //   })
       // })
-      // grid.forEach(item => {
-      //   this.ctx.setStrokeStyle('#000')
-      //   this.ctx.strokeRect(item.x, item.y, item.l, item.l)
-      // })
-      // data.forEach(item => {
-      //   this.ctx.setStrokeStyle('red')
-      //   this.ctx.strokeRect(item.x, item.y, item.l, item.l)
-      // })
-      // this.ctx.draw(true)
-      // getApp().ctx = this.ctx
-      // wx.hideLoading()
-      // return
+      grid.forEach(item => {
+        this.ctx.setStrokeStyle('#000')
+        this.ctx.strokeRect(item.x, item.y, item.l, item.l)
+      })
+      data.forEach(item => {
+        this.ctx.setStrokeStyle('red')
+        this.ctx.strokeRect(item.x, item.y, item.l, item.l)
+      })
+      this.ctx.setStrokeStyle('yellow')
+      this.ctx.strokeRect(this.imgZone.x, this.imgZone.y, this.imgZone.w, this.imgZone.h)
+      this.ctx.draw(true)
+      getApp().ctx = this.ctx
+      wx.hideLoading()
+      return
       imageBlock = data.sort((a, b) => b.weight - a.weight)
       this.calcCount = 0
       console.timeEnd('计算')
@@ -434,7 +442,7 @@ export default {
       console.log(puzzlePath)
       const variety = [
         {
-          name: '朋友圈分享图',
+          name: 'fx',
           puzzleX: 40,
           puzzleY: 118,
           puzzleW: 295,
@@ -475,6 +483,13 @@ export default {
         }
       ]
       variety.forEach(imgData => {
+        if (this.viewW < 375) {
+          Object.keys(imgData).forEach(key => {
+            if (!isNaN(imgData[key])) {
+              imgData[key] *= this.viewW / 375
+            }
+          })
+        }
         const {w, h} = this.imgZone
         console.log(w, h, imgData.puzzleW, imgData.puzzleH)
         const scale = w / h
@@ -571,10 +586,28 @@ export default {
       this.colors = this.colorOptions[0]
     })
   },
+  onLoad () {
+    renderTime = setTimeout(() => {
+      wx.hideLoading()
+      wx.showModal({
+        title: '',
+        content: '微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
+        showCancel: false,
+        success: function(res) {
+          const url = '../index/main'
+          wx.reLaunch({ url })
+        }
+      })
+    }, 5000)
+  },
   onShow () {
     if (pageInit) return
     const stencil = wx.getStorageSync('stencil')
     if (stencil !== this.stencil) {
+      wx.showLoading({
+        title: '图片渲染中',
+        mask: true
+      })
       this.ctx.draw()
       this.bgCtx.draw()
       this.stencil = stencil
@@ -607,6 +640,7 @@ export default {
     top: 158rpx;
     transform: translateX(-50%);
     z-index: 9;
+    border: 1px solid;
   }
   &.iphoneX{
     .cvs{
@@ -731,10 +765,10 @@ export default {
 
   .to-images{
     position: fixed;
-    left: -100vw;
-    top: -100vh;
-    width: 100vw;
-    height: 100vh;
+    left: -375px;
+    top: -1334px;
+    width: 375px;
+    height: 1334px;
     opacity: 0;
   }
 }

@@ -32,22 +32,62 @@ function radiusPath (ctx, x, y, w, h, r) {
   ctx.lineTo(x + w, y + h - r)
   ctx.closePath()
 }
+
+function getSvgActions (svg) {
+  let minX = 1000, maxX = 0, minY = 1000, maxY = 0
+  const pathArr = svg.path.split(/\s(?=[a-zA-Z])/g)
+  const res = pathArr.map((p) => {
+    var action = p.slice(0, 1)
+    var args = p.slice(1).split(/,|\s/g)
+    args.forEach((coord, index) => {
+      if (action === 'Z') return
+      if (index % 2 === 1) {
+        if (+coord > maxY) maxY = +coord
+        if (+coord < minY) minY = +coord
+      } else {
+        if (+coord > maxX) maxX = +coord
+        if (+coord < minX) minX = +coord
+      }
+    })
+    return {
+      action: [actions[action]],
+      args
+    }
+  })
+  svg.width = maxX - minX
+  svg.height = maxY - minY
+  svg.minX = minX
+  svg.minY = minY
+  // if (!svg.transform) {
+  //   svg.transform = `translate(${-minX} ${-minY})`
+  // }
+  return res.map((coord, index) => {
+    if (coord) {
+      return index % 2 ? coord - svg.minX : coord - svg.minY
+    } else {
+      return ''
+    }
+  })
+}
+
 function getSVGPath (svg, x, y, width, height) {
+  const actions = svg.actions
+  const transMatrix = calcTransMatrix(...arguments)
+  return actions.map(item => {
+    item.args = coordsTransform(transMatrix, item.args)
+    return item
+  })
+}
+
+function calcTransMatrix (svg, x, y, width, height) {
   const sX = width / svg.width
   const sY = height / svg.height
   var transMatrix = matrix3(sX, 0, 0, sY, x, y)
   if (svg.transform) {
     transformStringToMatrix(svg.transform, transMatrix, sX, sY)
+    console.log(sX, sY)
   }
-  const pathArr = svg.path.split(/\s(?=[a-zA-Z])/g)
-  return pathArr.map((p) => {
-    var action = p.slice(0, 1)
-    var args = p.slice(1).split(/,|\s/g)
-    return {
-      action: [actions[action]],
-      args: coordsTransform(transMatrix, args)
-    }
-  })
+  return transMatrix
 }
 
 function transformStringToMatrix (str, matrix, scaleX, scaleY) {
@@ -412,5 +452,6 @@ export default {
   drawImageFromU8,
   Trigger,
   TapHelper,
-  CvsDiv
+  CvsDiv,
+  getSvgActions
 }

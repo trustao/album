@@ -9,11 +9,9 @@
         :interval="5000"
         class="banner"
       >
-        <template v-for="(item, index) in imgUrls">
-          <swiper-item class="s-item">
-            <img class="img" :src="item"/>
-          </swiper-item>
-        </template>
+        <swiper-item v-for="(item, index) in imgUrls" :key="index" class="s-item">
+          <img class="img" :src="item"/>
+        </swiper-item>
       </swiper>
       <div class="bottom">
         <button class="btn" @click="bindViewTap">开始制作</button>

@@ -162,7 +162,7 @@
       beforeBack (next) {
         if (this.imagesData.length > 0) {
           wx.showModal({
-            title: '提示',
+            title: '',
             content: '该操作将清空已选图片',
             success: (res) => {
               if (res.confirm) {

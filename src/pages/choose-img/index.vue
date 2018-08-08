@@ -15,7 +15,7 @@
       <canvas class="compress-img" canvas-id="compress"></canvas>
       <div class="footer-btn" :class="{iphoneX: iphoneX}">
         <button @click="chooseImages">继续选图</button>
-        <button @click="chooseComplete">完成({{count}})</button>
+        <button id="choose-images-complete" @click="chooseComplete">完成({{count}})</button>
       </div>
     </div>
   </container>
@@ -150,6 +150,10 @@
           compressTask.setQueueEmptyCb(this.chooseComplete)
           return
         }
+        const pages = getCurrentPages()
+        pages[pages.length - 1].setData({
+          count: this.count
+        })
         wx.setStorageSync('images', this.imagesData)
         wx.hideLoading()
         wx.navigateTo({

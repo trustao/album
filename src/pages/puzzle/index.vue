@@ -59,8 +59,8 @@
           </scroll-view>
         </div>
         <div class="operation-item complete">
-          <div class="choose-stencil" @click="chooseStencil">换模板</div>
-          <div class="submit" @click="saveImage">生成拼图</div>
+          <div class="choose-stencil" id="change-stencil" @click="chooseStencil">换模板</div>
+          <div class="submit" id="create-puzzle" @click="saveImage">生成拼图</div>
         </div>
       </div>
     </div>
@@ -89,7 +89,7 @@ let pageInit = true
 let renderTime = 0
 console.log('start js')
 export default {
- 
+
   data () {
     const pages = getCurrentPages()
     const curPage = pages[pages.length - 1]
@@ -219,6 +219,11 @@ export default {
       this.ctx.setLineCap('round')
       this.ctx.setFillStyle('#fff')
       this.bgCtx.setFontSize(16)
+      const pages = getCurrentPages()
+      pages[pages.length - 1].setData({
+        stencil: this.stencil,
+        count: this.images.length
+      })
     },
     drawStencil (fill) {
       console.log('draw stencil')
@@ -418,6 +423,13 @@ export default {
         title: '图片生成中',
         mask: true
       })
+      const pages = getCurrentPages()
+      pages[pages.length - 1].setData({
+        colors: this.colors,
+        radius: this.radius,
+        lineWidth: this.lineWidth,
+        imgMargin: this.imgMargin
+      })
       this.bgCtx.setLineWidth(this.lineWidth)
       const {x, y, w, h} = this.imgZone
       wx.canvasToTempFilePath({
@@ -460,7 +472,7 @@ export default {
           imgH: 656,
         },
         {
-          name: '微信头像',
+          name: '个人头像',
           puzzleX: 48,
           puzzleY: 48,
           puzzleW: 279,
@@ -469,7 +481,7 @@ export default {
           imgH: 375,
         },
         {
-          name: '朋友圈封面',
+          name: '相册封面',
           puzzleX: 48,
           puzzleY: 78,
           puzzleW: 279,
@@ -478,6 +490,9 @@ export default {
           imgH: 375,
         }
       ]
+      if (Date.now() < 1533859200000) {
+        variety.shift()
+      }
       variety.forEach(imgData => {
         if (this.viewW < 375) {
           Object.keys(imgData).forEach(key => {
@@ -505,7 +520,7 @@ export default {
         wx.setStorageSync('result', variety)
         wx.hideLoading()
         wx.navigateTo({
-          url: '../share/main'
+          url: '../save/main'
         })
       })
     },
@@ -552,7 +567,7 @@ export default {
         } catch (err) {
           console.log(err)
         }
-        
+
       })
     },
     // 头部
@@ -596,7 +611,7 @@ export default {
         content: '微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
         showCancel: false,
         success: function(res) {
-          const url = '../index/main'
+          const url = '../index/main?crash=1'
           wx.reLaunch({ url })
         }
       })

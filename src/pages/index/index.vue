@@ -14,10 +14,10 @@
         </swiper-item>
       </swiper>
       <div class="bottom">
-        <button class="btn" @click="bindViewTap">开始制作</button>
+        <button class="btn" id="start" @click="bindViewTap">开始制作</button>
         <p>拼图功能对性能有一定要求</p>
         <p>请尽量使用较好配置的手机</p>
-        <button class="contact" open-type="contact">联系客服</button>
+        <button class="contact" id="contact" open-type="contact">联系客服</button>
       </div>
     </div>
   </container>
@@ -32,7 +32,8 @@ export default {
     return {
       imgUrls: [
         img1, img2, img3
-      ]
+      ],
+      crash: false
     }
   },
 
@@ -69,6 +70,9 @@ export default {
       path: '/pages/index/main',
       imageUrl: 'http://imglf3.nosdn0.126.net/img/Qmx2R2tOVVFNcjB2UDFEZjE3MExrZjkrVTRXZEhPWnhNSTF4K0xYSnNlenJzOEp3UXluaFJRPT0.jpg?imageView&thumbnail=1680x0&quality=96&stripmeta=0&type=jpg'
     }
+  },
+  onLoad (options) {
+    this.crash = options && !!options.crash || false
   }
 }
 </script>

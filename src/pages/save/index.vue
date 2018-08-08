@@ -16,9 +16,8 @@
         </swiper-item>
       </swiper>
       <div class="bottom" :class="{iphoneX: iphoneX}">
-        <button class="btn" @click="save">保存拼图</button>
-        <button class="btn share" open-type="share">推荐给朋友</button>
-        <p @click="backHome">回到首页</p>
+        <button class="btn" id="save-images" @click="save">保存拼图</button>
+        <p id="back-home" @click="backHome">回到首页</p>
       </div>
     </div>
   </container>

@@ -1,0 +1,40 @@
+## pages/index/main
+
+id | 操作
+-- | --
+start | 开始制作
+concat | 联系客服
+
+## pages/choose-stencil/main
+
+id | 操作 | 字段 | 描述
+-- | -- | -- | --
+stencil | 选中模版 | stencil | 模板名称
+
+## pages/choose-img/main
+
+id | 操作
+-- | --
+choose-images-complete | 选择图片完成
+
+## pages/puzzle/main
+
+id | 操作| 字段 | 描述
+-- | -- | -- | --
+change-stencil | 更换模版 | -- | --
+create-puzzle | 创建拼图 | colors | 颜色
+-- | -- | radius | 圆角
+-- | -- | lineWidth | 边框
+-- | -- | imgMargin | 间距
+-- | -- | stencil | 模版名称
+-- | -- | count | 图片数量
+
+## pages/save/main
+
+id | 操作
+-- | --
+save-images | 保存拼图
+back-home | 回到首页
+
+
+

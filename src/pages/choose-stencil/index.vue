@@ -3,7 +3,7 @@
     <div class="stencil-container">
       <ul class="stencil-list">
         <li class="stencil-item" v-for="item in svg.name" :key="item" @click="bindViewTap(item)">
-          <img class="stencil-img" :src="base64Svg[item]" alt="">
+          <img class="stencil-img" :id="stencil" :src="base64Svg[item]" alt="">
         </li>
       </ul>
     </div>
@@ -158,12 +158,17 @@ export default {
         // '68': svg68,
         // '69': svg69
       },
-        rePick: false
+      rePick: false,
+      stencil: ''
     }
   },
 
   methods: {
     bindViewTap (stencil) {
+      this.stencil = stencil
+      pages[pages.length - 1].setData({
+        stencil
+      })
       wx.setStorageSync('stencil', stencil)
       console.log(this.rePick)
       if (!this.rePick) {

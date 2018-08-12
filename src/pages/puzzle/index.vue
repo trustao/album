@@ -490,7 +490,7 @@ export default {
           imgH: 375,
         }
       ]
-      if (Date.now() < 1533859200000) {
+      if (Date.now() < 1533902400000) {
         variety.shift()
       }
       variety.forEach(imgData => {

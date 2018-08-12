@@ -13,9 +13,9 @@ stencil | 选中模版 | stencil | 模板名称
 
 ## pages/choose-img/main
 
-id | 操作
--- | --
-choose-images-complete | 选择图片完成
+id | 操作 | 字段 | 描述
+-- | -- | -- | --
+choose-images-complete | 选择图片完成 |  count | 图片数量
 
 ## pages/puzzle/main
 

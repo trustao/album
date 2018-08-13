@@ -6,6 +6,7 @@ app.$mount()
 
 export default {
   config: {
+    "disableScroll": true,
     usingComponents: {
       'container': '/static/container/container'
     }

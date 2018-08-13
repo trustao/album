@@ -17,6 +17,7 @@
       </swiper>
       <div class="bottom" :class="{iphoneX: iphoneX}">
         <button class="btn" id="save-images" @click="save">保存拼图</button>
+        <button class="btn share" open-type="share">推荐给朋友</button>
         <p id="back-home" @click="backHome">回到首页</p>
       </div>
     </div>
@@ -72,9 +73,12 @@ export default {
         })
       })).then(() => {
         wx.hideLoading()
-        wx.showToast({
+        wx.showModal({
           title: '保存成功',
-          icon: 'success'
+          content: '4张拼图已保存到手机相册，\r\n快去分享你的创作！',
+          showCancel: false,
+          success: function(res) {
+          }
         })
       }).catch(() => {
         wx.hideLoading()
@@ -99,7 +103,7 @@ export default {
   },
   mounted () {
     this.images = wx.getStorageSync('result') || []
-    this.showImages = this.images.filter(item => item.name !== 'fx')
+    this.showImages = this.images// .filter(item => item.name !== 'fx')
     console.log(this.images)
   },
   onUnLoad () {
@@ -120,7 +124,7 @@ export default {
     width: 100%;
     height: 100%;
     .banner{
-      margin: 0 80rpx;
+      margin: 0 auto;
       width: 80.26%;
       height: 1010rpx;
       border-radius: 20rpx;
@@ -131,7 +135,7 @@ export default {
         box-sizing: border-box;
         width: 100%;
         height: 100%;
-        padding: 90rpx 10rpx;
+        padding: 90rpx 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -164,11 +168,11 @@ export default {
         appearance: none;
         outline: none;
         box-sizing: border-box;
-        border: 1px solid;
+        border: 2rpx solid;
         border-radius: 44rpx;
         width: 42vw;
         height: 90rpx;
-        line-height: 90rpx;
+        line-height: 86rpx;
         font-size: 32rpx;
         background: #FFE200;
         &.share{

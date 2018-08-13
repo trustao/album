@@ -111,11 +111,11 @@ export default {
         appearance: none;
         outline: none;
         box-sizing: border-box;
-        border: 1px solid;
+        border: 2rpx solid;
         border-radius: 44rpx;
         width: 42vw;
         height: 90rpx;
-        line-height: 90rpx;
+        line-height: 88rpx;
         font-size: 32rpx;
         background: #FFE200;
         margin-bottom: 0.74vh;

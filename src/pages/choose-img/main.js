@@ -7,6 +7,7 @@ app.$mount()
 export default {
   config: {
     navigationBarTitleText: '选择图片',
+    "disableScroll": true,
     usingComponents: {
       'container': '/static/container/container'
     }

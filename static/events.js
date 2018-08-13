@@ -1,4 +1,9 @@
-const app = getApp()
+let app = null
+try {
+  app = getApp() || {}
+} catch (e) {
+  app = {}
+}
 
 let _events = null
 if (!app._events) {

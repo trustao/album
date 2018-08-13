@@ -23,8 +23,9 @@ Component({
    * 组件的初始数据
    */
   data: {
-    iphoneX: wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0,
-    plus: wx.getSystemInfoSync().model.indexOf('Plus') >= 0,
+    iphoneX: false,
+    iphone5: false,
+    plus: false,
     noBack: true,
     noBackground: false,
     size: {w: 0, h: 0}
@@ -45,6 +46,12 @@ Component({
     }
   },
   attached () {
+    const sysInfo = wx.getSystemInfoSync()
+    this.setData({
+      iphoneX: sysInfo.model.indexOf('iPhone X') >= 0,
+      iphone5: sysInfo.model.indexOf('iPhone 5') >= 0,
+      plus: sysInfo.model.indexOf('Plus') >= 0
+    })
     var pages = getCurrentPages()
     if (pages.length > 1) {
       this.setData({

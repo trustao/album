@@ -5,7 +5,7 @@
       <canvas class="cvs" canvas-id="puzzle" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
       <canvas class="to-images" canvas-id="to-images"></canvas>
       <div class="cvs-background" :style="{background: gradientStr[colorIndex], height: bgH + 'px'}"></div>
-      <div class="cvs-operation" :class="{'iphoneX': iphoneX}">
+      <scroll-view scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
         <div class="operation-item location">
           <div class="h-item">
             <p>边框</p>
@@ -62,7 +62,7 @@
           <div class="choose-stencil" id="change-stencil" @click="chooseStencil">换模板</div>
           <div class="submit" id="create-puzzle" @click="saveImage">生成拼图</div>
         </div>
-      </div>
+      </scroll-view>
     </div>
   </container>
 </template>
@@ -450,7 +450,7 @@ export default {
       console.log(puzzlePath)
       const variety = [
         {
-          name: 'fx',
+          name: '朋友圈分享图',
           puzzleX: 40,
           puzzleY: 118,
           puzzleW: 295,

@@ -3,8 +3,8 @@
     <div>
       <p class="tips">
         1.微信一次性只支持选9张图；<br>
-        2.为保证拼图效果，请选择27-99张图；<br>
-        3.不足27张图，系统自动作重复处理。<br>
+        2.请选择27-99张图，不足27张，自动重复补全；<br>
+        3.自动为你过滤重复图片。<br>
       </p>
       <ul class="images-container">
         <li v-for="(img, index) in imagesData" class="img-item" :key="index">
@@ -75,6 +75,7 @@
           })
         }))
           .then((imagesData) => {
+            let repeatCount = 0
             imagesData.forEach(item => {
               if (this.imagesMd5.indexOf(item.digest) < 0) {
                 this.imagesData.push(item)
@@ -100,7 +101,15 @@
                     this.compressImg(item)
                   }
                 })
+              } else {
+                repeatCount++
               }
+            })
+            if (repeatCount > 0)
+            wx.showToast({
+              icon: 'none',
+              title: `已过滤${repeatCount}张重复图片`,
+              duration: 1500
             })
           }).catch(() => {
             wx.showToast({
@@ -269,11 +278,11 @@
       appearance: none;
       outline: none;
       box-sizing: border-box;
-      border: 1px solid;
+      border: 2rpx solid;
       border-radius: 44rpx;
       width: 42vw;
       height: 90rpx;
-      line-height: 90rpx;
+      line-height: 88rpx;
       font-size: 32rpx;
       background: #FFE200;
       &:last-child{

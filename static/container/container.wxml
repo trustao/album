@@ -1,7 +1,7 @@
-<view class="container {{iphoneX ? 'iphoneX' : ''}} {{noBackground ? 'no-header' : '' }} {{plus ? 'plus' : ''}}">
-  <view class="main">
+<view class="container {{iphoneX ? 'iphoneX' : ''}} {{noBackground ? 'no-header' : '' }} {{plus ? 'plus' : ''}} {{iphone5 ? 'iphone5' : ''}}">
+  <scroll-view scroll-y class="main">
     <slot></slot>
-  </view>
+  </scroll-view >
   <cover-view class="header" style="{{'background:' + background}}" id="header">
     <cover-view wx:if="{{!noBack}}" class="back" bindtap="back">
       <cover-image class="back-img" src="./back.png"></cover-image>

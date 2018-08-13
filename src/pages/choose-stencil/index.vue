@@ -1,11 +1,12 @@
 <template>
   <container title="选择形状模板">
-    <div class="stencil-container">
+    <div class="stencil-container"  :class="{iphoneX: iphoneX}">
       <ul class="stencil-list" id="stencil">
         <li class="stencil-item" v-for="item in svg.name" :key="item" @click="bindViewTap(item)">
           <img class="stencil-img" :id="item" :src="base64Svg[item]" alt="">
         </li>
       </ul>
+      <button class="contact-sticky" id="stencil-contact" open-type="contact">没有找到想要的模板?快来反馈。</button>
     </div>
   </container>
 </template>
@@ -87,6 +88,7 @@ export default {
   data () {
     return {
       svg,
+      iphoneX: false,
       base64Svg: {
         '1': svg1,
         '2': svg2,
@@ -201,7 +203,15 @@ export default {
 
   },
   mounted () {
-
+    try {
+      var res = wx.getSystemInfoSync()
+      console.log(res)
+      if (res.model.indexOf('iPhone X') >= 0) {
+        this.iphoneX = true
+      }
+    } catch (e) {
+      // Do something when catch error
+    }
   },
   onShareAppMessage() {
     return {
@@ -243,5 +253,24 @@ export default {
       }
     }
   }
+  .contact-sticky {
+    display: block;
+    margin: 20rpx auto;
+    width: 470rpx;
+    height: 72rpx;
+    border-radius: 36rpx;
+    line-height: 70rpx;
+    text-align: center;
+    border: 1rpx solid;
+    color: #000;
+    background: #fff;
+    font-size: 26rpx;
+  }
+  &.iphoneX {
+    .contact-sticky{
+       margin: 20rpx auto 88rpx;
+    }
+  }
+
 }
 </style>

@@ -17,7 +17,7 @@
         <button class="btn" id="start" @click="bindViewTap">开始制作</button>
         <p>拼图功能对性能有一定要求</p>
         <p>请尽量使用较好配置的手机</p>
-        <button class="contact" id="contact" open-type="contact">联系客服</button>
+        <button class="contact" id="contact" open-type="contact">我要反馈</button>
       </div>
     </div>
   </container>

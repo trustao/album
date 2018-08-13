@@ -9,7 +9,7 @@
         <div class="operation-item location">
           <div class="h-item">
             <p>边框</p>
-            <div class="choose-wrap">
+            <div class="choose-wrap color-bg">
               <div class="choose-item"
                    v-for="(item, index) in borderOptions"
                    :class="{active: lineWidth === item}"
@@ -20,7 +20,7 @@
           </div>
           <div class="h-item">
             <p>边距</p>
-            <div class="choose-wrap">
+            <div class="choose-wrap color-bg">
               <div class="choose-item"
                    v-for="(item, index) in marginOptions"
                    :class="{active: marginOptions[imgMargin] === item}"
@@ -32,7 +32,7 @@
           </div>
           <div class="h-item">
             <p>圆角</p>
-            <div class="choose-wrap">
+            <div class="choose-wrap color-bgp">
               <div class="choose-item"
                    v-for="(item, index) in radiusOptions"
                    :class="{active: radiusOptions[radius] === item}"
@@ -44,19 +44,40 @@
           </div>
         </div>
         <div class="operation-item">
-          <p>颜色</p>
-          <!--<movable-area>-->
-          <!--<movable-view direction="horizontal" inertia>-->
-          <!--</movable-view>-->
-          <!--</movable-area>-->
-          <scroll-view scroll-x class="scroll-wrap">
-            <div class="choose-item"
-                 v-for="(item, index) in colorOptions"
-                 :class="{active: index === colorIndex}"
-                 :key="index"
-                 :style="{background: gradientStr[index]}"
-                 @click="pickColors(item)"></div>
-          </scroll-view>
+          <div class="h-item">
+            <p>图片</p>
+            <div class="choose-wrap color-bg">
+              <div class="choose-item scale"
+                   v-for="(item, index) in scaleOptions"
+                   :class="{active: scaleOptions[scale] === item}"
+                   :style="{width: item.width, height: item.height}"
+                   style="border-radius: 0;"
+                   @click="pickScale(index)"
+                   :key="index"
+              ></div>
+            </div>
+          </div>
+          <div class="colors-wrap">
+            <p>颜色</p>
+            <!--<movable-area>-->
+            <!--<movable-view direction="horizontal" inertia>-->
+            <!--</movable-view>-->
+            <!--</movable-area>-->
+            <scroll-view scroll-x class="scroll-wrap">
+              <div class="choose-item img-choose">
+                <img :src="icon" class="img">
+              </div>
+              <div class="choose-item img"></div>
+              <div class="choose-item img"></div>
+          
+              <div class="choose-item"
+                  v-for="(item, index) in colorOptions"
+                  :class="{active: index === colorIndex}"
+                  :key="index"
+                  :style="{background: gradientStr[index]}"
+                  @click="pickColors(item)"></div>
+            </scroll-view>
+          </div>
         </div>
         <div class="operation-item complete">
           <div class="choose-stencil" id="change-stencil" @click="chooseStencil">换模板</div>
@@ -74,7 +95,7 @@ import puzzle from './draw'
 import svgJson from '@/images/stencil/svg.json'
 import TaskQueue from '../choose-img/taskQueue'
 import events from '../../../static/events'
-
+import icon from '@/images/ic_changePic.png'
 const {
   drawColorBackground, getSvgActions,
   getSVGPath, getImageData, getBlocks,
@@ -115,7 +136,25 @@ export default {
       ['#cfd9df','#e2ebf0'],
       ['#fdfbfb','#ebedee']
     ]
+    const scaleOptions = [
+      {
+        width: '36rpx',
+        height: '36rpx',
+        scale: 1
+      },
+      {
+        width: '32rpx',
+        height: '48rpx',
+        scale: 16 / 24
+      },
+      {
+        width: '48rpx',
+        height: '32rpx',
+        scale: 24 / 26
+      }
+    ]
     return {
+      icon,
       iphoneX,
       noBack: true,
       noBackground: false,
@@ -147,7 +186,9 @@ export default {
       marginOptions: [0, 3, 6],
       radiusOptions: [0, 5, 10],
       colors: colorOptions[0],
-      colorOptions
+      colorOptions,
+      scaleOptions,
+      scale: 0
     }
   },
   computed: {
@@ -450,7 +491,7 @@ export default {
       console.log(puzzlePath)
       const variety = [
         {
-          name: '朋友圈分享图',
+          name: '拼图作品',
           puzzleX: 40,
           puzzleY: 118,
           puzzleW: 295,
@@ -678,10 +719,20 @@ export default {
     .operation-item{
       position: relative;
       height: 110rpx;
-      &.location{
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
+      display: flex;
+      .h-item{
+        display: inline-block;
+        width: 184rpx;
+        margin-right: 60rpx;
+        .choose-item:last-child{
+          margin-right: 0;
+        }
+      }
+      .colors-wrap{
+        display: inline-block;
+        width: calc(100% - 244rpx);
+      }
+      .color-bg.choose-wrap{
         .choose-item{
           background: #fff;
           color: #5F5F5F;
@@ -707,6 +758,12 @@ export default {
         height: 70rpx;
         white-space:nowrap;
       }
+      .choose-wrap{
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
       .choose-item{
         display: inline-block;
         position: relative;
@@ -727,6 +784,15 @@ export default {
           height: 8rpx;
           border-radius: 4rpx;
           background: #FFE200;
+        }
+        &.img-choose {
+          position: relative;
+          background: #9B9B9B;
+          overflow: hidden;
+          .img{
+            width: 48rpx;
+            height: 48rpx;
+          }
         }
       }
       .choose-stencil{

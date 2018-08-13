@@ -236,6 +236,7 @@
     font-size: 14px;
   }
   .images-container {
+    box-sizing: border-box;
     display: flex;
     flex-direction: row;
     justify-content: flex-start;

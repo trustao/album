@@ -17,8 +17,8 @@
       </swiper>
       <div class="bottom" :class="{iphoneX: iphoneX}">
         <button class="btn" id="save-images" @click="save">保存拼图</button>
-        <button class="btn share" open-type="share">推荐给朋友</button>
-        <p id="back-home" @click="backHome">回到首页</p>
+        <button class="btn share" @click="backHome">回到主页</button>
+        <button class="contact" id="contact" open-type="contact">我要反馈</button>
       </div>
     </div>
   </container>
@@ -180,10 +180,21 @@ export default {
           background: #DEDEDE;
         }
       }
-      p{
+      .contact{
+        appearance: none;
+        outline: none;
+        box-sizing: border-box;
+        border: none;
+        width: 42vw;
+        height: 34rpx;
+        line-height: 34rpx;
+        font-size: 24rpx;
+        color: #FF2600;
         margin-top: 12rpx;
-        font-size: 26rpx;
-        color: #333;
+        background: transparent;
+        &:after{
+          display: none;
+         }
       }
     }
   }

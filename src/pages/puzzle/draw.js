@@ -139,8 +139,7 @@ function drawImageBackground (ctx, path, cvsId, blur, width, height, originImgDa
         width: width,
         height: height,
         success: (res) => {
-          ctx.clearRect(0, 0, width, height)
-          drawImageFromU8(blurUint8Array(res.data, width, height, blur), cvsId, width, height, blur).then(() =>{
+          drawImageFromU8(blurUint8(res.data, width, height, blur), cvsId, width, height, blur).then(() =>{
             if (cb) cb()
           })
         }
@@ -159,9 +158,7 @@ function drawImageBackgroundB (ctx, path, cvsId, blur, width, height) {
       width: width,
       height: height,
       success: (res) => {
-        ctx.clearRect(0, 0, width, height)
         drawImageFromU8(blurUint8Array(res.data, width, height, blur), cvsId, width, height, blur)
-        
       }
     })
   })

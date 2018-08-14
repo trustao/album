@@ -658,6 +658,7 @@ export default {
         try {
         const newSvgActions = getSVGPath(svgJson.data[this.stencil], imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
         var ctx = wx.createCanvasContext('to-images')
+        ctx.clearRect(0, 0, imgData.imgW,  imgData.imgH)
         ctx.beginPath()
         ctx.save()
         if (this.colorIndex < 0) {
@@ -689,7 +690,7 @@ export default {
               if (imgData.QRCode) {
                 ctx.drawImage(imgData.QRCode, imgData.QRX, imgData.QRY, imgData.QRL, imgData.QRL)
               }
-              ctx.draw(false, () => {
+              ctx.draw(true, () => {
                 console.log('draw complete')
                 wx.canvasToTempFilePath({
                   canvasId: 'to-images',

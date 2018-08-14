@@ -122,21 +122,30 @@ function drawColorBackground (ctx, start, end, width, height, colors, noGradient
   ctx.fillRect(0, 0, width, height)
 }
 
-function drawImageBackground (ctx, path, cvsId, blur, width, height) {
-  ctx.drawImage(path, 0, 0, width, height)
+function drawImageBackground (ctx, path, cvsId, blur, width, height, originImgData, cb) {
+
+  ctx.drawImage(path, originImgData.x, originImgData.y, originImgData.w, originImgData.h)
+  console.log('画图片', path, originImgData.x, originImgData.y, originImgData.w, originImgData.h)
+  if (!blur) {
+    if (cb) cb()
+    return
+  }
   ctx.draw(false, function () {
-    if (!blur) return
-    wx.canvasGetImageData({
-      canvasId: cvsId,
-      x: 0,
-      y: 0,
-      width: width,
-      height: height,
-      success: (res) => {
-        ctx.clearRect(0, 0, width, height)
-        drawImageFromU8(blurUint8(res.data, width, height, blur), cvsId, width, height, blur)
-      }
-    })
+    setTimeout(() => {
+      wx.canvasGetImageData({
+        canvasId: cvsId,
+        x: 0,
+        y: 0,
+        width: width,
+        height: height,
+        success: (res) => {
+          ctx.clearRect(0, 0, width, height)
+          drawImageFromU8(blurUint8Array(res.data, width, height, blur), cvsId, width, height, blur).then(() =>{
+            if (cb) cb()
+          })
+        }
+      })
+    }, 800)
   })
 }
 function drawImageBackgroundB (ctx, path, cvsId, blur, width, height) {
@@ -152,6 +161,7 @@ function drawImageBackgroundB (ctx, path, cvsId, blur, width, height) {
       success: (res) => {
         ctx.clearRect(0, 0, width, height)
         drawImageFromU8(blurUint8Array(res.data, width, height, blur), cvsId, width, height, blur)
+        
       }
     })
   })
@@ -159,29 +169,35 @@ function drawImageBackgroundB (ctx, path, cvsId, blur, width, height) {
 
 function drawImageFromU8 (imgData, cvsId, width, height) {
   return new Promise((resolve, reject) => {
-    wx.canvasPutImageData({
-      canvasId: cvsId,
-      x: 0,
-      y: 0,
-      width: width,
-      height: height,
-      data: imgData,
-      success (res) {
-        resolve(res)
-      },
-      fail (er) {
-        console.log('drawImageFromU8 failed', er)
-        reject(er)
-      }
-    })
+    try {
+      wx.canvasPutImageData({
+        canvasId: cvsId,
+        x: 0,
+        y: 0,
+        width: width,
+        height: height,
+        data: imgData,
+        success (res) {
+          resolve(res)
+        },
+        fail (er) {
+          console.log('drawImageFromU8 failed', er)
+          reject(er)
+        }
+      })
+    } catch (er) {
+      reject(er)
+    }
+    
   })
 }
 
 class Block {
-  constructor (x, y, l, weight, factor) {
+  constructor (x, y, w, h, weight, factor) {
     this.x = x || 0
     this.y = y || 0
-    this.l = l || 0
+    this.w = w || 0
+    this.h = h || 0
     this.weight = weight || 0
     this.factor = factor !== undefined ? factor : 1
   }
@@ -221,9 +237,11 @@ function getBlocks (grid, uint8Arr, range, areaFactor, ios) {
     if (item.lastOne) {
       endX = (range.end.x - item.x) * 4
     } else {
-      endX = item.l * 4
+      endX = item.w * 4
     }
-    for (let i = 0; i < item.l; i++) {
+    var h =  item.h
+    if (item.y + item.h > range.end.y) h = range.end.y - item.y
+    for (let i = 0; i < h; i++) {
       let startIndex = 0
       if (ios) {
         startIndex = ((range.end.y - item.y - i) * width + (item.x - range.start.x)) * 4
@@ -240,13 +258,13 @@ function getBlocks (grid, uint8Arr, range, areaFactor, ios) {
   return blocks
 }
 
-function createGrid (range, l, factor) {
+function createGrid (range, w, h, factor) {
   const grid = []
-  for (let i = range.start.y; i < range.end.y; i = i + l) {
-    for (let j = range.start.x; j < range.end.x; j = j + l) {
-      let block = new Block(j, i, l, 0, factor)
+  for (let i = range.start.y; i < range.end.y; i = i + h) {
+    for (let j = range.start.x; j < range.end.x; j = j + w) {
+      let block = new Block(j, i, w, h, 0, factor)
       grid.push(block)
-      if (j + l >= range.end.x) {
+      if (j + w >= range.end.x) {
         block.lastOne = true
       }
     }

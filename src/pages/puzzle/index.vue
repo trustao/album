@@ -4,7 +4,12 @@
       <canvas class="cvs cvs-bg" canvas-id="puzzle-bg" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
       <canvas class="cvs" canvas-id="puzzle" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
       <canvas class="to-images" canvas-id="to-images"></canvas>
-      <div class="cvs-background" :style="{background: gradientStr[colorIndex], height: bgH + 'px'}"></div>
+      <div class="cvs-background" :style="{background: cvsBg, height: bgH + 'px'}">
+        <img class="cvs-bg-img" 
+          v-if="colorIndex < 0 && bgImgPath"
+          :class="{blur: !!drawImgBg}"
+          :src="bgImgPath" mode="aspectFill" />
+      </div>
       <scroll-view scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
         <div class="operation-item location">
           <div class="h-item">
@@ -32,7 +37,7 @@
           </div>
           <div class="h-item">
             <p>圆角</p>
-            <div class="choose-wrap color-bgp">
+            <div class="choose-wrap color-bg">
               <div class="choose-item"
                    v-for="(item, index) in radiusOptions"
                    :class="{active: radiusOptions[radius] === item}"
@@ -65,11 +70,20 @@
             <!--</movable-area>-->
             <scroll-view scroll-x class="scroll-wrap">
               <div class="choose-item img-choose">
-                <img :src="icon" class="img">
+                <img :src="icon" class="img" @click="chooseImgBg">
               </div>
-              <div class="choose-item img"></div>
-              <div class="choose-item img"></div>
-          
+              <div class="choose-item img" :class="{active: 0 === drawImgBg}"
+                   @click="drawBlur(0)">
+                   <div class="img-wrap">
+                      <img class="img-btn" v-if="bgImgPath" :src="bgImgPath" alt="">
+                   </div>
+                   </div>
+              <div class="choose-item img" :class="{active: 1 === drawImgBg}"
+                   @click="drawBlur(1)">
+                    <div class="img-wrap">
+                      <img class="img-btn" v-if="bgImgPath" :src="bgImgPath" style="filter: blur(3px);" alt="">
+                    </div>          
+                   </div>          
               <div class="choose-item"
                   v-for="(item, index) in colorOptions"
                   :class="{active: index === colorIndex}"
@@ -98,7 +112,7 @@ import events from '../../../static/events'
 import icon from '@/images/ic_changePic.png'
 const {
   drawColorBackground, getSvgActions,
-  getSVGPath, getImageData, getBlocks,
+  getSVGPath, getImageData, getBlocks, drawImageBackground,
   createGrid, radiusPath, // requestAnimationFrame,
 } = puzzle
 let stencilUnit8 = null
@@ -150,7 +164,7 @@ export default {
       {
         width: '48rpx',
         height: '32rpx',
-        scale: 24 / 26
+        scale: 24 / 16
       }
     ]
     return {
@@ -188,7 +202,13 @@ export default {
       colors: colorOptions[0],
       colorOptions,
       scaleOptions,
-      scale: 0
+      drawImgBg: -1,
+      scale: 0,
+      bgImg: {
+        w: 0,
+        h: 0,
+        path: ''
+      }
     }
   },
   computed: {
@@ -207,11 +227,22 @@ export default {
     },
     colorIndex () {
       return this.colorOptions.indexOf(this.colors)
+    },
+    bgImgPath () {
+      return this.bgImg.path || ''
+    },
+    cvsBg(){
+      if (this.colorIndex >= 0) {
+        return this.gradientStr[this.colorIndex]
+      } else {
+        return 'transparent'
+      }
     }
   },
   methods: {
     pickColors (colors) {
       this.colors = colors
+      this.drawImgBg = -1
     },
     pickRadius (item) {
       if (item === this.radius) return
@@ -226,6 +257,16 @@ export default {
       this.lineWidth = item
       this.drawBackground()
     },
+    pickScale (item) {
+      if (item === this.scale) return
+      this.scale = item
+      wx.showLoading({
+        title: '重新渲染中'
+      })
+      this.$nextTick(() =>{
+        this.startCalc()
+      })
+    },
     pickMargin (item) {
       if (item === this.imgMargin) return
       wx.showLoading({
@@ -233,6 +274,37 @@ export default {
       })
       this.imgMargin = item
       this.drawImages()
+    },
+    chooseImgBg() {
+      wx.chooseImage({
+        count: 1, // 默认9
+        sizeType: ['compressed', 'original'], // 可以指定是原图还是压缩图，默认二者都有
+        sourceType: ['album'], // 可以指定来源是相册还是相机，默认二者都有
+        success: (res) => {
+          this.setBgImg(res.tempFilePaths[0], () =>{
+            this.drawBlur(0)
+          })
+        }
+      })
+    },
+    setBgImg (path, cb) {
+       wx.getImageInfo({
+          src: path,
+          success: (res) => {
+            var w = res.width
+            var h = res.height
+            this.bgImg = {
+              w,
+              h,
+              path
+            }
+            if (cb) cb()
+          }
+       })
+    },
+    drawBlur(val) {
+      this.colors = []
+      this.drawImgBg = val
     },
     getSysInfo () {
       try {
@@ -252,6 +324,7 @@ export default {
     cvsInit () {
       this.stencil = wx.getStorageSync('stencil') || 'heart'
       this.images = wx.getStorageSync('images') || []
+      if (this.images.length) this.setBgImg(this.images[0].path)
       photoCount = this.images.length < 27 ? 27 : this.images.length
       this.ctx = wx.createCanvasContext('puzzle')
       this.bgCtx = wx.createCanvasContext('puzzle-bg')
@@ -268,18 +341,16 @@ export default {
     },
     drawStencil (fill) {
       console.log('draw stencil')
-      const res = this.setSvgPath(fill)
-      this.range = res
+      this.setSvgPath(fill)
       this.drawSvg(this.ctx, true)
       this.ctx.draw(false, () => {
         setTimeout(() => {
           clearTimeout(renderTime)
-          this.createImageContainer(res)
+          this.createImageContainer()
         }, 500)
       })
     },
     setSvgPath (fill) {
-      console.time('计算')
       var svgData = svgJson.data[this.stencil]
       svgData.actions = getSvgActions(svgData)
       var baseW = this.cvsW - 10
@@ -309,54 +380,67 @@ export default {
         w: width,
         h: height
       }
-      if (width < height) {
-        left = left - (height - width) / 2
-        width = height
+      this.repairRange()
+    },
+    repairRange(){
+      var {x, y, w, h} = this.imgZone
+      var sX, sY, eX, eY;
+      var scale = this.scaleOptions[this.scale].scale
+      if (w / h > scale) {
+        sX = x
+        sY = y - (w / scale - h) / 2
+        eX = x + w
+        eY = sY + w / scale
       } else {
-        top = top - (width - height) / 2
-        height = width
+        sX = x - (h * scale - w) / 2
+        sY = y
+        eX = sX + h * scale
+        eY = y + h
       }
-      var range = {
+      
+      this.range = {
         start: {
-          x: left | 0,
-          y: top | 0
+          x: sX | 0,
+          y: sY | 0
         },
         end: {
-          x: left + width | 0,
-          y: top + height | 0
+          x: eX | 0,
+          y: eY | 0
         }
       }
-      return range
     },
-    createImageContainer (range) {
-      getImageData(range, 'puzzle')
+    createImageContainer () {
+      getImageData(this.range, 'puzzle')
         .then((data) => {
           stencilUnit8 = data
-          console.log('range', range)
-          var maxArea = (range.end.y - range.start.y) * (range.end.x - range.start.x)
-          var minArea = 0
-          for (let i = 0; i < stencilUnit8.length; i++) {
-            if (stencilUnit8[i]) minArea++
-          }
-          minArea /= 4
-          if (!photoCount) {
-            wx.hideLoading()
-            return
-          }
-          var maxL = Math.sqrt(maxArea / photoCount) | 0
-          var minL = Math.sqrt(minArea / photoCount) | 0
-          console.log('边长范围', maxL, minL)
-          this.calculateFitBlock(range, maxL + 1, minL - 1)
+          this.startCalc()
         })
         .catch(() => {})
+    },
+    startCalc() {
+      var range = this.range
+      var maxArea = (range.end.y - range.start.y) * (range.end.x - range.start.x)
+      var minArea = 0
+      for (let i = 0; i < stencilUnit8.length; i++) {
+        if (stencilUnit8[i]) minArea++
+      }
+      minArea /= 4
+      if (!photoCount) {
+        wx.hideLoading()
+        return
+      }
+      var maxL = Math.sqrt(maxArea / photoCount * this.scaleOptions[this.scale].scale) | 0
+      var minL = Math.sqrt(minArea / photoCount * this.scaleOptions[this.scale].scale) | 0
+      console.log('边长范围', maxL, minL)
+      this.calculateFitBlock(range, maxL + 1, minL - 1)
     },
     calculateFitBlock (range, maxL, minL) {
       var l = Math.round((maxL + minL) / 2)
       this.calcCount++
       console.log('边长', l, this.calcCount)
-      var grid = createGrid(range, l, 0)
+      var grid = createGrid(range, l, l / this.scaleOptions[this.scale].scale | 0, 0)
       var block = getBlocks(grid, stencilUnit8, range, 1, this.ios)
-      var fitLength = block.filter(item => item.weight > l * l * 0.5).length
+      var fitLength = block.filter(item => item.weight > l * l / this.scaleOptions[this.scale].scale * 0.5).length
       if (this.calcCount > 10) {
         this.radiusOptions = [0, l * 0.2, l / 2 * 0.9]
         console.log('no', fitLength, photoCount, this.calcCount)
@@ -397,18 +481,18 @@ export default {
       // return
       imageBlock = data.sort((a, b) => b.weight - a.weight)
       this.calcCount = 0
-      console.timeEnd('计算')
       this.drawBackground(() => {
         this.drawImages(() => {
         })
       })
     },
-    drawSvg (ctx, fill) {
+    drawSvg (ctx, fill, customActions) {
+      var actions = customActions || svgActions
       ctx.setFillStyle('#fff')
       ctx.setStrokeStyle('#fff')
       ctx.beginPath()
-      for (let i = 0; i < svgActions.length; i++) {
-        const item = svgActions[i]
+      for (let i = 0; i < actions.length; i++) {
+        const item = actions[i]
         ctx[item.action].apply(ctx, item.args)
       }
       if (fill) {
@@ -431,12 +515,15 @@ export default {
         for (let index = 0; index < imageBlock.length; index++) {
           const item = imageBlock[index]
           this.ctx.save()
-          var l = item.l - this.marginOptions[this.imgMargin]
-          radiusPath(this.ctx, item.x, item.y, l, l, this.radiusOptions[this.radius])
+          radiusPath(this.ctx,
+           item.x, item.y, 
+           item.w - this.marginOptions[this.imgMargin], 
+           item.h - this.marginOptions[this.imgMargin], 
+           this.radiusOptions[this.radius])
           this.ctx.fill()
           this.ctx.globalCompositeOperation = 'source-atop'
           const img = this.images[index % this.images.length]
-          this.ctx.drawImage(img.compressImg, item.x, item.y, l, l)
+          this.ctx.drawImage(img.compressImg, item.x, item.y, item.w - this.marginOptions[this.imgMargin], item.h - this.marginOptions[this.imgMargin])
           this.ctx.restore()
         }
       }
@@ -567,44 +654,93 @@ export default {
     },
     makeImage (puzzlePath, imgData) {
       return new Promise((resolve, reject) => {
-        console.log(svgJson.data[this.stencil])
+        console.log('执行任务')
         try {
         const newSvgActions = getSVGPath(svgJson.data[this.stencil], imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
-        let temp = svgActions
-        svgActions = newSvgActions
         var ctx = wx.createCanvasContext('to-images')
         ctx.beginPath()
         ctx.save()
-        drawColorBackground(ctx, {x: 0, y: 0}, {x: 0, y: imgData.imgH}, imgData.imgW, imgData.imgH, this.colors, false, () => {})
-        ctx.restore()
-        ctx.setFillStyle('#fff')
-        ctx.setStrokeStyle('#fff')
-        ctx.setLineWidth(this.lineWidth)
-        this.drawSvg(ctx, false)
-        ctx.fill()
-        svgActions = temp
-        ctx.drawImage(puzzlePath, imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
-        if (imgData.QRCode) {
-          ctx.drawImage(imgData.QRCode, imgData.QRX, imgData.QRY, imgData.QRL, imgData.QRL)
-        }
-        ctx.draw(false, () => {
-          console.log('draw complete')
-          wx.canvasToTempFilePath({
-            canvasId: 'to-images',
+        if (this.colorIndex < 0) {
+          const originImgData = {
             x: 0,
             y: 0,
-            width: imgData.imgW,
-            height: imgData.imgH,
-            success: function (res) {
-              imgData.path = res.tempFilePath
-              resolve()
-            },
-            fail (err) {
-              console.log(err)
-              reject()
-            }
+            w: imgData.imgW,
+            h: imgData.imgH
+          }
+          const s = this.bgImg.w / this.bgImg.h
+          if (imgData.imgW / imgData.imgH > s) {
+            originImgData.y = -(imgData.imgW / s - imgData.imgH) / 2
+            originImgData.h = imgData.imgW / s
+          } else {
+            originImgData.x = -(imgData.imgH * s - imgData.imgW) / 2
+            originImgData.w = imgData.imgH * s
+          }
+          console.log(originImgData)
+          drawImageBackground(
+            ctx, this.bgImgPath, 'to-images', 
+            this.drawImgBg ? 5 : 0, 
+            imgData.imgW, imgData.imgH, originImgData, () =>{
+              ctx.setFillStyle('#fff')
+              ctx.setStrokeStyle('#fff')
+              ctx.setLineWidth(this.lineWidth)
+              this.drawSvg(ctx, false, newSvgActions)
+              ctx.fill()
+              ctx.drawImage(puzzlePath, imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
+              if (imgData.QRCode) {
+                ctx.drawImage(imgData.QRCode, imgData.QRX, imgData.QRY, imgData.QRL, imgData.QRL)
+              }
+              ctx.draw(false, () => {
+                console.log('draw complete')
+                wx.canvasToTempFilePath({
+                  canvasId: 'to-images',
+                  x: 0,
+                  y: 0,
+                  width: imgData.imgW,
+                  height: imgData.imgH,
+                  success: function (res) {
+                    imgData.path = res.tempFilePath
+                    console.log('任务结束')
+                    resolve()
+                  },
+                  fail (err) {
+                    console.log(err)
+                    reject()
+                  }
+                })
+              })
+            })
+        } else {
+          drawColorBackground(ctx, {x: 0, y: 0}, {x: 0, y: imgData.imgH}, imgData.imgW, imgData.imgH, this.colors, false, () => {})
+          ctx.setFillStyle('#fff')
+          ctx.setStrokeStyle('#fff')
+          ctx.setLineWidth(this.lineWidth)
+          this.drawSvg(ctx, false, newSvgActions)
+          ctx.fill()
+          ctx.drawImage(puzzlePath, imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
+          if (imgData.QRCode) {
+            ctx.drawImage(imgData.QRCode, imgData.QRX, imgData.QRY, imgData.QRL, imgData.QRL)
+          }
+          ctx.draw(false, () => {
+            console.log('draw complete')
+            wx.canvasToTempFilePath({
+              canvasId: 'to-images',
+              x: 0,
+              y: 0,
+              width: imgData.imgW,
+              height: imgData.imgH,
+              success: function (res) {
+                imgData.path = res.tempFilePath
+                resolve()
+              },
+              fail (err) {
+                console.log(err)
+                reject()
+              }
+            })
           })
-        })
+        }
+        ctx.restore()
+        
         } catch (err) {
           console.log(err)
         }
@@ -775,6 +911,17 @@ export default {
         line-height: 48rpx;
         margin-right: 20rpx;
         font-size: 20rpx;
+        .img-wrap{
+          width: 48rpx;
+          height: 48rpx;
+          overflow: hidden;
+          border-radius: 12rpx;
+          background: #9B9B9B;
+          .img-btn{
+            width: 48rpx;
+            height: 48rpx;
+          }
+        }
         &.active:after{
           content: '';
           position: absolute;
@@ -843,6 +990,14 @@ export default {
     width: 100%;
     height: 100%;
     z-index: 2;
+    overflow: hidden;
+    .cvs-bg-img{
+      width: 100%;
+      height: 100%;
+      &.blur{
+        filter: blur(5px);
+      }
+    }
   }
 
   .to-images{

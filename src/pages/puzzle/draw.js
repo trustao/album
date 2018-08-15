@@ -125,7 +125,6 @@ function drawColorBackground (ctx, start, end, width, height, colors, noGradient
 function drawImageBackground (ctx, path, cvsId, blur, width, height, originImgData, cb) {
 
   ctx.drawImage(path, originImgData.x, originImgData.y, originImgData.w, originImgData.h)
-  console.log('画图片', path, originImgData.x, originImgData.y, originImgData.w, originImgData.h)
   if (!blur) {
     if (cb) cb()
     return
@@ -144,7 +143,7 @@ function drawImageBackground (ctx, path, cvsId, blur, width, height, originImgDa
           })
         }
       })
-    }, 800)
+    }, 100)
   })
 }
 

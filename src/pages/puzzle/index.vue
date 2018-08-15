@@ -72,13 +72,13 @@
               <div class="choose-item img-choose">
                 <img :src="icon" class="img" @click="chooseImgBg">
               </div>
-              <div class="choose-item img" :class="{active: 0 === drawImgBg}"
+              <div class="choose-item img" :class="{active: 0 === drawImgBg && colorIndex < 0}"
                    @click="drawBlur(0)">
                    <div class="img-wrap">
                       <img class="img-btn" v-if="bgImgPath" :src="bgImgPath" alt="">
                    </div>
                    </div>
-              <div class="choose-item img" :class="{active: 1 === drawImgBg}"
+              <div class="choose-item img" :class="{active: 1 === drawImgBg && colorIndex < 0}"
                    @click="drawBlur(1)">
                     <div class="img-wrap">
                       <img class="img-btn" v-if="bgImgPath" :src="bgImgPath" style="filter: blur(3px);" alt="">
@@ -159,12 +159,12 @@ export default {
       {
         width: '32rpx',
         height: '48rpx',
-        scale: 16 / 24
+        scale: 3 / 4
       },
       {
         width: '48rpx',
         height: '32rpx',
-        scale: 24 / 16
+        scale: 4 / 3
       }
     ]
     return {
@@ -249,6 +249,7 @@ export default {
       wx.showLoading({
         title: '重新渲染中'
       })
+      console.log(this.radiusOptions)
       this.radius = item
       this.drawImages()
     },
@@ -442,7 +443,7 @@ export default {
       var block = getBlocks(grid, stencilUnit8, range, 1, this.ios)
       var fitLength = block.filter(item => item.weight > l * l / this.scaleOptions[this.scale].scale * 0.5).length
       if (this.calcCount > 10) {
-        this.radiusOptions = [0, l * 0.2, l / 2 * 0.9]
+        this.radiusOptions = [0, l * 0.2, Math.min(l, l / this.scaleOptions[this.scale].scale) / 2 * 0.9]
         console.log('no', fitLength, photoCount, this.calcCount)
         this.sortBlocks(block, grid)
         return
@@ -453,7 +454,7 @@ export default {
         this.calculateFitBlock(range, maxL, l)
       } else {
         console.log('get', fitLength, photoCount, this.calcCount)
-        this.radiusOptions = [0, l * 0.2, l / 2 * 0.9]
+        this.radiusOptions = [0, l * 0.2, Math.min(l, l / this.scaleOptions[this.scale].scale) / 2 * 0.9]
         this.sortBlocks(block, grid)
       }
     },
@@ -556,7 +557,9 @@ export default {
         colors: this.colors,
         radius: this.radius,
         lineWidth: this.lineWidth,
-        imgMargin: this.imgMargin
+        imgMargin: this.imgMargin,
+        scale: this.scale,
+        blur: this.drawImgBg
       })
       this.bgCtx.setLineWidth(this.lineWidth)
       const {x, y, w, h} = this.imgZone
@@ -618,9 +621,6 @@ export default {
           imgH: 375,
         }
       ]
-      if (Date.now() < 1533902400000) {
-        variety.shift()
-      }
       variety.forEach(imgData => {
         if (this.viewW < 375) {
           Object.keys(imgData).forEach(key => {
@@ -676,11 +676,12 @@ export default {
             originImgData.x = -(imgData.imgH * s - imgData.imgW) / 2
             originImgData.w = imgData.imgH * s
           }
-          console.log(originImgData)
+          console.time('blur compute')
           drawImageBackground(
             ctx, this.bgImgPath, 'to-images',
             this.drawImgBg ? 5 : 0,
             imgData.imgW, imgData.imgH, originImgData, () =>{
+              console.timeEnd('blur compute')
               ctx.setFillStyle('#fff')
               ctx.setStrokeStyle('#fff')
               ctx.setLineWidth(this.lineWidth)

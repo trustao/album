@@ -83,7 +83,7 @@
                 wx.getImageInfo({
                   src: item.path,
                   success: (res) => {
-                    const targetScales = [1, 2 / 3, 3 / 2]
+                    const targetScales = [1, 3 / 4, 4 / 3]
                     var w = res.width
                     var h = res.height
                     var targetW = 100

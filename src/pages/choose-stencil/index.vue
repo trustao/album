@@ -6,7 +6,7 @@
           <img class="stencil-img" :id="item" :src="base64Svg[item]" alt="">
         </li>
       </ul>
-      <button class="contact-sticky" id="stencil-contact" open-type="contact">没有找到想要的模板?快来反馈。</button>
+      <button v-if="showBtn" class="contact-sticky" id="stencil-contact" open-type="contact">没有找到想要的模板?快来反馈。</button>
     </div>
   </container>
 </template>
@@ -89,6 +89,7 @@ export default {
     return {
       svg,
       iphoneX: false,
+      showBtn: false,
       base64Svg: {
         '1': svg1,
         '2': svg2,
@@ -212,6 +213,9 @@ export default {
     } catch (e) {
       // Do something when catch error
     }
+    setTimeout(() => {
+      this.showBtn = true
+    }, 500)
   },
   onShareAppMessage() {
     return {

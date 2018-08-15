@@ -1,4 +1,4 @@
-import {blurUint8, blurUint8Array, coordsTransform, matrix3} from './calculate'
+import { blurUint8Array, coordsTransform, matrix3} from './calculate'
 const actions = {
   M: 'moveTo',
   C: 'bezierCurveTo',
@@ -139,28 +139,12 @@ function drawImageBackground (ctx, path, cvsId, blur, width, height, originImgDa
         width: width,
         height: height,
         success: (res) => {
-          drawImageFromU8(blurUint8(res.data, width, height, blur), cvsId, width, height, blur).then(() =>{
+          drawImageFromU8(blurUint8Array(res.data, width, height, blur), cvsId, width, height, blur).then(() =>{
             if (cb) cb()
           })
         }
       })
     }, 800)
-  })
-}
-function drawImageBackgroundB (ctx, path, cvsId, blur, width, height) {
-  ctx.drawImage(path, 0, 0, width, height)
-  ctx.draw(false, function () {
-    if (!blur) return
-    wx.canvasGetImageData({
-      canvasId: cvsId,
-      x: 0,
-      y: 0,
-      width: width,
-      height: height,
-      success: (res) => {
-        drawImageFromU8(blurUint8Array(res.data, width, height, blur), cvsId, width, height, blur)
-      }
-    })
   })
 }
 
@@ -185,7 +169,7 @@ function drawImageFromU8 (imgData, cvsId, width, height) {
     } catch (er) {
       reject(er)
     }
-    
+
   })
 }
 
@@ -462,7 +446,6 @@ export default {
   getSVGPath,
   drawColorBackground,
   drawImageBackground,
-  drawImageBackgroundB,
   Block,
   transformStringToMatrix,
   getImageData,

@@ -1,54 +1,3 @@
-// 输入 Uint8ClampedArray
-// 返回 Uint8ClampedArray
-function blurUint8 (sourceU8, width, height, blur) {
-  const source = {
-    r: [],
-    g: [],
-    b: [],
-    a: []
-  };
-  const target = {
-    r: [],
-    g: [],
-    b: [],
-    a: []
-  };
-  const res = new Uint8ClampedArray(width * height * 4);
-  for (let i = 0; i < sourceU8.length; i++) {
-    switch (i % 4) {
-      case 0:
-        source.r.push(sourceU8[i]);
-        break;
-      case 1:
-        source.g.push(sourceU8[i]);
-        break;
-      case 2:
-        source.b.push(sourceU8[i]);
-        break;
-      case 3:
-        source.a.push(sourceU8[i]);
-        break;
-    }
-  }
-  for (let key in source) {
-    gaussBlur(source[key], target[key], width, height, blur);
-  }
-  for (let i = 0; i < target.r.length; i++) {
-    res[i * 4] = target.r[i];
-    res[i * 4 + 1] = target.g[i];
-    res[i * 4 + 2] = target.b[i];
-    res[i * 4 + 3] = target.a[i];
-  }
-  return res;
-}
-
-// 三次均值模糊代替高斯模糊
-function gaussBlur (scl, tcl, w, h, r) {
-  var bxs = boxesForGauss(r, 3);
-  boxBlur(scl, tcl, w, h, (bxs[0] - 1) / 2);
-  boxBlur(tcl, scl, w, h, (bxs[1] - 1) / 2);
-  boxBlur(scl, tcl, w, h, (bxs[2] - 1) / 2);
-}
 
 function boxesForGauss (sigma, n) {
   var wIdeal = Math.sqrt((12 * sigma * sigma / n) + 1);
@@ -64,21 +13,6 @@ function boxesForGauss (sigma, n) {
   return sizes;
 }
 
-function boxBlur (scl, tcl, w, h, r) {
-  for (var i = 0; i < h; i++) {
-    for (var j = 0; j < w; j++) {
-      var val = 0;
-      for (var iy = i - r; iy < i + r + 1; iy++) {
-        for (var ix = j - r; ix < j + r + 1; ix++) {
-          var x = Math.min(w - 1, Math.max(0, ix));
-          var y = Math.min(h - 1, Math.max(0, iy));
-          val += scl[y * w + x];
-        }
-      }
-      tcl[i * w + j] = val / ((r + r + 1) * (r + r + 1));
-    }
-  }
-}
 
 function blurUint8Array (uint8Arr, width, height, blur) {
   var result = new Uint8ClampedArray(width * height * 4);
@@ -198,7 +132,6 @@ class Coord {
 export {
   coordsTransform,
   blurUint8Array,
-  blurUint8,
   matrix3,
   Coord
 };

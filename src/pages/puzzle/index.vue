@@ -5,7 +5,7 @@
       <canvas class="cvs" canvas-id="puzzle" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
       <canvas class="to-images" canvas-id="to-images"></canvas>
       <div class="cvs-background" :style="{background: cvsBg, height: bgH + 'px'}">
-        <img class="cvs-bg-img" 
+        <img class="cvs-bg-img"
           v-if="colorIndex < 0 && bgImgPath"
           :class="{blur: !!drawImgBg}"
           :src="bgImgPath" mode="aspectFill" />
@@ -82,8 +82,8 @@
                    @click="drawBlur(1)">
                     <div class="img-wrap">
                       <img class="img-btn" v-if="bgImgPath" :src="bgImgPath" style="filter: blur(3px);" alt="">
-                    </div>          
-                   </div>          
+                    </div>
+                   </div>
               <div class="choose-item"
                   v-for="(item, index) in colorOptions"
                   :class="{active: index === colorIndex}"
@@ -397,7 +397,7 @@ export default {
         eX = sX + h * scale
         eY = y + h
       }
-      
+
       this.range = {
         start: {
           x: sX | 0,
@@ -516,14 +516,14 @@ export default {
           const item = imageBlock[index]
           this.ctx.save()
           radiusPath(this.ctx,
-           item.x, item.y, 
-           item.w - this.marginOptions[this.imgMargin], 
-           item.h - this.marginOptions[this.imgMargin], 
+           item.x, item.y,
+           item.w - this.marginOptions[this.imgMargin],
+           item.h - this.marginOptions[this.imgMargin],
            this.radiusOptions[this.radius])
           this.ctx.fill()
           this.ctx.globalCompositeOperation = 'source-atop'
           const img = this.images[index % this.images.length]
-          this.ctx.drawImage(img.compressImg, item.x, item.y, item.w - this.marginOptions[this.imgMargin], item.h - this.marginOptions[this.imgMargin])
+          this.ctx.drawImage(img.compressImg[this.scale], item.x, item.y, item.w - this.marginOptions[this.imgMargin], item.h - this.marginOptions[this.imgMargin])
           this.ctx.restore()
         }
       }
@@ -678,8 +678,8 @@ export default {
           }
           console.log(originImgData)
           drawImageBackground(
-            ctx, this.bgImgPath, 'to-images', 
-            this.drawImgBg ? 5 : 0, 
+            ctx, this.bgImgPath, 'to-images',
+            this.drawImgBg ? 5 : 0,
             imgData.imgW, imgData.imgH, originImgData, () =>{
               ctx.setFillStyle('#fff')
               ctx.setStrokeStyle('#fff')
@@ -741,7 +741,7 @@ export default {
           })
         }
         ctx.restore()
-        
+
         } catch (err) {
           console.log(err)
         }

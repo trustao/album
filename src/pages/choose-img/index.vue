@@ -79,26 +79,33 @@
             imagesData.forEach(item => {
               if (this.imagesMd5.indexOf(item.digest) < 0) {
                 this.imagesData.push(item)
+                item.compressImg = {}
                 wx.getImageInfo({
                   src: item.path,
                   success: (res) => {
+                    const targetScales = [1, 2 / 3, 3 / 2]
                     var w = res.width
                     var h = res.height
-                    var targetL = 100
-                    if (w > h) {
-                      item.w = w / h * targetL
-                      item.h = targetL
-                      item.l = targetL
-                      item.clipX = (item.w - item.h) / 2
-                      item.clipY = 0
-                    } else {
-                      item.w = targetL
-                      item.h = h / w * targetL
-                      item.l = targetL
-                      item.clipX = 0
-                      item.clipY = (item.h - item.w) / 2
-                    }
-                    this.compressImg(item)
+                    var targetW = 100
+                    targetScales.forEach((scale, index) => {
+                      const img = {}
+                      if (w / h  > scale) {
+                        img.h = targetW
+                        img.w = w / h * targetW
+                        img.clipW = targetW * scale
+                        img.clipH = targetW
+                        img.clipX = (img.w - img.clipW) / 2
+                        img.clipY = 0
+                      } else {
+                        img.h = h / w * targetW
+                        img.w = targetW
+                        img.clipW = targetW
+                        img.clipH = targetW / scale
+                        img.clipX = 0
+                        img.clipY = (img.h - img.clipH) / 2
+                      }
+                      this.compressImg(img, item, index)
+                    })
                   }
                 })
               } else {
@@ -119,20 +126,20 @@
             })
         })
       },
-      compressImg(img) {
+      compressImg(img, item, index) {
         compressTask.addTask(() => {
           return new Promise((resolve, reject) => {
             const ctx = wx.createCanvasContext('compress')
-            ctx.drawImage(img.path, 0, 0, img.w, img.h)
+            ctx.drawImage(item.path, 0, 0, img.w, img.h)
             ctx.draw(false, () => {
               wx.canvasToTempFilePath({
                 canvasId: 'compress',
                 x: img.clipX,
                 y: img.clipY,
-                width: img.l,
-                height: img.l,
+                width: img.clipW,
+                height: img.clipH,
                 success: (res) => {
-                  img.compressImg = res.tempFilePath
+                  item.compressImg[index] = res.tempFilePath
                   resolve()
                 },
                 fail (err) {

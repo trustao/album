@@ -21,6 +21,8 @@ function blurUint8Array (uint8Arr, width, height, blur) {
   boxBlurUint8(source, result, width, height, (bxs[0] - 1) / 2)
   boxBlurUint8(result, source, width, height, (bxs[1] - 1) / 2)
   boxBlurUint8(source, result, width, height, (bxs[2] - 1) / 2)
+  boxBlurUint8(result, source, width, height, (bxs[1] - 1) / 2)
+  boxBlurUint8(source, result, width, height, (bxs[2] - 1) / 2)
   return result
 }
 
@@ -33,9 +35,13 @@ function boxBlurUint8 (scl, tcl, w, h, r) {
       var A = 0
       for (var iy = i - r; iy < i + r + 1; iy++) {
         for (var ix = j - r; ix < j + r + 1; ix++) {
-          var x = Math.min(w - 1, Math.max(0, ix))
-          var y = Math.min(h - 1, Math.max(0, iy))
-          var index = (y * w + x) * 4
+          var maxX = ix > 0 ? ix : 0
+          var maxY = iy > 0 ? iy : 0
+          var x = (maxX > w - 1) ? (w - 1) : maxX
+          var y = (maxY > h - 1) ? (h -1) : maxY
+          // var x = Math.min(w - 1, Math.max(0, ix))
+          // var y = Math.min(h - 1, Math.max(0, iy))
+          var index = (y * w + x) << 2
           R += scl[index]
           G += scl[index + 1]
           B += scl[index + 2]

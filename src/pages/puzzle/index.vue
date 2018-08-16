@@ -679,7 +679,7 @@ export default {
           console.time('blur compute')
           drawImageBackground(
             ctx, this.bgImgPath, 'to-images',
-            this.drawImgBg ? 5 : 0,
+            this.drawImgBg ? 3 : 0,
             imgData.imgW, imgData.imgH, originImgData, () =>{
               console.timeEnd('blur compute')
               ctx.setFillStyle('#fff')

@@ -1,3 +1,8 @@
+## appid
+```
+C wxea11b3efed0d1e07
+B wxc88caac4f7c14bd8
+```
 ## pages/index/main
 
 id | 操作
@@ -28,7 +33,8 @@ create-puzzle | 创建拼图 | colors | 颜色
 -- | -- | imgMargin | 间距
 -- | -- | stencil | 模版名称
 -- | -- | count | 图片数量
-
+-- | -- | scale | 形状比例
+-- | -- | blur | 模糊
 ## pages/save/main
 
 id | 操作

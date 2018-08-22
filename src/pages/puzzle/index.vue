@@ -608,7 +608,7 @@ export default {
           imgW: 375,
           imgH: 656,
           QRCode: '/static/QRCode.png',
-          QRX: 168,
+          QRX: 157,
           QRY: 586,
           QRL: 60
         },

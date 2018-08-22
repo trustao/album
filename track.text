@@ -15,6 +15,7 @@ concat | 联系客服
 id | 操作 | 字段 | 描述
 -- | -- | -- | --
 stencil | 选中模版 | stencil | 模板名称
+stencil-contact
 
 ## pages/choose-img/main
 
@@ -35,12 +36,13 @@ create-puzzle | 创建拼图 | colors | 颜色
 -- | -- | count | 图片数量
 -- | -- | scale | 形状比例
 -- | -- | blur | 模糊
+
 ## pages/save/main
 
 id | 操作
 -- | --
 save-images | 保存拼图
 back-home | 回到首页
-
+contact
 
 

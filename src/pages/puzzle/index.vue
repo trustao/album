@@ -548,6 +548,25 @@ export default {
       })
     },
     saveImage () {
+      if (this.drawImgBg === 1 && this.colorIndex < 0) {
+        wx.showModal({
+          title: '',
+          content: '虚化背景的生成较复杂，预计耗时十几秒，请知晓！',
+          confirmText: '确定生成',
+          success: (res) => {
+            if (res.confirm) {
+              console.log('用户点击确定')
+              this.startCreatePuzzle()
+            } else if (res.cancel) {
+              console.log('用户点击取消')
+            }
+          }
+        })
+        return
+      }
+      this.startCreatePuzzle()
+    },
+    startCreatePuzzle () {
       wx.showLoading({
         title: '图片生成中',
         mask: true
@@ -590,8 +609,8 @@ export default {
           imgH: 656,
           QRCode: '/static/QRCode.png',
           QRX: 168,
-          QRY: 600,
-          QRL: 40
+          QRY: 586,
+          QRL: 60
         },
         {
           name: '手机壁纸',
@@ -814,7 +833,7 @@ export default {
   },
   onShareAppMessage() {
     return {
-      title: '形状拼图',
+      title: 'Shapin',
       path: '/pages/index/main',
       imageUrl: 'http://imglf3.nosdn0.126.net/img/Qmx2R2tOVVFNcjB2UDFEZjE3MExrZjkrVTRXZEhPWnhNSTF4K0xYSnNlenJzOEp3UXluaFJRPT0.jpg?imageView&thumbnail=1680x0&quality=96&stripmeta=0&type=jpg'
     }

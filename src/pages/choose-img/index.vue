@@ -227,7 +227,7 @@
     },
     onShareAppMessage() {
       return {
-        title: '形状拼图',
+        title: 'Shapin',
         path: '/pages/index/main',
         imageUrl: 'http://imglf3.nosdn0.126.net/img/Qmx2R2tOVVFNcjB2UDFEZjE3MExrZjkrVTRXZEhPWnhNSTF4K0xYSnNlenJzOEp3UXluaFJRPT0.jpg?imageView&thumbnail=1680x0&quality=96&stripmeta=0&type=jpg'
       }

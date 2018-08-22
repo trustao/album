@@ -131,29 +131,72 @@ function drawImageBackground (ctx, path, cvsId, blur, width, height, originImgDa
   }
   ctx.draw(false, function () {
     setTimeout(() => {
-      wx.canvasGetImageData({
-        canvasId: cvsId,
-        x: 0,
-        y: 0,
-        width: width,
-        height: height,
-        success: (res) => {
-          drawImageFromU8(blurUint8Array(res.data, width, height, blur), cvsId, width, height, blur).then(() =>{
-            if (cb) cb()
-          })
-        }
-      })
+      if (width * height > 375 * 375){
+        partitionDraw(cvsId, width, height, blur).then(() => {
+          if (cb) cb()
+        })
+      } else {
+        wx.canvasGetImageData({
+          canvasId: cvsId,
+          x: 0,
+          y: 0,
+          width: width,
+          height: height,
+          success: (res) => {
+            drawImageFromU8(blurUint8Array(res.data, width, height, blur), cvsId, width, height).then(() =>{
+              if (cb) cb()
+            })
+          }
+        })
+      }
     }, 100)
   })
 }
 
-function drawImageFromU8 (imgData, cvsId, width, height) {
+function partitionDraw(cvsId, width, height, blur) {
+  return new Promise((reslove) => {
+    wx.canvasGetImageData({
+      canvasId: cvsId,
+      x: 0,
+      y: 0,
+      width: width,
+      height: height / 2 | 0 + 20,
+      success: (res) => {
+        drawImageFromU8(
+          blurUint8Array(res.data, width, height / 2 | 0  + 20, blur),
+          cvsId, width, height / 2 | 0  + 20)
+        .then(() =>{
+          wx.canvasGetImageData({
+            canvasId: cvsId,
+            x: 0,
+            y:  (height / 2 | 0) + 1 - 20,
+            width: width,
+            height: (height / 2 | 0) + 20,
+            success: (d) => {
+              drawImageFromU8(
+                blurUint8Array(d.data, width, (height / 2 | 0) + 20, blur),
+                cvsId, width, (height / 2 | 0) + 20,
+                0, (height / 2 | 0) + 1 - 20)
+              .then(() =>{
+                reslove()
+              })
+            }
+          })
+        })
+      }
+    })
+  })
+}
+
+function drawImageFromU8 (imgData, cvsId, width, height, x, y) {
+  console.log( width, height, x, y)
   return new Promise((resolve, reject) => {
+    console.log( width, height, x, y)
     try {
       wx.canvasPutImageData({
         canvasId: cvsId,
-        x: 0,
-        y: 0,
+        x: x || 0,
+        y: y || 0,
         width: width,
         height: height,
         data: imgData,

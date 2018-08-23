@@ -1,24 +1,15 @@
 <template>
   <container title="保存拼图">
     <div class="wrap">
-      <swiper
-        :indicator-dots="true"
-        :autoplay="true"
-        :circular="true"
-        indicator-active-color="#FFE200"
-        :interval="5000"
-        @change="swiperChange"
-        class="banner"
-      >
-        <swiper-item class="s-item"  v-for="(item, index) in imgData" :key="index">
-          <p class="title">{{item.name}}</p>
-          <img class="img" :src="item.path" :style="{width: item.imgW + 'rpx', height: item.imgH + 'rpx'}"/>
-        </swiper-item>
-      </swiper>
+      <div class="res-tip">
+         <icon type="success" size="50" color="#6ac259"/>
+          <p>已保存到手机相册</p>
+          <p>快分享你的Shapin</p>
+      </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
-        <button class="btn" id="save-images" @click="save">保存拼图</button>
-        <button class="btn share" @click="backHome">回到主页</button>
-        <button class="contact" id="contact" open-type="contact">我要反馈</button>
+        <button class="btn" @click="backHome">回到主页</button>
+        <button class="btn share" id="save-images"  open-type="share">推荐给朋友</button>
+        <button class="btn share" id="contact" open-type="contact">我要反馈</button>
       </div>
     </div>
   </container>
@@ -123,60 +114,32 @@ export default {
   .wrap{
     width: 100%;
     height: 100%;
-    .banner{
-      margin: 0 auto;
-      width: 80.26%;
-      height: 1010rpx;
-      border-radius: 20rpx;
-      padding-top: 1px;
-      overflow: hidden;
-      .s-item{
-        position: relative;
-        box-sizing: border-box;
-        width: 100%;
-        height: 100%;
-        padding: 90rpx 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        .title{
-          position: absolute;
-          top: 20rpx;
-          font-size: 32rpx;
-          left: 50%;
-          transform: translateX(-50%);
-        }
-      }
-      .img{
-        width: 100%;
-        height: auto;
-        border-radius: 20rpx;
+    .res-tip{
+      padding: 80rpx 0 100rpx;
+      text-align: center;
+      p{
+        font-size: 36rpx;
+        color: #333;
       }
     }
     .bottom{
-      position: fixed;
-      bottom: 30rpx;
-      left: 0;
       width: 100%;
-      text-align: center;
-      &.iphoneX{
-        bottom: 98rpx;
-      }
       .btn {
-        display: inline-block;
+        display: block;
+        margin: 0 auto 32rpx;
         appearance: none;
         outline: none;
         box-sizing: border-box;
         border: 2rpx solid;
         border-radius: 44rpx;
-        width: 42vw;
+        width: 320rpx;
         height: 90rpx;
         line-height: 86rpx;
         font-size: 32rpx;
         background: #FFE200;
+        text-align: center;
+        color: #000;
         &.share{
-          margin-left: 30rpx;
           background: #DEDEDE;
         }
       }

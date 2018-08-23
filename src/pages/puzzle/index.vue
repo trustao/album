@@ -1,5 +1,5 @@
 <template>
-  <container title="编辑拼图" background="none">
+  <container title="编辑拼图">
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <canvas class="cvs cvs-bg" canvas-id="puzzle-bg" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
       <canvas class="cvs" canvas-id="puzzle" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
@@ -11,93 +11,13 @@
           :src="bgImgPath" mode="aspectFill" />
       </div>
       <scroll-view scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
-        <div class="operation-item location">
-          <div class="h-item">
-            <p>边框</p>
-            <div class="choose-wrap color-bg">
-              <div class="choose-item"
-                   v-for="(item, index) in borderOptions"
-                   :class="{active: lineWidth === item}"
-                   v-text="chooseText[index]"
-                   @click="pickBorder(item)"
-              ></div>
-            </div>
-          </div>
-          <div class="h-item">
-            <p>边距</p>
-            <div class="choose-wrap color-bg">
-              <div class="choose-item"
-                   v-for="(item, index) in marginOptions"
-                   :class="{active: marginOptions[imgMargin] === item}"
-                   v-text="chooseText[index]"
-                   @click="pickMargin(index)"
-                   :key="index"
-              ></div>
-            </div>
-          </div>
-          <div class="h-item">
-            <p>圆角</p>
-            <div class="choose-wrap color-bg">
-              <div class="choose-item"
-                   v-for="(item, index) in radiusOptions"
-                   :class="{active: radiusOptions[radius] === item}"
-                   v-text="chooseText[index]"
-                   @click="pickRadius(index)"
-                   :key="index"
-              ></div>
-            </div>
-          </div>
-        </div>
-        <div class="operation-item">
-          <div class="h-item">
-            <p>图片</p>
-            <div class="choose-wrap color-bg">
-              <div class="choose-item scale"
-                   v-for="(item, index) in scaleOptions"
-                   :class="{active: scaleOptions[scale] === item}"
-                   :style="{width: item.width, height: item.height}"
-                   style="border-radius: 0;"
-                   @click="pickScale(index)"
-                   :key="index"
-              ></div>
-            </div>
-          </div>
-          <div class="colors-wrap">
-            <p>颜色</p>
-            <!--<movable-area>-->
-            <!--<movable-view direction="horizontal" inertia>-->
-            <!--</movable-view>-->
-            <!--</movable-area>-->
-            <scroll-view scroll-x class="scroll-wrap">
-              <div class="choose-item img-choose">
-                <img :src="icon" class="img" @click="chooseImgBg">
-              </div>
-              <div class="choose-item img" :class="{active: 0 === drawImgBg && colorIndex < 0}"
-                   @click="drawBlur(0)">
-                   <div class="img-wrap">
-                      <img class="img-btn" v-if="bgImgPath" :src="bgImgPath" alt="">
-                   </div>
-                   </div>
-              <div class="choose-item img" :class="{active: 1 === drawImgBg && colorIndex < 0}"
-                   @click="drawBlur(1)">
-                    <div class="img-wrap">
-                      <img class="img-btn" v-if="bgImgPath" :src="bgImgPath" style="filter: blur(3px);" alt="">
-                    </div>
-                   </div>
-              <div class="choose-item"
-                  v-for="(item, index) in colorOptions"
-                  :class="{active: index === colorIndex}"
-                  :key="index"
-                  :style="{background: gradientStr[index]}"
-                  @click="pickColors(item)"></div>
-            </scroll-view>
-          </div>
-        </div>
-        <div class="operation-item complete">
-          <div class="choose-stencil" id="change-stencil" @click="chooseStencil">换模板</div>
-          <div class="submit" id="create-puzzle" @click="saveImage">生成拼图</div>
-        </div>
+         <ul class="stencil-list" id="stencil">
+            <li class="stencil-item" v-for="item in svgJson.name" :key="item" @click="changeStencil(item)">
+              <img class="stencil-img" :id="item" :src="base64Svg[item]" alt="">
+            </li>
+          </ul>
       </scroll-view>
+      <cover-view class="submit" id="create-puzzle" @click="saveImage">生成拼图</cover-view>
     </div>
   </container>
 </template>
@@ -110,6 +30,66 @@ import svgJson from '@/images/stencil/svg.json'
 import TaskQueue from '../choose-img/taskQueue'
 import events from '../../../static/events'
 import icon from '@/images/ic_changePic.png'
+
+import svg from '@/images/stencil/svg.json'
+import svg1 from '@/images/stencil/1.svg'
+import svg2 from '@/images/stencil/2.svg'
+import svg3 from '@/images/stencil/3.svg'
+import svg4 from '@/images/stencil/4.svg'
+import svg5 from '@/images/stencil/5.svg'
+import svg6 from '@/images/stencil/6.svg'
+import svg7 from '@/images/stencil/7.svg'
+import svg8 from '@/images/stencil/8.svg'
+import svg9 from '@/images/stencil/9.svg'
+import svg10 from '@/images/stencil/10.svg'
+import svg11 from '@/images/stencil/11.svg'
+import svg12 from '@/images/stencil/12.svg'
+import svg13 from '@/images/stencil/13.svg'
+import svg14 from '@/images/stencil/14.svg'
+import svg15 from '@/images/stencil/15.svg'
+import svg16 from '@/images/stencil/16.svg'
+import svg17 from '@/images/stencil/17.svg'
+import svg18 from '@/images/stencil/18.svg'
+import svg19 from '@/images/stencil/19.svg'
+import svg20 from '@/images/stencil/20.svg'
+import svg21 from '@/images/stencil/21.svg'
+import svg22 from '@/images/stencil/22.svg'
+import svg23 from '@/images/stencil/23.svg'
+import svg24 from '@/images/stencil/24.svg'
+import svg25 from '@/images/stencil/25.svg'
+import svg26 from '@/images/stencil/26.svg'
+import svg27 from '@/images/stencil/27.svg'
+import svg28 from '@/images/stencil/28.svg'
+import svg29 from '@/images/stencil/29.svg'
+import svg30 from '@/images/stencil/30.svg'
+import svg31 from '@/images/stencil/31.svg'
+import svg32 from '@/images/stencil/32.svg'
+import svg33 from '@/images/stencil/33.svg'
+import svg34 from '@/images/stencil/34.svg'
+import svg35 from '@/images/stencil/35.svg'
+import svg36 from '@/images/stencil/36.svg'
+// import svg37 from '@/images/stencil/37.svg'
+import svg38 from '@/images/stencil/38.svg'
+// import svg39 from '@/images/stencil/39.svg'
+import svg40 from '@/images/stencil/40.svg'
+import svg41 from '@/images/stencil/41.svg'
+import svg42 from '@/images/stencil/42.svg'
+// import svg43 from '@/images/stencil/43.svg'
+import svg44 from '@/images/stencil/44.svg'
+// import svg45 from '@/images/stencil/45.svg'
+import svg46 from '@/images/stencil/46.svg'
+import svg47 from '@/images/stencil/47.svg'
+import svg48 from '@/images/stencil/48.svg'
+import svg49 from '@/images/stencil/49.svg'
+import svg50 from '@/images/stencil/50.svg'
+import svg51 from '@/images/stencil/51.svg'
+import svg52 from '@/images/stencil/52.svg'
+import svg53 from '@/images/stencil/53.svg'
+// import svg54 from '@/images/stencil/54.svg'
+// import svg55 from '@/images/stencil/55.svg'
+import svg56 from '@/images/stencil/56.svg'
+import svg57 from '@/images/stencil/57.svg'
+
 const {
   drawColorBackground, getSvgActions,
   getSVGPath, getImageData, getBlocks, drawImageBackground,
@@ -131,6 +111,7 @@ export default {
     const model = wx.getSystemInfoSync().model
     const iphoneX = model.indexOf('iPhone X') >= 0
     const colorOptions = [
+      ['#FFD9D9'],
       ['#e6b980', '#eacda3'],
       ['#bdc2e8', '#e6dee9'],
       ['#F3D1AE', '#C8DE7F', '#4FBDCF'],
@@ -168,6 +149,78 @@ export default {
       }
     ]
     return {
+      base64Svg: {
+        '1': svg1,
+        '2': svg2,
+        '3': svg3,
+        '4': svg4,
+        '5': svg5,
+        '6': svg6,
+        '7': svg7,
+        '8': svg8,
+        '9': svg9,
+        '10': svg10,
+        '11': svg11,
+        '12': svg12,
+        '13': svg13,
+        '14': svg14,
+        '15': svg15,
+        '16': svg16,
+        '17': svg17,
+        '18': svg18,
+        '19': svg19,
+        '20': svg20,
+        '21': svg21,
+        '22': svg22,
+        '23': svg23,
+        '24': svg24,
+        '25': svg25,
+        '26': svg26,
+        '27': svg27,
+        '28': svg28,
+        '29': svg29,
+        '30': svg30,
+        '31': svg31,
+        '32': svg32,
+        '33': svg33,
+        '34': svg34,
+        '35': svg35,
+        '36': svg36,
+        // '37': svg37,
+        '38': svg38,
+        // '39': svg39,
+        '40': svg40,
+        '41': svg41,
+        '42': svg42,
+        // '43': svg43,
+        '44': svg44,
+        // '45': svg45,
+        '46': svg46,
+        '47': svg47,
+        '48': svg48,
+        '49': svg49,
+        '50': svg50,
+        '51': svg51,
+        '52': svg52,
+        '53': svg53,
+        // '54': svg54,
+        // '55': svg55,
+        '56': svg56,
+        '57': svg57
+        // '58': svg58,
+        // '59': svg59,
+        // '60': svg60,
+        // '61': svg61,
+        // '62': svg62,
+        // '63': svg63,
+        // '64': svg64,
+        // '65': svg65,
+        // '66': svg66,
+        // '67': svg67,
+        // '68': svg68,
+        // '69': svg69
+      },
+      svgJson,
       icon,
       iphoneX,
       noBack: true,
@@ -193,9 +246,9 @@ export default {
       cvsW: 0,
       cvsH: 0,
       chooseText: ['无', '小', '大'],
-      lineWidth: 5,
-      imgMargin: 1,
-      radius: 1,
+      lineWidth: 0,
+      imgMargin: 0,
+      radius: 0,
       borderOptions: [0, 5, 10],
       marginOptions: [0, 3, 6],
       radiusOptions: [0, 5, 10],
@@ -315,18 +368,18 @@ export default {
         this.pixelRatio = res.pixelRatio
         this.viewH = res.windowHeight
         var rpx = this.viewW / 750
-        this.cvsW = this.viewW - 60 * rpx
-        this.cvsH = this.viewH - (this.iphoneX ? 440 * rpx : 372 * rpx) - (this.iphoneX ? 176 * rpx: 128 * rpx) - 60 * rpx
+        this.cvsW = 355// this.viewW - 60 * rpx
+        this.cvsH = 355// this.viewH - (this.iphoneX ? 440 * rpx : 372 * rpx) - (this.iphoneX ? 176 * rpx: 128 * rpx) - 60 * rpx
         this.bgH = this.viewH - (this.iphoneX ? 440 * rpx : 372 * rpx) + 60
       } catch (e) {
         // Do something when catch error
       }
     },
     cvsInit () {
-      this.stencil = wx.getStorageSync('stencil') || 'heart'
+      this.stencil = '1'
       this.images = wx.getStorageSync('images') || []
       if (this.images.length) this.setBgImg(this.images[0].path)
-      photoCount = this.images.length < 27 ? 27 : this.images.length
+      photoCount = this.images.length// < 27 ? 27 : this.images.length
       this.ctx = wx.createCanvasContext('puzzle')
       this.bgCtx = wx.createCanvasContext('puzzle-bg')
       this.OpCtx = wx.createCanvasContext('operation')
@@ -542,6 +595,18 @@ export default {
         cb && cb()
       })
     },
+    changeStencil (name){
+      if (name !== this.stencil) {
+        this.stencil = name
+        wx.showLoading({
+          title: '图片渲染中',
+          mask: true
+        })
+        this.ctx.draw()
+        this.bgCtx.draw()
+        this.drawStencil(true)
+      }
+    },
     chooseStencil () {
       wx.navigateTo({
         url: '../choose-stencil/main?rePick=1'
@@ -599,28 +664,28 @@ export default {
     cvsToImages (puzzlePath) {
       console.log(puzzlePath)
       const variety = [
-        {
-          name: '拼图作品',
-          puzzleX: 40,
-          puzzleY: 118,
-          puzzleW: 295,
-          puzzleH: 420,
-          imgW: 375,
-          imgH: 656,
-          QRCode: '/static/QRCode.png',
-          QRX: 168,
-          QRY: 586,
-          QRL: 60
-        },
-        {
-          name: '手机壁纸',
-          puzzleX: 40,
-          puzzleY: 118,
-          puzzleW: 295,
-          puzzleH: 420,
-          imgW: 375,
-          imgH: 656,
-        },
+        // {
+        //   name: '拼图作品',
+        //   puzzleX: 40,
+        //   puzzleY: 118,
+        //   puzzleW: 295,
+        //   puzzleH: 420,
+        //   imgW: 375,
+        //   imgH: 656,
+        //   QRCode: '/static/QRCode.png',
+        //   QRX: 168,
+        //   QRY: 586,
+        //   QRL: 60
+        // },
+        // {
+        //   name: '手机壁纸',
+        //   puzzleX: 40,
+        //   puzzleY: 118,
+        //   puzzleW: 295,
+        //   puzzleH: 420,
+        //   imgW: 375,
+        //   imgH: 656,
+        // },
         {
           name: '个人头像',
           puzzleX: 48,
@@ -629,16 +694,20 @@ export default {
           puzzleH: 279,
           imgW: 375,
           imgH: 375,
-        },
-        {
-          name: '相册封面',
-          puzzleX: 48,
-          puzzleY: 78,
-          puzzleW: 279,
-          puzzleH: 279,
-          imgW: 375,
-          imgH: 375,
+          QRCode: '/static/QRCode.png',
+          QRX: 0,
+          QRY: 332,
+          QRL: 43
         }
+        // {
+        //   name: '相册封面',
+        //   puzzleX: 48,
+        //   puzzleY: 78,
+        //   puzzleW: 279,
+        //   puzzleH: 279,
+        //   imgW: 375,
+        //   imgH: 375,
+        // }
       ]
       variety.forEach(imgData => {
         if (this.viewW < 375) {
@@ -665,9 +734,21 @@ export default {
       })
       imageQueue.setQueueEmptyCb(() => {
         wx.setStorageSync('result', variety)
-        wx.hideLoading()
-        wx.navigateTo({
-          url: '../save/main'
+        wx.saveImageToPhotosAlbum({
+          filePath: variety[0].path,
+          success (res) {
+            wx.hideLoading()
+            wx.navigateTo({
+              url: '../save/main'
+            })
+          },
+          fail () {
+            wx.hideLoading()
+            wx.showToast({
+              title: '保存失败，请在右上角设置中打开权限。',
+              icon: 'none'
+            })
+          }
         })
       })
     },
@@ -675,63 +756,11 @@ export default {
       return new Promise((resolve, reject) => {
         console.log('执行任务')
         try {
-        const newSvgActions = getSVGPath(svgJson.data[this.stencil], imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
-        var ctx = wx.createCanvasContext('to-images')
-        ctx.clearRect(0, 0, imgData.imgW,  imgData.imgH)
-        ctx.beginPath()
-        ctx.save()
-        if (this.colorIndex < 0) {
-          const originImgData = {
-            x: 0,
-            y: 0,
-            w: imgData.imgW,
-            h: imgData.imgH
-          }
-          const s = this.bgImg.w / this.bgImg.h
-          if (imgData.imgW / imgData.imgH > s) {
-            originImgData.y = -(imgData.imgW / s - imgData.imgH) / 2
-            originImgData.h = imgData.imgW / s
-          } else {
-            originImgData.x = -(imgData.imgH * s - imgData.imgW) / 2
-            originImgData.w = imgData.imgH * s
-          }
-          console.time('blur compute')
-          drawImageBackground(
-            ctx, this.bgImgPath, 'to-images',
-            this.drawImgBg ? 3 : 0,
-            imgData.imgW, imgData.imgH, originImgData, () =>{
-              console.timeEnd('blur compute')
-              ctx.setFillStyle('#fff')
-              ctx.setStrokeStyle('#fff')
-              ctx.setLineWidth(this.lineWidth)
-              this.drawSvg(ctx, false, newSvgActions)
-              ctx.fill()
-              ctx.drawImage(puzzlePath, imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
-              if (imgData.QRCode) {
-                ctx.drawImage(imgData.QRCode, imgData.QRX, imgData.QRY, imgData.QRL, imgData.QRL)
-              }
-              ctx.draw(true, () => {
-                console.log('draw complete')
-                wx.canvasToTempFilePath({
-                  canvasId: 'to-images',
-                  x: 0,
-                  y: 0,
-                  width: imgData.imgW,
-                  height: imgData.imgH,
-                  success: function (res) {
-                    imgData.path = res.tempFilePath
-                    console.log('任务结束')
-                    resolve()
-                  },
-                  fail (err) {
-                    console.log(err)
-                    reject()
-                  }
-                })
-              })
-            })
-        } else {
-          drawColorBackground(ctx, {x: 0, y: 0}, {x: 0, y: imgData.imgH}, imgData.imgW, imgData.imgH, this.colors, false, () => {})
+          const newSvgActions = getSVGPath(svgJson.data[this.stencil], imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
+          var ctx = wx.createCanvasContext('to-images')
+          ctx.clearRect(0, 0, imgData.imgW,  imgData.imgH)
+          ctx.beginPath()
+          ctx.save()
           ctx.setFillStyle('#fff')
           ctx.setStrokeStyle('#fff')
           ctx.setLineWidth(this.lineWidth)
@@ -740,6 +769,10 @@ export default {
           ctx.drawImage(puzzlePath, imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
           if (imgData.QRCode) {
             ctx.drawImage(imgData.QRCode, imgData.QRX, imgData.QRY, imgData.QRL, imgData.QRL)
+            ctx.setFillStyle('#9C9C9C')
+            ctx.setFontSize(10)
+            ctx.setTextBaseline('bottom')
+            ctx.fillText('小程序Shapin', 44, 375)
           }
           ctx.draw(false, () => {
             console.log('draw complete')
@@ -759,9 +792,7 @@ export default {
               }
             })
           })
-        }
-        ctx.restore()
-
+          ctx.restore()
         } catch (err) {
           console.log(err)
         }
@@ -818,18 +849,7 @@ export default {
   onShow () {
     if (pageInit) return
     const stencil = wx.getStorageSync('stencil')
-    if (stencil !== this.stencil) {
-      wx.showLoading({
-        title: '图片渲染中',
-        mask: true
-      })
-      this.ctx.draw()
-      this.bgCtx.draw()
-      this.stencil = stencil
-      this.drawStencil(true)
-    } else {
-      this.drawImages()
-    }
+    this.drawImages()
   },
   onShareAppMessage() {
     return {
@@ -852,27 +872,47 @@ export default {
   .cvs{
     position: absolute;
     left: 50%;
-    top: 158rpx;
+    top: 40rpx;
     transform: translateX(-50%);
     z-index: 9;
   }
   &.iphoneX{
     .cvs{
-      top: 206rpx;
+      // top: 206rpx;
     }
+    .submit{
+      bottom: 88rpx;
+    }
+  }
+  .submit{
+    position: absolute;
+    bottom: 40rpx;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 240rpx;
+    height: 64rpx;
+    line-height: 64rpx;
+    text-align: center;
+    font-size: 24rpx;
+    background: #FFE200;
+    color: #000;
+    border-radius: 32rpx;
+    z-index: 999;
   }
   .cvs-operation{
     position: absolute;
     left: 0;
     bottom: 0;
-    height: 352rpx;
-    width: 95vw;
-    padding: 2.5vw;
+    height: 456rpx;
+    width: 100vw;
+    // padding: 2.5vw;
     background: #666;
     z-index: 10;
     &.iphoneX{
-      padding-bottom: 88rpx;
+      // padding-bottom: 88rpx;
+      
     }
+    
     .operation-item{
       position: relative;
       height: 110rpx;
@@ -977,20 +1017,7 @@ export default {
         border-radius: 30rpx;
         border: 1px solid #fff;
       }
-      .submit{
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 240rpx;
-        height: 64rpx;
-        line-height: 64rpx;
-        text-align: center;
-        font-size: 24rpx;
-        background: #FFE200;
-        color: #000;
-        border-radius: 32rpx;
-      }
+      
     }
   }
   .header-cvs {
@@ -1030,4 +1057,31 @@ export default {
     opacity: 0;
   }
 }
+.stencil-list{
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    .stencil-item{
+      box-sizing: border-box;
+      position: relative;
+      width: 33vw;
+      height: 33vw;
+      white-space: normal;
+      word-break: break-all;
+      text-align: center;
+      margin-bottom: 1px;
+      background: #3D4042;
+      .stencil-img{
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 80%;
+        height: 80%;
+        color: #fff;
+      }
+    }
+  }
 </style>

@@ -1,6 +1,7 @@
 <template>
   <container title="Shapin">
     <div class="wrap">
+      <h1>Shapin=shape(形状)+pin(拼图)</h1>
       <swiper
         :indicator-dots="true"
         :autoplay="true"
@@ -14,10 +15,11 @@
         </swiper-item>
       </swiper>
       <div class="bottom">
-        <button class="btn" id="start" @click="bindViewTap">开始制作</button>
-        <p>拼图功能对性能有一定要求</p>
-        <p>请尽量使用较好配置的手机</p>
-        <button class="contact" id="contact" open-type="contact">我要反馈</button>
+        <button class="btn" id="start" @click="bindViewTap">创作Shapin</button>
+        <div class="btns">
+          <button class="contact" id="contact" open-type="contact">我要反馈</button>
+          <button class="contact" id="contact" open-type="share">推荐好友</button>
+        </div>
       </div>
     </div>
   </container>
@@ -39,7 +41,7 @@ export default {
 
   methods: {
     bindViewTap () {
-      const url = '../choose-stencil/main'
+      const url = '../choose-img/main'
       wx.navigateTo({ url })
     },
     getUserInfo () {
@@ -84,8 +86,15 @@ export default {
     width: 100%;
     height: 100%;
     overflow:hidden;
+    h1{
+      margin: 40rpx auto;
+      font-size: 32rpx;
+      color: #333;
+      line-height: 44rpx;
+      text-align: center;
+    }
     .banner{
-      margin: 4.5vh auto 0;
+      margin: auto;
       width: 610rpx;
       height: 840rpx;
       border-radius: 20rpx;
@@ -120,17 +129,21 @@ export default {
         background: #FFE200;
         margin-bottom: 0.74vh;
       }
+      .btns{
+        text-align: center;
+      }
       .contact{
         appearance: none;
         outline: none;
         box-sizing: border-box;
         border: none;
-        width: 42vw;
+        display: inline;
         height: 34rpx;
+        font-size: 28rpx;
         line-height: 34rpx;
         font-size: 24rpx;
-        color: #FF2600;
-        margin-top: 2.24vh;
+        color: #333;
+        margin: 20px;
         background: transparent;
         &:after{
           display: none;

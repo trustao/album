@@ -3,8 +3,7 @@
     <div>
       <p class="tips">
         1.微信一次性只支持选9张图；<br>
-        2.请选择27-99张图，不足27张，自动重复补全；<br>
-        3.自动为你过滤重复图片。<br>
+        2.Shapin支持选任意数量的图片进行拼图；<br>
       </p>
       <ul class="images-container">
         <li v-for="(img, index) in imagesData" class="img-item" :key="index">
@@ -86,7 +85,7 @@
                     const targetScales = [1, 3 / 4, 4 / 3]
                     var w = res.width
                     var h = res.height
-                    var targetW = 100
+                    var targetW = 200
                     targetScales.forEach((scale, index) => {
                       const img = {}
                       if (w / h  > scale) {
@@ -254,8 +253,8 @@
       box-sizing: border-box;
       position: relative;
       border: 1rpx solid #fff;
-      width: 20vw;
-      height: 20vw;
+      width: 33.3vw;
+      height: 33.3vw;
       .delete-img{
         position: absolute;
         top: 4px;

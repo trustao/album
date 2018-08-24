@@ -18,7 +18,7 @@
         <button class="btn" id="start" @click="bindViewTap">创作Shapin</button>
         <div class="btns">
           <button class="contact" id="contact" open-type="contact">我要反馈</button>
-          <button class="contact" id="contact" open-type="share">推荐好友</button>
+          <button class="contact" id="share" open-type="share">推荐好友</button>
         </div>
       </div>
     </div>
@@ -141,7 +141,6 @@ export default {
         height: 34rpx;
         font-size: 28rpx;
         line-height: 34rpx;
-        font-size: 24rpx;
         color: #333;
         margin: 20px;
         background: transparent;

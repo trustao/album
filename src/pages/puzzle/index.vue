@@ -12,9 +12,11 @@
       </div>
       <scroll-view scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
          <ul class="stencil-list" id="stencil">
-            <li class="stencil-item" v-for="item in svgJson.name" :key="item" @click="changeStencil(item)">
+            <li class="stencil-item" v-for="item in svgJson.name" :key="item" @click="changeStencil(item)" :class="{active: stencil === item}">
               <img class="stencil-img" :id="item" :src="base64Svg[item]" alt="">
             </li>
+           <li class="stencil-item">
+           </li>
           </ul>
       </scroll-view>
       <cover-view class="submit" id="create-puzzle" @click="saveImage">生成拼图</cover-view>
@@ -486,6 +488,10 @@ export default {
       var maxL = Math.sqrt(maxArea / photoCount * this.scaleOptions[this.scale].scale) | 0
       var minL = Math.sqrt(minArea / photoCount * this.scaleOptions[this.scale].scale) | 0
       console.log('边长范围', maxL, minL)
+      if (this.images.length === 1) {
+        this.sortBlocks(createGrid(range, range.end.x - range.start.x, range.end.x - range.start.x, 0))
+        return
+      }
       this.calculateFitBlock(range, maxL + 1, minL - 1)
     },
     calculateFitBlock (range, maxL, minL) {
@@ -910,9 +916,9 @@ export default {
     z-index: 10;
     &.iphoneX{
       // padding-bottom: 88rpx;
-      
+
     }
-    
+
     .operation-item{
       position: relative;
       height: 110rpx;
@@ -1017,7 +1023,7 @@ export default {
         border-radius: 30rpx;
         border: 1px solid #fff;
       }
-      
+
     }
   }
   .header-cvs {
@@ -1058,21 +1064,28 @@ export default {
   }
 }
 .stencil-list{
+    box-sizing: border-box;
     width: 100%;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: space-around;
-    .stencil-item{
+    background: #2F2F2F;
+    border: 3rpx solid #2F2F2F;
+  .stencil-item{
       box-sizing: border-box;
       position: relative;
-      width: 33vw;
-      height: 33vw;
+      width: 25%;
+      height: 25vw;
       white-space: normal;
       word-break: break-all;
       text-align: center;
-      margin-bottom: 1px;
       background: #3D4042;
+      border: 3rpx solid #2F2F2F;
+      border-collapse: collapse;
+      &.active{
+        background: #6AC259;
+      }
       .stencil-img{
         position: absolute;
         top: 50%;

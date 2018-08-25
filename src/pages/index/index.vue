@@ -142,7 +142,7 @@ export default {
         font-size: 28rpx;
         line-height: 34rpx;
         color: #333;
-        margin: 20px;
+        margin: 30rpx 15rpx;
         background: transparent;
         &:after{
           display: none;

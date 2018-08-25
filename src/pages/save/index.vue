@@ -1,5 +1,5 @@
 <template>
-  <container title="保存拼图">
+  <container title="保存成功">
     <div class="wrap">
       <div class="res-tip">
          <icon type="success" size="50" color="#6ac259"/>

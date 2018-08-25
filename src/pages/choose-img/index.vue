@@ -82,7 +82,7 @@
                 wx.getImageInfo({
                   src: item.path,
                   success: (res) => {
-                    const targetScales = [1, 3 / 4, 4 / 3]
+                    const targetScales = [1]
                     var w = res.width
                     var h = res.height
                     var targetW = 200
@@ -138,6 +138,7 @@
                 width: img.clipW,
                 height: img.clipH,
                 success: (res) => {
+                  console.log(img)
                   item.compressImg[index] = res.tempFilePath
                   resolve()
                 },
@@ -205,7 +206,6 @@
     },
     mounted () {
       compressTask = new TaskQueue()
-      console.log(compressTask)
       try {
         var res = wx.getSystemInfoSync()
         console.log(res)
@@ -303,8 +303,8 @@
   }
   .compress-img{
     position: fixed;
-    width: 200px;
-    height: 200px;
+    width: 300px;
+    height: 300px;
     top: -300px;
     left: -300px;
     opacity: 0;

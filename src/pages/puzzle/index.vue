@@ -108,6 +108,10 @@ import svg from '@/images/stencil/svg.json'
 
 import shape1 from '@/images/stencilPng/shape1-small.png'
 import shape2 from '@/images/stencilPng/shape2-small.png'
+import shape3 from '@/images/stencilPng/shape1-small-2.4.png'
+import shape4 from '@/images/stencilPng/shape2-small-2.4.png'
+import shape5 from '@/images/stencilPng/shape1-small-3.png'
+import shape6 from '@/images/stencilPng/shape2-small-3.png'
 
 const {
   drawColorBackground, getSvgActions,
@@ -134,7 +138,11 @@ export default {
         "1-1": svg11,"1-10": svg110,"1-12": svg112,"1-14": svg114,"1-13": svg113,"1-17": svg117,"1-15": svg115,"1-2": svg12,"1-3": svg13,"1-16": svg116,"1-4": svg14,"1-5": svg15,"1-11": svg111,"1-6": svg16,"1-9": svg19,"1-7": svg17,"2-1": svg21,"2-10": svg210,"2-2": svg22,"2-4": svg24,"2-3": svg23,"2-5": svg25,"2-6": svg26,"2-7": svg27,"2-8": svg28,"3-1": svg31,"2-9": svg29,"1-8": svg18,"3-11": svg311,"3-10": svg310,"3-13": svg313,"3-14": svg314,"3-12": svg312,"3-2": svg32,"3-4": svg34,"3-5": svg35,"3-6": svg36,"3-7": svg37,"3-8": svg38,"3-9": svg39,"4-10": svg410,"4-12": svg412,"4-11": svg411,"4-13": svg413,"4-2": svg42,"4-14": svg414,"4-15": svg415,"4-1": svg41,"4-4": svg44,"4-6": svg46,"4-7": svg47,"4-3": svg43,"4-5": svg45,"4-9": svg49,"4-8": svg48,"3-3": svg33
       },
       pngs: {
-        shape1, shape2
+        shape1, shape2,
+        'shape1-2.4': shape3,
+        'shape2-2.4': shape4,
+        'shape1-3': shape5,
+        'shape2-3': shape6
       },
       svgJson,
       icon,
@@ -144,7 +152,6 @@ export default {
       size: {w: 0, h: 0},
       curPage,
       ctx: null,
-      bgCtx: null,
       OpCtx: null,
       viewW: 0,
       viewH: 0,
@@ -162,7 +169,8 @@ export default {
       userHide: false,
       cvsW: 0,
       cvsH: 0,
-      kinds: 'svg'
+      kinds: 'svg',
+      stencilPng: ''
     }
   },
   computed: {
@@ -186,14 +194,16 @@ export default {
           mask: true
         })
         this.ctx.draw()
-        this.bgCtx.draw()
         this.drawStencil(true)
       }
     },
     changeStencilPng (item) {
+      this.stencilPng = item
+      this.ctx.clearRect(0, 0, this.cvsW, this.cvsH)
+      this.ctx.beginPath()
       this.ctx.drawImage(this.photoPath, 0, 0, this.cvsW, this.cvsH)
       this.ctx.drawImage(`/static/${item}.png`,0, 0, this.cvsW, this.cvsH)
-      this.ctx.draw()
+      this.ctx.draw(false)
     },
     changeKinds (val) {
       this.kinds = val
@@ -339,8 +349,7 @@ export default {
     sortBlocks (data) {
       imageBlock = data.sort((a, b) => b.weight - a.weight)
       this.calcCount = 0
-      this.drawImages(() => {
-      })
+      this.drawImages()
     },
     drawSvg (ctx, fill, customActions) {
       var actions = customActions || svgActions
@@ -402,8 +411,13 @@ export default {
         scale: this.scale,
         blur: this.drawImgBg
       })
-      this.bgCtx.setLineWidth(this.lineWidth)
-      const {x, y, w, h} = this.imgZone
+      let {x, y, w, h} = this.imgZone
+      if (this.kinds === 'png') {
+        x = 0
+        y = 0
+        w = this.cvsW
+        h = this.cvsH
+      }
       wx.canvasToTempFilePath({
         canvasId: 'puzzle',
         x,
@@ -472,6 +486,10 @@ export default {
               imgData[key] *= this.viewW / 375
             }
           })
+        }
+        if (this.kinds === 'png') {
+          imageQueue.addTask(this.makeImage.bind(this, puzzlePath, imgData))
+          return
         }
         const {w, h} = this.imgZone
         console.log(w, h, imgData.puzzleW, imgData.puzzleH)

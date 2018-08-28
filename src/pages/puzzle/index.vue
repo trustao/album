@@ -7,7 +7,7 @@
              @touchend="touchEndHandler"
              @touchmove="touchMoveHandler"
         >
-          <img class="shape-img" :style="{width: '', height: '', transform: photoStyle}" :src="photoPath" alt="">
+          <img class="shape-img" :style="{width: photoW + 'px', height: photoH + 'px', transform: photoStyle}" :src="photoPath" alt="">
           <img class="shape-mask" :src="maskPath">
         </div>
       </div>
@@ -32,7 +32,7 @@
         <cover-view class="btn" id="create-puzzle" @click="saveImage">保存图片</cover-view>
       </cover-view>
     </div>
-    <canvas class="to-images" canvas-id="to-images"></canvas>
+    <canvas class="to-images" :style="{left: left, top: top}" canvas-id="to-images"></canvas>
   </container>
 </template>
 
@@ -91,7 +91,12 @@ export default {
       translateX: 0,
       translateY: 0,
       rotate: 0,
-      scale: 1
+      scale: 1,
+      photoContentWidth: 0,
+      photoW: 0,
+      photoH: 0,
+      left: null,
+      top: null
     }
   },
   computed: {
@@ -102,7 +107,7 @@ export default {
       return `/static/${this.stencilPng}.png`
     },
     photoStyle () {
-      return `translate(${this.translateX}px, ${this.translateY}px) rotateZ(${this.rotate}deg) scale(${this.scale})`
+      return `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`
     }
   },
   methods: {
@@ -119,7 +124,9 @@ export default {
       if (ev.touches.length > 1) {
         const {clientX, clientY} = ev.touches[1]
         startTouch.distance = Math.sqrt((clientY - startTouch.y)**2 + (clientX - startTouch.x)**2)
-        startTouch.slope = (clientY - startTouch.y) / (clientX - startTouch.x)
+        let slope = (clientY - startTouch.y) / (clientX - startTouch.x)
+        if(isNaN(slope)) return
+        startTouch.slope = slope
         startTouch.scale = this.scale
         startTouch.rotate = this.rotate
         startTouch.identifiers += ev.touches[1].identifier
@@ -133,19 +140,28 @@ export default {
         const X2 = ev.touches[1].clientX
         const Y2 = ev.touches[1].clientY
         const distance = Math.sqrt((clientY - Y2)**2 + (clientX - X2)**2)
-        const slope = (Y2 - clientY) / (X2 - clientX)
+        let slope = (Y2 - clientY) / (X2 - clientX)
+        if(isNaN(slope)) return
         this.scale = startTouch.scale * (distance / startTouch.distance)
         this.rotate = startTouch.rotate + Math.atan(slope - startTouch.slope) / Math.PI * 180
+        console.log(this.rotate)
       }
     },
     touchEndHandler (ev) {
       console.log(ev)
-      const identifiers = ev.touches.reduce((a, b) => {
-        return a + b.identifier
-      }, '').slice(0, 2)
-      if (identifiers !== startTouch.identifiers) {
-        this.touchStartHandler(ev)
+      if (ev.touches) {
+        const identifiers = ev.touches.reduce((a, b) => {
+          return a + b.identifier
+        }, '').slice(0, 2)
+        if (identifiers !== startTouch.identifiers) {
+          this.touchStartHandler(ev)
+        }
       }
+    },
+    getRectData (){
+      wx.createSelectorQuery().select('.shape-content').boundingClientRect((rect) => {
+        this.photoW = this.photoH = this.photoContentWidth = rect.width
+      }).exec()
     },
     changeStencil (name){
       if (name !== this.stencil) {
@@ -170,7 +186,25 @@ export default {
         sizeType: ['compressed'], // 可以指定是原图还是压缩图，默认二者都有
         sourceType: ['album'], // 可以指定来源是相册还是相机，默认二者都有
         success: (res) => {
-          this.photoPath = res.tempFilePaths[0]
+          const path = res.tempFilePaths[0]
+          wx.getImageInfo({
+            src: path,
+            success: (data) => {
+              const {width, height} = data
+              if (width > height) {
+                this.photoH = this.photoContentWidth
+                this.photoW = this.photoContentWidth * (width / height)
+                this.translateX = -(this.photoW - this.photoH) / 2
+                this.translateY = 0
+              } else {
+                this.photoW = this.photoContentWidth
+                this.photoH = this.photoContentWidth / (width / height)
+                this.translateY = -(this.photoH - this.photoW) / 2
+                this.translateX = 0
+              }
+              this.photoPath = path
+            }
+          })
         }
       })
     },
@@ -187,171 +221,78 @@ export default {
         this.viewW = res.windowWidth
         this.pixelRatio = res.pixelRatio
         this.viewH = res.windowHeight
-        var rpx = this.viewW / 750
-        this.cvsW = this.viewW - 60 * rpx// this.viewW - 60 * rpx
-        this.cvsH =  this.cvsW// this.viewH - (this.iphoneX ? 440 * rpx : 372 * rpx) - (this.iphoneX ? 176 * rpx: 128 * rpx) - 60 * rpx
-        let headerHeight = 0
-        if (res.model.indexOf('iPhone X') >= 0){
-          headerHeight = headerH.iphoneX
-        } else if (res.model.indexOf('iPhone 5') >= 0) {
-          headerHeight = headerH.iphone5
-        } else if (res.model.indexOf('Plus') >= 0) {
-          headerHeight = headerH.plus
-        } else {
-          headerHeight = headerH.default
-        }
-        this.operationH = this.viewH - headerHeight * rpx - this.cvsH - 60 * rpx
-        console.log('-0-height', this.operationH)
       } catch (e) {
         // Do something when catch error
       }
     },
-    cvsInit () {
-      this.stencil = '1-1'
-      this.images = []
-      this.ctx = wx.createCanvasContext('puzzle')
-      this.ctx.setLineJoin('round')
-      this.ctx.setLineCap('round')
-      this.ctx.setFillStyle('#fff')
-      const pages = getCurrentPages()
-      pages[pages.length - 1].setData({
-        stencil: this.stencil
-      })
-    },
-    drawStencil (fill) {
-      console.log('draw stencil')
-      this.setSvgPath(fill)
-      this.drawSvg(this.ctx, true)
-      this.ctx.draw(false, () => {
-        setTimeout(() => {
-          clearTimeout(renderTime)
-          this.createImageContainer()
-        }, 500)
-      })
-    },
-    setSvgPath (fill) {
-      var svgData = svgJson.data[this.stencil]
-      svgData.actions = getSvgActions(svgData)
-      var baseW = this.cvsW - 10
-      var baseH = this.cvsH - 10
-      var ratio = svgData.width / svgData.height
-      var cvsRatio = this.cvsW / this.cvsH
-      var h1 = baseW / ratio
-      var w1 = baseH * ratio
-      console.log(svgData)
-      if (ratio < cvsRatio) {
-        var width = w1
-        var height = baseH
-        var left = (baseW - width) / 2 + 5
-        var top = 5
-      } else {
-        width = baseW
-        height = h1
-        left = 5
-        top = (baseH - height) / 2 + 5
-      }
-      svgActions = getSVGPath(svgData, left, top, width, height)
-      this.imgZone = {
-        x: left,
-        y: top,
-        w: width,
-        h: height
-      }
-      this.repairRange()
-    },
-    repairRange(){
-      var {x, y, w, h} = this.imgZone
-      var sX, sY, eX, eY;
-      var scale = 1
-      if (w / h > scale) {
-        sX = x
-        sY = y - (w / scale - h) / 2
-        eX = x + w
-        eY = sY + w / scale
-      } else {
-        sX = x - (h * scale - w) / 2
-        sY = y
-        eX = sX + h * scale
-        eY = y + h
-      }
-
-      this.range = {
-        start: {
-          x: sX | 0,
-          y: sY | 0
-        },
-        end: {
-          x: eX | 0,
-          y: eY | 0
-        }
-      }
-    },
-    createImageContainer () {
-      getImageData(this.range, 'puzzle')
-        .then((data) => {
-          stencilUnit8 = data
-          this.startCalc()
-        })
-        .catch(() => {})
-    },
-    startCalc() {
-      var range = this.range
-      if (!photoCount) {
-        wx.hideLoading()
-        return
-      }
-      this.sortBlocks(createGrid(range, range.end.x - range.start.x, range.end.x - range.start.x, 0))
-    },
-    sortBlocks (data) {
-      imageBlock = data.sort((a, b) => b.weight - a.weight)
-      this.calcCount = 0
-      this.drawImages()
-    },
-    drawSvg (ctx, fill, customActions) {
-      var actions = customActions || svgActions
-      ctx.setFillStyle('#fff')
-      ctx.setStrokeStyle('#fff')
-      ctx.beginPath()
-      for (let i = 0; i < actions.length; i++) {
-        const item = actions[i]
-        ctx[item.action].apply(ctx, item.args)
-      }
-      if (fill) {
-        ctx.fill()
-      } else {
-        ctx.stroke()
-      }
-    },
-    drawImages (cb) {
-      this.ctx.setLineWidth(0)
-      this.ctx.setStrokeStyle('#fff')
-      this.ctx.beginPath()
-      for (let i = 0; i < svgActions.length; i++) {
-        const item = svgActions[i]
-        this.ctx[item.action].apply(this.ctx, item.args)
-      }
-      this.ctx.closePath()
-      this.ctx.clip()
-      for (let index = 0; index < imageBlock.length; index++) {
-        const item = imageBlock[index]
-        this.ctx.save()
-        radiusPath(this.ctx,
-         item.x, item.y,
-         item.w,
-         item.h,
-         0)
-        this.ctx.fill()
-        this.ctx.globalCompositeOperation = 'source-atop'
-        this.ctx.drawImage(this.photoPath, item.x, item.y, item.w, item.h)
-        this.ctx.restore()
-      }
-      this.ctx.draw(false, () => {
-        cb && cb()
-      })
-      wx.hideLoading()
-    },
     saveImage () {
-      this.startCreatePuzzle()
+      // wx.showLoading({
+      //   title: '图片生成中',
+      //   mask: true
+      // })
+      const goal = {
+        name: '个人头像',
+        puzzleX: 20,
+        puzzleY: 20,
+        puzzleW: 335,
+        puzzleH: 335,
+        imgW: 375,
+        imgH: 375,
+        QRCode: '/static/QRCode.png',
+        QRX: 0,
+        QRY: 332,
+        QRL: 43
+      }
+      const scale = goal.puzzleW / this.photoContentWidth
+      const ctx = wx.createCanvasContext('to-images')
+      let height, width
+      if (this.photoW > this.photoH) {
+        height = goal.puzzleH
+        width = goal.puzzleH * (this.photoW / this.photoH)
+      } else {
+        width = goal.puzzleW
+        height = goal.puzzleW / (this.photoW / this.photoH)
+      }
+      ctx.beginPath()
+      ctx.setFillStyle('#fff')
+      ctx.fillRect(0, 0, goal.imgW, goal.imgH)
+      ctx.rect(goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
+      ctx.save()
+      ctx.clip()
+      ctx.setFillStyle('#000')
+      ctx.fill()
+      ctx.translate(this.translateX * scale, this.translateY * scale)
+      ctx.scale(this.scale, this.scale)
+      ctx.drawImage(this.photoPath, goal.puzzleX, goal.puzzleY, width, height)
+      ctx.restore()
+      ctx.drawImage(this.maskPath, goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
+      ctx.draw(true, () => {
+        wx.canvasToTempFilePath({
+          canvasId: 'to-images',
+          x: 0,
+          y: 0,
+          width: goal.imgW,
+          height: goal.imgH,
+          success: function (res) {
+            wx.saveImageToPhotosAlbum({
+              filePath: res.tempFilePath,
+              success (res) {
+
+              },
+              fail () {
+                wx.hideLoading()
+                wx.showToast({
+                  title: '保存失败，请在右上角设置中打开权限。',
+                  icon: 'none'
+                })
+              }
+            })
+          },
+          fail (err) {
+            console.log(err)
+          }
+        })
+      })
     },
     startCreatePuzzle () {
       wx.showLoading({
@@ -546,7 +487,7 @@ export default {
     this.getSysInfo()
   },
   mounted () {
-
+    this.getRectData()
     events.$off('cvsDataClear')
     events.$on('cvsDataClear', () => {
 
@@ -591,6 +532,7 @@ export default {
       width: 100%;
       height: 100%;
       overflow: hidden;
+      background: #000;
       .shape-mask{
         position: absolute;
         top: 0;
@@ -598,7 +540,6 @@ export default {
         width: 100%;
         height: 100%;
         z-index: 9;
-        background: rgba(0,0,0,.2);
       }
       .shape-img{
         position: absolute;
@@ -607,7 +548,6 @@ export default {
         width: 100%;
         height: 100%;
         z-index: 8;
-        background: rgba(0,0,0,.2);
       }
     }
   }
@@ -617,7 +557,7 @@ export default {
     left: 0;
     bottom: 20rpx;
     width: 100%;
-    display: none;
+    display: flex;
     flex-direction: row;
     justify-content: space-around;
     height: 80rpx;

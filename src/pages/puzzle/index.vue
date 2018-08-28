@@ -1,13 +1,15 @@
 <template>
   <container title="选择shape">
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
-      <canvas class="cvs" canvas-id="puzzle" :style="{width: cvsW + 'px', height: cvsH + 'px'}"></canvas>
-      <canvas class="to-images" canvas-id="to-images"></canvas>
-      <div class="cvs-background" :style="{background: '#fff'}">
-        <img class="cvs-bg-img"
-          v-if="colorIndex < 0 && bgImgPath"
-          :class="{blur: !!drawImgBg}"
-          :src="bgImgPath" mode="aspectFill" />
+      <div class="shape-wrap">
+        <div class="shape-content"
+             @touchstart="touchStartHandler"
+             @touchend="touchEndHandler"
+             @touchmove="touchMoveHandler"
+        >
+          <img class="shape-img" :style="{width: '', height: '', transform: photoStyle}" :src="photoPath" alt="">
+          <img class="shape-mask" :src="maskPath">
+        </div>
       </div>
       <div scroll-y class="cvs-operation" :style="{height: operationH + 'px'}" :class="{'iphoneX': iphoneX}">
         <scroll-view scroll-x class="kinds">
@@ -17,13 +19,7 @@
           </ul>
         </scroll-view>
         <scroll-view scroll-y class="stencils">
-          <ul v-if="kinds === 'svg'" class="stencil-list" id="stencil">
-            <li class="stencil-item" v-for="item in svgJson.name" :key="item" @click="changeStencil(item)" :class="{active: stencil === item}">
-              <img class="stencil-img" :id="item" :src="base64Svg[item]" alt="">
-            </li>
-            <li class="stencil-item" v-for="item in fill" :key="item"></li>
-          </ul>
-          <ul class="stencil-list" v-else>
+          <ul class="stencil-list">
             <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencil === item}">
               <img class="stencil-img" :id="item" :src="item" alt="">
             </li>
@@ -36,6 +32,7 @@
         <cover-view class="btn" id="create-puzzle" @click="saveImage">保存图片</cover-view>
       </cover-view>
     </div>
+    <canvas class="to-images" canvas-id="to-images"></canvas>
   </container>
 </template>
 
@@ -43,68 +40,10 @@
 /* global getCurrentPages */
 // import { forEachmatTime } from '@/utils/index'
 import puzzle from './draw'
-import svgJson from '@/images/stencil/svg.json'
-import TaskQueue from '../choose-img/taskQueue'
+import TaskQueue from './taskQueue'
 import events from '../../../static/events'
 import icon from '@/images/ic_changePic.png'
 
-import svg11 from "@/images/stencil/1-1.svg"
-import svg110 from "@/images/stencil/1-10.svg"
-import svg112 from "@/images/stencil/1-12.svg"
-import svg114 from "@/images/stencil/1-14.svg"
-import svg113 from "@/images/stencil/1-13.svg"
-import svg117 from "@/images/stencil/1-17.svg"
-import svg115 from "@/images/stencil/1-15.svg"
-import svg12 from "@/images/stencil/1-2.svg"
-import svg13 from "@/images/stencil/1-3.svg"
-import svg116 from "@/images/stencil/1-16.svg"
-import svg14 from "@/images/stencil/1-4.svg"
-import svg15 from "@/images/stencil/1-5.svg"
-import svg111 from "@/images/stencil/1-11.svg"
-import svg16 from "@/images/stencil/1-6.svg"
-import svg19 from "@/images/stencil/1-9.svg"
-import svg17 from "@/images/stencil/1-7.svg"
-import svg21 from "@/images/stencil/2-1.svg"
-import svg210 from "@/images/stencil/2-10.svg"
-import svg22 from "@/images/stencil/2-2.svg"
-import svg24 from "@/images/stencil/2-4.svg"
-import svg23 from "@/images/stencil/2-3.svg"
-import svg25 from "@/images/stencil/2-5.svg"
-import svg26 from "@/images/stencil/2-6.svg"
-import svg27 from "@/images/stencil/2-7.svg"
-import svg28 from "@/images/stencil/2-8.svg"
-import svg31 from "@/images/stencil/3-1.svg"
-import svg29 from "@/images/stencil/2-9.svg"
-import svg18 from "@/images/stencil/1-8.svg"
-import svg311 from "@/images/stencil/3-11.svg"
-import svg310 from "@/images/stencil/3-10.svg"
-import svg313 from "@/images/stencil/3-13.svg"
-import svg314 from "@/images/stencil/3-14.svg"
-import svg312 from "@/images/stencil/3-12.svg"
-import svg32 from "@/images/stencil/3-2.svg"
-import svg34 from "@/images/stencil/3-4.svg"
-import svg35 from "@/images/stencil/3-5.svg"
-import svg36 from "@/images/stencil/3-6.svg"
-import svg37 from "@/images/stencil/3-7.svg"
-import svg38 from "@/images/stencil/3-8.svg"
-import svg39 from "@/images/stencil/3-9.svg"
-import svg410 from "@/images/stencil/4-10.svg"
-import svg412 from "@/images/stencil/4-12.svg"
-import svg411 from "@/images/stencil/4-11.svg"
-import svg413 from "@/images/stencil/4-13.svg"
-import svg42 from "@/images/stencil/4-2.svg"
-import svg414 from "@/images/stencil/4-14.svg"
-import svg415 from "@/images/stencil/4-15.svg"
-import svg41 from "@/images/stencil/4-1.svg"
-import svg44 from "@/images/stencil/4-4.svg"
-import svg46 from "@/images/stencil/4-6.svg"
-import svg47 from "@/images/stencil/4-7.svg"
-import svg43 from "@/images/stencil/4-3.svg"
-import svg45 from "@/images/stencil/4-5.svg"
-import svg49 from "@/images/stencil/4-9.svg"
-import svg48 from "@/images/stencil/4-8.svg"
-import svg33 from "@/images/stencil/3-3.svg"
-import svg from '@/images/stencil/svg.json'
 
 import shape1 from '@/images/stencilPng/shape1-small.png'
 import shape2 from '@/images/stencilPng/shape2-small.png'
@@ -126,17 +65,13 @@ let imageQueue = new TaskQueue()
 let pageInit = true
 let renderTime = 0
 console.log('start js')
+
+let startTouch = {}
+let doubleClear = false
 export default {
 
   data () {
-    const pages = getCurrentPages()
-    const curPage = pages[pages.length - 1]
-    const model = wx.getSystemInfoSync().model
-    const iphoneX = model.indexOf('iPhone X') >= 0
     return {
-      base64Svg: {
-        "1-1": svg11,"1-10": svg110,"1-12": svg112,"1-14": svg114,"1-13": svg113,"1-17": svg117,"1-15": svg115,"1-2": svg12,"1-3": svg13,"1-16": svg116,"1-4": svg14,"1-5": svg15,"1-11": svg111,"1-6": svg16,"1-9": svg19,"1-7": svg17,"2-1": svg21,"2-10": svg210,"2-2": svg22,"2-4": svg24,"2-3": svg23,"2-5": svg25,"2-6": svg26,"2-7": svg27,"2-8": svg28,"3-1": svg31,"2-9": svg29,"1-8": svg18,"3-11": svg311,"3-10": svg310,"3-13": svg313,"3-14": svg314,"3-12": svg312,"3-2": svg32,"3-4": svg34,"3-5": svg35,"3-6": svg36,"3-7": svg37,"3-8": svg38,"3-9": svg39,"4-10": svg410,"4-12": svg412,"4-11": svg411,"4-13": svg413,"4-2": svg42,"4-14": svg414,"4-15": svg415,"4-1": svg41,"4-4": svg44,"4-6": svg46,"4-7": svg47,"4-3": svg43,"4-5": svg45,"4-9": svg49,"4-8": svg48,"3-3": svg33
-      },
       pngs: {
         shape1, shape2,
         'shape1-2.4': shape3,
@@ -144,48 +79,74 @@ export default {
         'shape1-3': shape5,
         'shape2-3': shape6
       },
-      svgJson,
       icon,
-      iphoneX,
-      noBack: true,
-      noBackground: false,
-      size: {w: 0, h: 0},
-      curPage,
-      ctx: null,
-      OpCtx: null,
+      iphoneX: false,
       viewW: 0,
       viewH: 0,
-      operationH: 0,
-      stencil: '',
-      calcCount: 0,
-      images: [],
       photoPath: '/static/photo.jpg',
-      lineColor: '#fff',
-      changeLine: false,
-      changeRadius: false,
-      ios: false,
-      pixelRatio: 1,
-      range: null,
-      userHide: false,
       cvsW: 0,
       cvsH: 0,
       kinds: 'svg',
-      stencilPng: ''
+      stencilPng: 'shape1',
+      translateX: 0,
+      translateY: 0,
+      rotate: 0,
+      scale: 1
     }
   },
   computed: {
     fill () {
-      return 6 - this.stencilList.length % 6
+      return 6 - Object.keys(this.pngs).length % 6
     },
-    stencilList () {
-      // if (kinds === 'svg') {
-        return this.svgJson.name
-      // } else {
-      //   return
-      // }
+    maskPath () {
+      return `/static/${this.stencilPng}.png`
+    },
+    photoStyle () {
+      return `translate(${this.translateX}px, ${this.translateY}px) rotateZ(${this.rotate}deg) scale(${this.scale})`
     }
   },
   methods: {
+    touchStartHandler (ev) {
+      startTouch = {
+        x: ev.touches[0].clientX,
+        y: ev.touches[0].clientY,
+        translate: {
+          x: this.translateX,
+          y: this.translateY
+        },
+        identifiers: '' + ev.touches[0].identifier
+      }
+      if (ev.touches.length > 1) {
+        const {clientX, clientY} = ev.touches[1]
+        startTouch.distance = Math.sqrt((clientY - startTouch.y)**2 + (clientX - startTouch.x)**2)
+        startTouch.slope = (clientY - startTouch.y) / (clientX - startTouch.x)
+        startTouch.scale = this.scale
+        startTouch.rotate = this.rotate
+        startTouch.identifiers += ev.touches[1].identifier
+      }
+    },
+    touchMoveHandler(ev) {
+      const {clientX, clientY} = ev.touches[0]
+      this.translateX = startTouch.translate.x + (clientX - startTouch.x)
+      this.translateY = startTouch.translate.y + (clientY - startTouch.y)
+      if (ev.touches.length > 1) {
+        const X2 = ev.touches[1].clientX
+        const Y2 = ev.touches[1].clientY
+        const distance = Math.sqrt((clientY - Y2)**2 + (clientX - X2)**2)
+        const slope = (Y2 - clientY) / (X2 - clientX)
+        this.scale = startTouch.scale * (distance / startTouch.distance)
+        this.rotate = startTouch.rotate + Math.atan(slope - startTouch.slope) / Math.PI * 180
+      }
+    },
+    touchEndHandler (ev) {
+      console.log(ev)
+      const identifiers = ev.touches.reduce((a, b) => {
+        return a + b.identifier
+      }, '').slice(0, 2)
+      if (identifiers !== startTouch.identifiers) {
+        this.touchStartHandler(ev)
+      }
+    },
     changeStencil (name){
       if (name !== this.stencil) {
         this.stencil = name
@@ -199,11 +160,6 @@ export default {
     },
     changeStencilPng (item) {
       this.stencilPng = item
-      this.ctx.clearRect(0, 0, this.cvsW, this.cvsH)
-      this.ctx.beginPath()
-      this.ctx.drawImage(this.photoPath, 0, 0, this.cvsW, this.cvsH)
-      this.ctx.drawImage(`/static/${item}.png`,0, 0, this.cvsW, this.cvsH)
-      this.ctx.draw(false)
     },
     changeKinds (val) {
       this.kinds = val
@@ -590,29 +546,17 @@ export default {
     this.getSysInfo()
   },
   mounted () {
-    this.init()
+
     events.$off('cvsDataClear')
     events.$on('cvsDataClear', () => {
 
     })
   },
   onLoad () {
-    renderTime = setTimeout(() => {
-      wx.hideLoading()
-      wx.showModal({
-        title: '',
-        content: '微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
-        showCancel: false,
-        success: function(res) {
-          const url = '../index/main?crash=1'
-          wx.reLaunch({ url })
-        }
-      })
-    }, 5000)
+
   },
   onShow () {
     if (pageInit) return
-    this.drawImages()
   },
   onShareAppMessage() {
     return {
@@ -631,28 +575,49 @@ export default {
   width: 100%;
   height: 100%;
   overflow: hidden;
-
-  .cvs{
-    position: absolute;
-    left: 50%;
-    top: 15px;
-    transform: translateX(-50%);
-    z-index: 9;
-  }
   &.iphoneX{
-    .cvs{
-      // top: 206rpx;
-    }
     .btns{
       bottom: 60rpx;
     }
   }
+  .shape-wrap{
+    box-sizing: border-box;
+    padding: 40rpx;
+    width: 100vw;
+    height: 100vw;
+    background: lightpink;
+    .shape-content{
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      .shape-mask{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9;
+        background: rgba(0,0,0,.2);
+      }
+      .shape-img{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 8;
+        background: rgba(0,0,0,.2);
+      }
+    }
+  }
+
   .btns{
     position: absolute;
     left: 0;
     bottom: 20rpx;
     width: 100%;
-    display: flex;
+    display: none;
     flex-direction: row;
     justify-content: space-around;
     height: 80rpx;
@@ -674,11 +639,8 @@ export default {
   }
 
   .cvs-operation{
-    position: absolute;
-    box-sizing: border-box;
-    left: 0;
-    bottom: 0;
-    height: 456rpx;
+    position: relative;
+    height: calc(100% - 100vw);
     width: 100vw;
     // padding: 2.5vw;
     border: 3rpx solid #2F2F2F;
@@ -721,49 +683,49 @@ export default {
     &.iphoneX .stencil-list{
       margin-bottom: 168rpx;
     }
-  }
-
-  .to-images{
-    position: fixed;
-    left: -100vw;
-    top: -100vh;
-    width: 100vw;
-    height: 100vh;
-    opacity: 0;
-  }
-}
-.stencil-list{
-    box-sizing: border-box;
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: space-around;
-    background: #2F2F2F;
-    margin-bottom: 120rpx;
-  .stencil-item{
+    .stencil-list{
       box-sizing: border-box;
-      position: relative;
-      width: 16.66%;
-      height: 16.66vw;
-      white-space: normal;
-      word-break: break-all;
-      text-align: center;
-      background: #3D4042;
-      border: 3rpx solid #2F2F2F;
-      border-collapse: collapse;
-      &.active{
-        background: #6AC259;
-      }
-      .stencil-img{
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 80%;
-        height: 80%;
-        color: #fff;
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      background: #2F2F2F;
+      margin-bottom: 120rpx;
+      .stencil-item{
+        box-sizing: border-box;
+        position: relative;
+        width: 16.66%;
+        height: 16.66vw;
+        white-space: normal;
+        word-break: break-all;
+        text-align: center;
+        background: #3D4042;
+        border: 3rpx solid #2F2F2F;
+        border-collapse: collapse;
+        &.active{
+          background: #6AC259;
+        }
+        .stencil-img{
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 80%;
+          height: 80%;
+          color: #fff;
+        }
       }
     }
   }
+}
+.to-images{
+  position: fixed;
+  left: -100vw;
+  top: -100vh;
+  width: 100vw;
+  height: 100vh;
+  opacity: 0;
+}
+
 </style>

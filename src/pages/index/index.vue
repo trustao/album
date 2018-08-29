@@ -1,27 +1,6 @@
 <template>
   <container title="Shapin">
-    <div class="wrap">
-      <h1>Shapin=shape(形状)+pin(拼图)</h1>
-      <swiper
-        :indicator-dots="true"
-        :autoplay="true"
-        :circular="true"
-        indicator-active-color="#FFE200"
-        :interval="5000"
-        class="banner"
-      >
-        <swiper-item v-for="(item, index) in imgUrls" :key="index" class="s-item">
-          <img class="img" :src="item"/>
-        </swiper-item>
-      </swiper>
-      <div class="bottom">
-        <button class="btn" id="start" @click="bindViewTap">创作Shapin</button>
-        <div class="btns">
-          <button class="contact" id="contact" open-type="contact">我要反馈</button>
-          <button class="contact" id="share" open-type="share">推荐好友</button>
-        </div>
-      </div>
-    </div>
+
   </container>
 </template>
 

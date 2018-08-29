@@ -183,7 +183,7 @@ export default {
     choosePhoto (name){
       wx.chooseImage({
         count: 1, // 默认9
-        sizeType: ['compressed'], // 可以指定是原图还是压缩图，默认二者都有
+        sizeType: ['compressed', 'original'], // 可以指定是原图还是压缩图，默认二者都有
         sourceType: ['album'], // 可以指定来源是相册还是相机，默认二者都有
         success: (res) => {
           const path = res.tempFilePaths[0]
@@ -202,6 +202,7 @@ export default {
                 this.translateY = -(this.photoH - this.photoW) / 2
                 this.translateX = 0
               }
+              this.scale = 1
               this.photoPath = path
             }
           })
@@ -226,10 +227,21 @@ export default {
       }
     },
     saveImage () {
-      // wx.showLoading({
-      //   title: '图片生成中',
-      //   mask: true
-      // })
+      wx.showLoading({
+        title: '图片生成中',
+        mask: true
+      })
+      const timer = setTimeout(() => {
+        wx.hideLoading()
+        wx.showModal({
+          title: 'ERROR',
+          content: 'Canvas Crashed',//'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
+          showCancel: false,
+          success: function(res) {
+
+          }
+        })
+      }, 10000)
       const goal = {
         name: '个人头像',
         puzzleX: 20,
@@ -255,18 +267,22 @@ export default {
       }
       ctx.beginPath()
       ctx.setFillStyle('#fff')
-      ctx.fillRect(0, 0, goal.imgW, goal.imgH)
+      ctx.fillRect(0, 0, this.viewW, this.viewH)
       ctx.rect(goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
       ctx.save()
       ctx.clip()
       ctx.setFillStyle('#000')
       ctx.fill()
       ctx.translate(this.translateX * scale, this.translateY * scale)
-      ctx.scale(this.scale, this.scale)
-      ctx.drawImage(this.photoPath, goal.puzzleX, goal.puzzleY, width, height)
+      ctx.drawImage(this.photoPath, goal.puzzleX - width * (this.scale - 1) / 2, goal.puzzleY - height * (this.scale - 1) / 2, width *  this.scale, height *  this.scale)
       ctx.restore()
       ctx.drawImage(this.maskPath, goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
-      ctx.draw(true, () => {
+      ctx.drawImage(goal.QRCode, goal.QRX, goal.QRY, goal.QRL, goal.QRL)
+      ctx.setFillStyle('#9C9C9C')
+      ctx.setFontSize(10)
+      ctx.setTextBaseline('bottom')
+      ctx.fillText('小程序Shapin', goal.QRL + 1, goal.imgH)
+      ctx.draw(false, () => {
         wx.canvasToTempFilePath({
           canvasId: 'to-images',
           x: 0,
@@ -276,8 +292,11 @@ export default {
           success: function (res) {
             wx.saveImageToPhotosAlbum({
               filePath: res.tempFilePath,
-              success (res) {
-
+              success () {
+                clearTimeout(timer)
+                wx.hideLoading()
+                const url = '../result/main'
+                wx.navigateTo({ url })
               },
               fail () {
                 wx.hideLoading()
@@ -293,194 +312,6 @@ export default {
           }
         })
       })
-    },
-    startCreatePuzzle () {
-      wx.showLoading({
-        title: '图片生成中',
-        mask: true
-      })
-      const pages = getCurrentPages()
-      pages[pages.length - 1].setData({
-        colors: this.colors,
-        radius: this.radius,
-        lineWidth: this.lineWidth,
-        imgMargin: this.imgMargin,
-        scale: this.scale,
-        blur: this.drawImgBg
-      })
-      let {x, y, w, h} = this.imgZone
-      if (this.kinds === 'png') {
-        x = 0
-        y = 0
-        w = this.cvsW
-        h = this.cvsH
-      }
-      wx.canvasToTempFilePath({
-        canvasId: 'puzzle',
-        x,
-        y,
-        width: w,
-        height: h,
-        success: (res) => {
-          this.cvsToImages(res.tempFilePath)
-        },
-        fail (err) {
-          console.log(err)
-        }
-      })
-    },
-    cvsToImages (puzzlePath) {
-      const variety = [
-        // {
-        //   name: '拼图作品',
-        //   puzzleX: 40,
-        //   puzzleY: 118,
-        //   puzzleW: 295,
-        //   puzzleH: 420,
-        //   imgW: 375,
-        //   imgH: 656,
-        //   QRCode: '/static/QRCode.png',
-        //   QRX: 168,
-        //   QRY: 586,
-        //   QRL: 60
-        // },
-        // {
-        //   name: '手机壁纸',
-        //   puzzleX: 40,
-        //   puzzleY: 118,
-        //   puzzleW: 295,
-        //   puzzleH: 420,
-        //   imgW: 375,
-        //   imgH: 656,
-        // },
-        {
-          name: '个人头像',
-          puzzleX: 15,
-          puzzleY: 15,
-          puzzleW: 345,
-          puzzleH: 345,
-          imgW: 375,
-          imgH: 375,
-          QRCode: '/static/QRCode.png',
-          QRX: 0,
-          QRY: 332,
-          QRL: 43
-        }
-        // {
-        //   name: '相册封面',
-        //   puzzleX: 48,
-        //   puzzleY: 78,
-        //   puzzleW: 279,
-        //   puzzleH: 279,
-        //   imgW: 375,
-        //   imgH: 375,
-        // }
-      ]
-      variety.forEach(imgData => {
-        if (this.viewW < 375) {
-          Object.keys(imgData).forEach(key => {
-            if (!isNaN(imgData[key])) {
-              imgData[key] *= this.viewW / 375
-            }
-          })
-        }
-        if (this.kinds === 'png') {
-          imageQueue.addTask(this.makeImage.bind(this, puzzlePath, imgData))
-          return
-        }
-        const {w, h} = this.imgZone
-        console.log(w, h, imgData.puzzleW, imgData.puzzleH)
-        const scale = w / h
-        if (scale >= imgData.puzzleW / imgData.puzzleH) {
-          const height = imgData.puzzleW / scale
-          imgData.puzzleY += (imgData.puzzleH - height) / 2
-          imgData.puzzleH = height
-        } else {
-          const width = imgData.puzzleH * scale
-          imgData.puzzleX += (imgData.puzzleW - width) / 2
-          imgData.puzzleW = width
-        }
-        console.log(imgData)
-        imageQueue.addTask(this.makeImage.bind(this, puzzlePath, imgData))
-      })
-      imageQueue.setQueueEmptyCb(() => {
-        wx.setStorageSync('result', variety)
-        wx.saveImageToPhotosAlbum({
-          filePath: variety[0].path,
-          success (res) {
-            wx.hideLoading()
-            wx.navigateTo({
-              url: '../save/main'
-            })
-          },
-          fail () {
-            wx.hideLoading()
-            wx.showToast({
-              title: '保存失败，请在右上角设置中打开权限。',
-              icon: 'none'
-            })
-          }
-        })
-      })
-    },
-    makeImage (puzzlePath, imgData) {
-      return new Promise((resolve, reject) => {
-        console.log('执行任务')
-        try {
-          const newSvgActions = getSVGPath(svgJson.data[this.stencil], imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
-          var ctx = wx.createCanvasContext('to-images')
-          ctx.clearRect(0, 0, imgData.imgW,  imgData.imgH)
-          ctx.beginPath()
-          ctx.save()
-          ctx.setFillStyle('#fff')
-          ctx.setStrokeStyle('#fff')
-          ctx.fillRect(0, 0, imgData.imgW, imgData.imgH)
-          ctx.setLineWidth(0)
-          this.drawSvg(ctx, false, newSvgActions)
-          ctx.fill()
-          console.log(imgData.puzzleW, imgData.puzzleH)
-          ctx.drawImage(puzzlePath, imgData.puzzleX, imgData.puzzleY, imgData.puzzleW, imgData.puzzleH)
-          if (imgData.QRCode) {
-            ctx.drawImage(imgData.QRCode, imgData.QRX, imgData.QRY, imgData.QRL, imgData.QRL)
-            ctx.setFillStyle('#9C9C9C')
-            ctx.setFontSize(10)
-            ctx.setTextBaseline('bottom')
-            ctx.fillText('小程序Shapin', 44, 375)
-          }
-          ctx.draw(false, () => {
-            console.log('draw complete')
-            wx.canvasToTempFilePath({
-              canvasId: 'to-images',
-              x: 0,
-              y: 0,
-              width: imgData.imgW,
-              height: imgData.imgH,
-              success: function (res) {
-                imgData.path = res.tempFilePath
-                resolve()
-              },
-              fail (err) {
-                console.log(err)
-                reject()
-              }
-            })
-          })
-          ctx.restore()
-        } catch (err) {
-          console.log(err)
-        }
-
-      })
-    },
-    init () {
-      pageInit = false
-      wx.showLoading({
-        title: '图片渲染中',
-        mask: true
-      })
-      svgActions = []
-      this.cvsInit()
-      this.drawStencil(true)
     }
   },
   created () {
@@ -555,7 +386,7 @@ export default {
   .btns{
     position: absolute;
     left: 0;
-    bottom: 20rpx;
+    bottom: 80rpx;
     width: 100%;
     display: flex;
     flex-direction: row;
@@ -664,7 +495,7 @@ export default {
   left: -100vw;
   top: -100vh;
   width: 100vw;
-  height: 100vh;
+  height: 100vw;
   opacity: 0;
 }
 

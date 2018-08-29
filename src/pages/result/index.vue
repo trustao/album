@@ -1,10 +1,11 @@
 <template>
-  <container title="保存成功">
+  <container title="保存成功" background="#FFE200">
     <div class="wrap">
       <div class="res-tip">
          <icon type="success" size="50" color="#6ac259"/>
           <p>已保存到手机相册</p>
           <p>快去分享你的作品</p>
+          <p>keke</p>
       </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
         <button class="btn" @click="backHome">回到主页</button>
@@ -28,7 +29,8 @@
         </swiper-item>
       </swiper>
       <div class="bottom">
-        <button class="btn" id="start" @click="bindViewTap">我要使用</button>
+        <button class="btn" id="start" @click="jumpShapin
+">我要使用</button>
       </div>
     </div>
   </container>
@@ -53,6 +55,7 @@ export default {
 
   methods: {
     jumpShapin () {
+      console.log('jump')
       wx.navigateToMiniProgram({
         appId: 'wxea11b3efed0d1e07',
         envVersion: 'release',
@@ -64,48 +67,13 @@ export default {
         }
       })
     },
-    save () {
-      wx.showLoading({
-          title: '图片保存中'
-      })
-      Promise.all(this.images.map(item => {
-        return new Promise((resolve, reject) => {
-          wx.saveImageToPhotosAlbum({
-            filePath: item.path,
-            success (res) {
-              resolve()
-            },
-            fail () {
-              reject()
-            }
-          })
-        })
-      })).then(() => {
-        wx.hideLoading()
-        wx.showModal({
-          title: '保存成功',
-          content: '4张拼图已保存到手机相册，\r\n快去分享你的创作！',
-          showCancel: false,
-          success: function(res) {
-          }
-        })
-      }).catch(() => {
-        wx.hideLoading()
-        wx.showToast({
-          title: '保存失败，请在右上角设置中打开权限。',
-          icon: 'none'
-        })
-      })
-
-    },
     backHome () {
-      const url = '../puzzle/main'
-      wx.reLaunch({ url })
+      wx.navigateBack()
     }
   },
   onShareAppMessage() {
     return {
-      title: 'Shapin',
+      title: 'Keke',
       path: '/pages/index/main',
       imageUrl: 'http://imglf3.nosdn0.126.net/img/Qmx2R2tOVVFNcjB2UDFEZjE3MExrZjkrVTRXZEhPWnhNSTF4K0xYSnNlenJzOEp3UXluaFJRPT0.jpg?imageView&thumbnail=1680x0&quality=96&stripmeta=0&type=jpg'
     }
@@ -151,7 +119,7 @@ export default {
         text-align: center;
         color: #000;
         &.share{
-          background: #fff;
+          background: transparent;
         }
       }
       .contact{

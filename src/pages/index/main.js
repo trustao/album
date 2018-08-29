@@ -6,7 +6,8 @@ app.$mount()
 
 export default {
   config: {
-    "disableScroll": true,
+    navigationBarTitleText: '',
+    disableScroll: true,
     usingComponents: {
       'container': '/static/container/container'
     }

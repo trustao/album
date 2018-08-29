@@ -1,31 +1,64 @@
 <template>
-  <container title="选择shape">
+  <container title="Keke" background="#FFE200">
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <div class="shape-wrap">
-        <div class="shape-content"
-             @touchstart="touchStartHandler"
-             @touchend="touchEndHandler"
-             @touchmove="touchMoveHandler"
-        >
+        <div class="shape-content">
           <img class="shape-img" :style="{width: photoW + 'px', height: photoH + 'px', transform: photoStyle}" :src="photoPath" alt="">
-          <img class="shape-mask" :src="maskPath">
         </div>
+        <canvas class="shape-mask" canvas-id="shape-mask"
+                @touchstart="touchStartHandler"
+                @touchend="touchEndHandler"
+                @touchmove="touchMoveHandler"></canvas>
       </div>
-      <div scroll-y class="cvs-operation" :style="{height: operationH + 'px'}" :class="{'iphoneX': iphoneX}">
+      <div scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
         <scroll-view scroll-x class="kinds">
           <ul class="kinds-wrap">
-            <li class="kinds-item" :class="{active: kinds === 'svg'}" @click="changeKinds('svg')">svg</li>
-            <li class="kinds-item" :class="{active: kinds === 'png'}" @click="changeKinds('png')">png</li>
+            <li class="kinds-item" v-for="(item, index) in kinds" :key="index" :class="{active: curkinds === item}" @click="changeKinds(item)">{{item}}</li>
           </ul>
         </scroll-view>
-        <scroll-view scroll-y class="stencils">
-          <ul class="stencil-list">
-            <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencil === item}">
-              <img class="stencil-img" :id="item" :src="item" alt="">
-            </li>
-            <li class="stencil-item" v-for="item in fill" :key="item"></li>
-          </ul>
-        </scroll-view>
+        <swiper class="stencils"
+                :current="currentIndex"
+                @change="swiperChange">
+          <swiper-item>
+            <scroll-view scroll-y class="stencils-scroll">
+              <ul class="stencil-list">
+                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
+                  <img class="stencil-img" :id="item" :src="item" alt="">
+                </li>
+                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
+                  <img class="stencil-img" :id="item" :src="item" alt="">
+                </li>
+                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
+                  <img class="stencil-img" :id="item" :src="item" alt="">
+                </li>
+                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
+                  <img class="stencil-img" :id="item" :src="item" alt="">
+                </li>
+                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
+                  <img class="stencil-img" :id="item" :src="item" alt="">
+                </li>
+                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
+                  <img class="stencil-img" :id="item" :src="item" alt="">
+                </li>
+                <li class="stencil-item" v-for="item in fill" :key="item"></li>
+              </ul>
+            </scroll-view>
+          </swiper-item>
+          <swiper-item>
+            <scroll-view scroll-y class="stencils-scroll">
+              <ul class="stencil-list">
+                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
+                  <img class="stencil-img" :id="item" :src="item" alt="">
+                </li>
+                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
+                  <img class="stencil-img" :id="item" :src="item" alt="">
+                </li>
+                <li class="stencil-item" v-for="item in fill" :key="item"></li>
+              </ul>
+            </scroll-view>
+          </swiper-item>
+        </swiper>
+
       </div>
       <cover-view class="btns" id="create-puzzle">
         <cover-view class="btn" id="create-puzzle" @click="choosePhoto">选择图片</cover-view>
@@ -52,16 +85,7 @@ import shape4 from '@/images/stencilPng/shape2-small-2.4.png'
 import shape5 from '@/images/stencilPng/shape1-small-3.png'
 import shape6 from '@/images/stencilPng/shape2-small-3.png'
 
-const {
-  drawColorBackground, getSvgActions,
-  getSVGPath, getImageData, getBlocks, drawImageBackground,
-  createGrid, radiusPath, // requestAnimationFrame,
-} = puzzle
-let stencilUnit8 = null
-let photoCount = 25
-let imageBlock = []
-let svgActions = []
-let imageQueue = new TaskQueue()
+
 let pageInit = true
 let renderTime = 0
 console.log('start js')
@@ -79,6 +103,7 @@ export default {
         'shape1-3': shape5,
         'shape2-3': shape6
       },
+      kinds: ['类别a', '类别b'],
       icon,
       iphoneX: false,
       viewW: 0,
@@ -86,7 +111,7 @@ export default {
       photoPath: '/static/photo.jpg',
       cvsW: 0,
       cvsH: 0,
-      kinds: 'svg',
+      curkinds: '',
       stencilPng: 'shape1',
       translateX: 0,
       translateY: 0,
@@ -96,12 +121,13 @@ export default {
       photoW: 0,
       photoH: 0,
       left: null,
-      top: null
+      top: null,
+      currentIndex: 0
     }
   },
   computed: {
     fill () {
-      return 6 - Object.keys(this.pngs).length % 6
+      return 6 - (Object.keys(this.pngs).length % 6 || 6)
     },
     maskPath () {
       return `/static/${this.stencilPng}.png`
@@ -111,10 +137,14 @@ export default {
     }
   },
   methods: {
+    swiperChange (ev){
+      this.currentIndex = ev.target.current
+      this.changeKinds(this.kinds[this.currentIndex])
+    },
     touchStartHandler (ev) {
       startTouch = {
-        x: ev.touches[0].clientX,
-        y: ev.touches[0].clientY,
+        x: ev.touches[0].x,
+        y: ev.touches[0].y,
         translate: {
           x: this.translateX,
           y: this.translateY
@@ -122,9 +152,9 @@ export default {
         identifiers: '' + ev.touches[0].identifier
       }
       if (ev.touches.length > 1) {
-        const {clientX, clientY} = ev.touches[1]
-        startTouch.distance = Math.sqrt((clientY - startTouch.y)**2 + (clientX - startTouch.x)**2)
-        let slope = (clientY - startTouch.y) / (clientX - startTouch.x)
+        const {x, y} = ev.touches[1]
+        startTouch.distance = Math.sqrt((y - startTouch.y)**2 + (x - startTouch.x)**2)
+        let slope = (y - startTouch.y) / (x - startTouch.x)
         if(isNaN(slope)) return
         startTouch.slope = slope
         startTouch.scale = this.scale
@@ -133,14 +163,14 @@ export default {
       }
     },
     touchMoveHandler(ev) {
-      const {clientX, clientY} = ev.touches[0]
-      this.translateX = startTouch.translate.x + (clientX - startTouch.x)
-      this.translateY = startTouch.translate.y + (clientY - startTouch.y)
+      const {x, y} = ev.touches[0]
+      this.translateX = startTouch.translate.x + (x - startTouch.x)
+      this.translateY = startTouch.translate.y + (y - startTouch.y)
       if (ev.touches.length > 1) {
-        const X2 = ev.touches[1].clientX
-        const Y2 = ev.touches[1].clientY
-        const distance = Math.sqrt((clientY - Y2)**2 + (clientX - X2)**2)
-        let slope = (Y2 - clientY) / (X2 - clientX)
+        const X2 = ev.touches[1].x
+        const Y2 = ev.touches[1].y
+        const distance = Math.sqrt((y - Y2)**2 + (x - X2)**2)
+        let slope = (Y2 - y) / (X2 - x)
         if(isNaN(slope)) return
         this.scale = startTouch.scale * (distance / startTouch.distance)
         this.rotate = startTouch.rotate + Math.atan(slope - startTouch.slope) / Math.PI * 180
@@ -161,6 +191,8 @@ export default {
     getRectData (){
       wx.createSelectorQuery().select('.shape-content').boundingClientRect((rect) => {
         this.photoW = this.photoH = this.photoContentWidth = rect.width
+        this.drawMask()
+        this.changeKinds(this.kinds[0])
       }).exec()
     },
     changeStencil (name){
@@ -176,9 +208,13 @@ export default {
     },
     changeStencilPng (item) {
       this.stencilPng = item
+      this.$nextTick(() => {
+        this.drawMask()
+      })
     },
     changeKinds (val) {
-      this.kinds = val
+      this.curkinds = val
+      this.currentIndex = this.kinds.indexOf(val)
     },
     choosePhoto (name){
       wx.chooseImage({
@@ -208,6 +244,15 @@ export default {
           })
         }
       })
+    },
+    drawMask () {
+      const ctx = wx.createCanvasContext('shape-mask')
+      ctx.setFillStyle('#fff')
+      const l = (this.viewW - this.photoContentWidth) / 2
+      ctx.fillRect(0, 0, this.viewW, this.viewW)
+      ctx.clearRect(l, l, this.photoContentWidth, this.photoContentWidth)
+      ctx.drawImage(this.maskPath, l, l, this.photoContentWidth, this.photoContentWidth)
+      ctx.draw()
     },
     getSysInfo () {
       const headerH = {
@@ -353,25 +398,18 @@ export default {
     }
   }
   .shape-wrap{
+    position: relative;
     box-sizing: border-box;
     padding: 40rpx;
     width: 100vw;
     height: 100vw;
-    background: lightpink;
+    background: #fff;
     .shape-content{
       position: relative;
       width: 100%;
       height: 100%;
       overflow: hidden;
       background: #000;
-      .shape-mask{
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 9;
-      }
       .shape-img{
         position: absolute;
         top: 0;
@@ -381,18 +419,28 @@ export default {
         z-index: 8;
       }
     }
+    .shape-mask{
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vw;
+      z-index: 9;
+    }
   }
 
   .btns{
     position: absolute;
     left: 0;
-    bottom: 80rpx;
+    bottom: 20rpx;
     width: 100%;
     display: flex;
     flex-direction: row;
     justify-content: space-around;
     height: 80rpx;
     .btn{
+      position: relative;
+      box-sizing: border-box;
       width: 280rpx;
       height: 80rpx;
       line-height: 78rpx;
@@ -400,9 +448,9 @@ export default {
       font-size: 32rpx;
       background: #FFE200;
       color: #000;
-      border-radius: 44rpx;
-      z-index: 999;
+      border-radius: 40rpx;
       border: 1px solid #000;
+      z-index: 999;
       &:first-child{
         background: #fff;
       }
@@ -439,7 +487,8 @@ export default {
         line-height: 68rpx;
         margin: 0 20rpx;
         color: #fff;
-        border-bottom: 4px solid #2F2F2F;
+        border-bottom: 4rpx solid #2F2F2F;
+        transition: border-bottom-color .3s linear;
         &.active{
           border-bottom-color: #FFE200;
         }
@@ -447,12 +496,17 @@ export default {
     }
     .stencils{
       width: 100%;
-      height: 100%;
+      height: calc(100% - 68rpx);
       overflow: hidden;
       background: #2F2F2F;
     }
+    .stencils-scroll{
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
     &.iphoneX .stencil-list{
-      margin-bottom: 168rpx;
+      padding-bottom: 168rpx;
     }
     .stencil-list{
       box-sizing: border-box;
@@ -462,7 +516,7 @@ export default {
       flex-wrap: wrap;
       justify-content: space-around;
       background: #2F2F2F;
-      margin-bottom: 120rpx;
+      padding-bottom: 120rpx;
       .stencil-item{
         box-sizing: border-box;
         position: relative;

@@ -4,7 +4,7 @@
       <div class="res-tip">
          <icon type="success" size="50" color="#6ac259"/>
           <p>已保存到手机相册</p>
-          <p>快分享你的Shapin</p>
+          <p>快去分享你的作品</p>
       </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
         <button class="btn" @click="backHome">回到主页</button>
@@ -28,10 +28,7 @@
         </swiper-item>
       </swiper>
       <div class="bottom">
-        <button class="btn" id="start" @click="bindViewTap">创作Shapin</button>
-        <div class="btns">
-          <button class="contact" id="jump-shapin" @click="jumpShapin">推荐好友</button>
-        </div>
+        <button class="btn" id="start" @click="bindViewTap">我要使用</button>
       </div>
     </div>
   </container>
@@ -50,36 +47,20 @@ export default {
       iphoneX,
       imgUrls: [
         img1, img2, img3
-      ],
-      images: [],
-      showImages: [],
-      current: 0
+      ]
     }
   },
 
-  computed: {
-     imgData () {
-         return this.showImages.map(item => {
-             if (item.imgW === item.imgH) {
-                 item.imgW = item.imgH = 598
-             } else {
-                 item.imgH = 840
-                 item.imgW = 480
-             }
-             return item
-         })
-     }
-  },
   methods: {
-    swiperChange (ev) {
-       this.current = ev.target.current
-    },
     jumpShapin () {
       wx.navigateToMiniProgram({
         appId: 'wxea11b3efed0d1e07',
         envVersion: 'release',
         success(res) {
           // 打开成功
+        },
+        fail (res) {
+          console.log(res)
         }
       })
     },
@@ -118,24 +99,9 @@ export default {
 
     },
     backHome () {
-      events.$emit('imgClear')
-      events.$emit('cvsDataClear')
-      const url = '../index/main'
+      const url = '../puzzle/main'
       wx.reLaunch({ url })
     }
-  },
-
-  created () {
-    // 调用应用实例的方法获取全局数据
-
-  },
-  mounted () {
-    this.images = wx.getStorageSync('result') || []
-    this.showImages = this.images// .filter(item => item.name !== 'fx')
-    console.log(this.images)
-  },
-  onUnLoad () {
-    this.showImages = []
   },
   onShareAppMessage() {
     return {

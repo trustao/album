@@ -9,7 +9,7 @@
 	},
 	"miniprogramRoot": "./dist/",
 	"compileType": "miniprogram",
-	"appid": "wxea11b3efed0d1e07",
+	"appid": "wx4a9a55a260001198",
 	"projectname": "album",
 	"condition": {
 		"search": {

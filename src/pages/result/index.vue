@@ -84,7 +84,7 @@ export default {
 <style lang="less" scoped>
   .wrap{
     width: 100%;
-    height: 748rpx;
+    height: 780rpx;
     text-align: center;
     &:after{
       content: '';

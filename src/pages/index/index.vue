@@ -11,7 +11,7 @@
                 @touchmove="touchMoveHandler"></canvas>
       </div>
       <div scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
-        <scroll-view scroll-x class="kinds">
+        <scroll-view scroll-x scroll-y class="kinds">
           <ul class="kinds-wrap">
             <li class="kinds-item" v-for="(item, index) in kinds" :key="index" :class="{active: curkinds === item}" @click="changeKinds(item)">{{item}}</li>
           </ul>
@@ -71,12 +71,8 @@
 
 <script>
 /* global getCurrentPages */
-// import { forEachmatTime } from '@/utils/index'
-import puzzle from './draw'
-import TaskQueue from './taskQueue'
-import events from '../../../static/events'
-import icon from '@/images/ic_changePic.png'
 
+import icon from '@/images/ic_changePic.png'
 
 import shape1 from '@/images/stencilPng/shape1-small.png'
 import shape2 from '@/images/stencilPng/shape2-small.png'
@@ -85,13 +81,7 @@ import shape4 from '@/images/stencilPng/shape2-small-2.4.png'
 import shape5 from '@/images/stencilPng/shape1-small-3.png'
 import shape6 from '@/images/stencilPng/shape2-small-3.png'
 
-
-let pageInit = true
-let renderTime = 0
-console.log('start js')
-
 let startTouch = {}
-let doubleClear = false
 export default {
 
   data () {
@@ -255,12 +245,6 @@ export default {
       ctx.draw()
     },
     getSysInfo () {
-      const headerH = {
-        default: 128,
-        iphoneX: 176,
-        plus: 116,
-        iphone5: 142
-      }
       try {
         const res = wx.getSystemInfoSync()
         if (/ios/ig.test(res.system)) this.ios = true
@@ -312,7 +296,7 @@ export default {
       }
       ctx.beginPath()
       ctx.setFillStyle('#fff')
-      ctx.fillRect(0, 0, this.viewW, this.viewH)
+      ctx.fillRect(0, 0, this.viewW, this.viewW)
       ctx.rect(goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
       ctx.save()
       ctx.clip()
@@ -326,7 +310,7 @@ export default {
       ctx.setFillStyle('#9C9C9C')
       ctx.setFontSize(10)
       ctx.setTextBaseline('bottom')
-      ctx.fillText('小程序Keke', goal.QRL + 1, goal.imgH)
+      ctx.fillText('小程序keke', goal.QRL + 1, goal.imgH)
       ctx.draw(false, () => {
         wx.canvasToTempFilePath({
           canvasId: 'to-images',
@@ -362,18 +346,8 @@ export default {
   created () {
     this.getSysInfo()
   },
-  mounted () {
+  onReady() {
     this.getRectData()
-    events.$off('cvsDataClear')
-    events.$on('cvsDataClear', () => {
-
-    })
-  },
-  onLoad () {
-
-  },
-  onShow () {
-    if (pageInit) return
   },
   onShareAppMessage() {
     return {
@@ -391,6 +365,7 @@ export default {
   position: relative;
   width: 100%;
   height: 100%;
+  scroll-y: hidden;
   overflow: hidden;
   &.iphoneX{
     .btns{

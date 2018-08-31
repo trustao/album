@@ -13,47 +13,20 @@
       <div scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
         <scroll-view scroll-x scroll-y class="kinds">
           <ul class="kinds-wrap">
-            <li class="kinds-item" v-for="(item, index) in kinds" :key="index" :class="{active: curkinds === item}" @click="changeKinds(item)">{{item}}</li>
+            <li class="kinds-item" v-for="(cate, key) in kinds" :key="key" :class="{active: curkinds === cate}" @click="changeKinds(cate)">{{cate}}</li>
           </ul>
         </scroll-view>
         <swiper class="stencils"
                 :current="currentIndex"
+                id="stencils"
                 @change="swiperChange">
-          <swiper-item>
+          <swiper-item v-for="(cate, key) in kindsData" :key="key">
             <scroll-view scroll-y class="stencils-scroll">
               <ul class="stencil-list">
-                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
-                  <img class="stencil-img" :id="item" :src="item" alt="">
+                <li class="stencil-item" v-for="(item, index) in cate" :key="index" @click="changeStencilPng(item)" :class="{active: stencilPng === item.full_url}">
+                  <img class="stencil-img" :id="item" :src="item.full_icon_url" alt="">
                 </li>
-                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
-                  <img class="stencil-img" :id="item" :src="item" alt="">
-                </li>
-                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
-                  <img class="stencil-img" :id="item" :src="item" alt="">
-                </li>
-                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
-                  <img class="stencil-img" :id="item" :src="item" alt="">
-                </li>
-                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
-                  <img class="stencil-img" :id="item" :src="item" alt="">
-                </li>
-                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
-                  <img class="stencil-img" :id="item" :src="item" alt="">
-                </li>
-                <li class="stencil-item" v-for="item in fill" :key="item"></li>
-              </ul>
-            </scroll-view>
-          </swiper-item>
-          <swiper-item>
-            <scroll-view scroll-y class="stencils-scroll">
-              <ul class="stencil-list">
-                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
-                  <img class="stencil-img" :id="item" :src="item" alt="">
-                </li>
-                <li class="stencil-item" v-for="(item, key) in pngs" :key="key" @click="changeStencilPng(key)" :class="{active: stencilPng === key}">
-                  <img class="stencil-img" :id="item" :src="item" alt="">
-                </li>
-                <li class="stencil-item" v-for="item in fill" :key="item"></li>
+                <li class="stencil-item" v-for="item in (6 - (cate.length % 6 || 6))" :key="item"></li>
               </ul>
             </scroll-view>
           </swiper-item>
@@ -61,8 +34,8 @@
 
       </div>
       <cover-view class="btns" id="create-puzzle">
-        <cover-view class="btn" id="create-puzzle" @click="choosePhoto">选择图片</cover-view>
-        <cover-view class="btn" id="create-puzzle" @click="saveImage">保存图片</cover-view>
+        <cover-view class="btn" id="choose-img" @click="choosePhoto">选择图片</cover-view>
+        <cover-view class="btn" id="save-img" @click="saveImage">保存图片</cover-view>
       </cover-view>
     </div>
     <canvas class="to-images" :style="{left: left, top: top}" canvas-id="to-images"></canvas>
@@ -102,7 +75,7 @@ export default {
       cvsW: 0,
       cvsH: 0,
       curkinds: '',
-      stencilPng: 'shape1',
+      stencilPng: '',
       translateX: 0,
       translateY: 0,
       rotate: 0,
@@ -112,21 +85,54 @@ export default {
       photoH: 0,
       left: null,
       top: null,
-      currentIndex: 0
+      currentIndex: 0,
+      kindsData: [],
+      loadedPath: ''
     }
   },
   computed: {
-    fill () {
-      return 6 - (Object.keys(this.pngs).length % 6 || 6)
-    },
     maskPath () {
-      return `/static/${this.stencilPng}.png`
+      console.log(this.stencilPng)
+      return this.stencilPng
     },
     photoStyle () {
       return `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`
     }
   },
   methods: {
+    getStencil () {
+      wx.request({
+        url: 'http://api.pintuxiangce.com/icon/index',
+        success: (res) => {
+          const category = {}
+          const kinds =[]
+          const kindsData = []
+          res.data.data.forEach(item => {
+            if (category[item.category_name || item.category_id]) {
+              category[item.category_name || item.category_id].push(item)
+            } else {
+              category[item.category_name || item.category_id] = [item]
+            }
+          })
+          Object.keys(category).forEach(key => {
+            kinds.push(key)
+            kindsData.push(category[key])
+          })
+          this.kinds = kinds
+          this.kindsData = kindsData
+          if (this.photoContentWidth) {
+            this.changeStencilPng(this.kindsData[0][0])
+            this.changeKinds(this.kinds[0])
+          } else {
+            const unWatch = this.$watch('photoContentWidth',() => {
+              this.changeStencilPng(this.kindsData[0][0])
+              this.changeKinds(this.kinds[0])
+              unWatch()
+            })
+          }
+        }
+      })
+    },
     swiperChange (ev){
       this.currentIndex = ev.target.current
       this.changeKinds(this.kinds[this.currentIndex])
@@ -182,7 +188,6 @@ export default {
       wx.createSelectorQuery().select('.shape-content').boundingClientRect((rect) => {
         this.photoW = this.photoH = this.photoContentWidth = rect.width
         this.drawMask()
-        this.changeKinds(this.kinds[0])
       }).exec()
     },
     changeStencil (name){
@@ -197,10 +202,15 @@ export default {
       }
     },
     changeStencilPng (item) {
-      this.stencilPng = item
+      this.stencilPng = item.full_url
       this.$nextTick(() => {
         this.drawMask()
       })
+      this.$root.$mp.page.setData({
+        icon_id: item.id,
+        icon_name: item.name
+      })
+      console.log(this)
     },
     changeKinds (val) {
       this.curkinds = val
@@ -236,13 +246,19 @@ export default {
       })
     },
     drawMask () {
-      const ctx = wx.createCanvasContext('shape-mask')
-      ctx.setFillStyle('#fff')
-      const l = (this.viewW - this.photoContentWidth) / 2
-      ctx.fillRect(0, 0, this.viewW, this.viewW)
-      ctx.clearRect(l, l, this.photoContentWidth, this.photoContentWidth)
-      ctx.drawImage(this.maskPath, l, l, this.photoContentWidth, this.photoContentWidth)
-      ctx.draw()
+      wx.getImageInfo({
+        src: this.maskPath,
+        success: ({path}) => {
+          const ctx = wx.createCanvasContext('shape-mask')
+          ctx.setFillStyle('#fff')
+          const l = (this.viewW - this.photoContentWidth) / 2
+          ctx.fillRect(0, 0, this.viewW, this.viewW)
+          ctx.clearRect(l, l, this.photoContentWidth, this.photoContentWidth)
+          ctx.drawImage(path, l, l, this.photoContentWidth, this.photoContentWidth)
+          ctx.draw()
+          this.loadedPath = path
+        }
+      })
     },
     getSysInfo () {
       try {
@@ -284,6 +300,7 @@ export default {
         QRY: 332,
         QRL: 43
       }
+
       const scale = goal.puzzleW / this.photoContentWidth
       const ctx = wx.createCanvasContext('to-images')
       let height, width
@@ -305,7 +322,7 @@ export default {
       ctx.translate(this.translateX * scale, this.translateY * scale)
       ctx.drawImage(this.photoPath, goal.puzzleX - width * (this.scale - 1) / 2, goal.puzzleY - height * (this.scale - 1) / 2, width *  this.scale, height *  this.scale)
       ctx.restore()
-      ctx.drawImage(this.maskPath, goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
+      ctx.drawImage(this.loadedPath, goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
       ctx.drawImage(goal.QRCode, goal.QRX, goal.QRY, goal.QRL, goal.QRL)
       ctx.setFillStyle('#9C9C9C')
       ctx.setFontSize(10)
@@ -344,6 +361,7 @@ export default {
     }
   },
   created () {
+    this.getStencil()
     this.getSysInfo()
   },
   onReady() {

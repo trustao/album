@@ -8,9 +8,9 @@
           <p>keke</p>
       </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
-        <button class="btn" @click="backHome">回到主页</button>
-        <button class="btn share" id="save-images"  open-type="share">推荐给朋友</button>
-        <button class="btn share" id="contact" open-type="contact">我要反馈</button>
+        <button class="btn" id="back" @click="backHome">回到主页</button>
+        <button class="btn share" id="share"  open-type="share">推荐给朋友</button>
+        <button class="btn share" id="advance" open-type="contact">我要反馈</button>
       </div>
     </div>
     <div class="wrap-jump">
@@ -29,7 +29,7 @@
         </swiper-item>
       </swiper>
       <div class="bottom">
-        <button class="btn" id="start" @click="jumpShapin
+        <button class="btn" id="jump" @click="jumpShapin
 ">我要使用</button>
       </div>
     </div>

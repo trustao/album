@@ -44,6 +44,7 @@
 
 <script>
 /* global getCurrentPages */
+const API = 'https://api.pintuxiangce.com/icon/index'
 
 import icon from '@/images/ic_changePic.png'
 
@@ -100,9 +101,9 @@ export default {
     }
   },
   methods: {
-    getStencil () {
+    getStencil (noChange) {
       wx.request({
-        url: 'http://api.pintuxiangce.com/icon/index',
+        url: API,
         success: (res) => {
           const category = {}
           const kinds =[]
@@ -120,6 +121,7 @@ export default {
           })
           this.kinds = kinds
           this.kindsData = kindsData
+          if (noChange) return
           if (this.photoContentWidth) {
             this.changeStencilPng(this.kindsData[0][0])
             this.changeKinds(this.kinds[0])
@@ -366,6 +368,9 @@ export default {
   },
   onReady() {
     this.getRectData()
+  },
+  onShow () {
+    this.getStencil(true)
   },
   onShareAppMessage() {
     return {

@@ -3,28 +3,31 @@
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <div class="shape-wrap">
         <div class="shape-content">
+          <img class="shape-img copy" v-if="copy.show" :style="{width: copy.photoW + 'px', height: copy.photoH + 'px', transform: copy.photoStyle}" :src="copy.photoPath" alt="">
           <img class="shape-img" :style="{width: photoW + 'px', height: photoH + 'px', transform: photoStyle}" :src="photoPath" alt="">
         </div>
-        <canvas class="shape-mask" canvas-id="shape-mask"
+        <canvas class="shape-mask" canvas-id="shape-mask" :disable-scroll="true"
                 @touchstart="touchStartHandler"
                 @touchend="touchEndHandler"
                 @touchmove="touchMoveHandler"></canvas>
       </div>
       <div scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
-        <scroll-view scroll-x scroll-y class="kinds">
+        <scroll-view scroll-y scroll-x  @touchstart.stop="fn" @touchend="changeKindsTouchEndHandler" class="kinds">
           <ul class="kinds-wrap">
-            <li class="kinds-item" v-for="(cate, key) in kinds" :key="key" :class="{active: curkinds === cate}" @click="changeKinds(cate)">{{cate}}</li>
+            <li class="kinds-item" v-for="(cate, key) in kinds" :data-cate="cate" :key="key" :class="{active: curkinds === cate}">{{cate}}</li>
           </ul>
         </scroll-view>
         <swiper class="stencils"
                 :current="currentIndex"
                 id="stencils"
+                @touchstart="fn"
+                @touchend="changeStencilPngTouchEndHandler"
                 @change="swiperChange">
           <swiper-item v-for="(cate, key) in kindsData" :key="key">
             <scroll-view scroll-y class="stencils-scroll">
-              <ul class="stencil-list">
-                <li class="stencil-item" v-for="(item, index) in cate" :key="index" @click="changeStencilPng(item)" :class="{active: stencilPng === item.full_url}">
-                  <img class="stencil-img" :id="item" :src="item.full_icon_url" alt="">
+              <ul class="stencil-list" >
+                <li class="stencil-item" v-for="(item, index) in cate" :key="index" :data-stencil="item" :class="{active: stencilPng === item.full_url}">
+                  <img class="stencil-img" :data-stencil="item" :src="item.full_icon_url" alt="">
                 </li>
                 <li class="stencil-item" v-for="item in (6 - (cate.length % 6 || 6))" :key="item"></li>
               </ul>
@@ -56,6 +59,9 @@ import shape5 from '@/images/stencilPng/shape1-small-3.png'
 import shape6 from '@/images/stencilPng/shape2-small-3.png'
 
 let startTouch = {}
+let startTime = 0
+let startX = 0
+let startY = 0
 export default {
 
   data () {
@@ -67,7 +73,7 @@ export default {
         'shape1-3': shape5,
         'shape2-3': shape6
       },
-      kinds: ['类别a', '类别b'],
+      kinds: [],
       icon,
       iphoneX: false,
       viewW: 0,
@@ -88,7 +94,14 @@ export default {
       top: null,
       currentIndex: 0,
       kindsData: [],
-      loadedPath: ''
+      loadedPath: '',
+      copy: {
+        show: false,
+        photoH: 0,
+        photoW: 0,
+        photoStyle: '',
+        photoPath: ''
+      }
     }
   },
   computed: {
@@ -101,6 +114,25 @@ export default {
     }
   },
   methods: {
+    fn (ev) {
+      startTime = Date.now()
+      startX = ev.mp.changedTouches[0].clientX
+      startY = ev.mp.changedTouches[0].clientY
+    },
+    changeStencilPngTouchEndHandler (ev) {
+      if (Date.now() - startTime < 250 &&
+        Math.abs(ev.mp.changedTouches[0].clientX - startX) < 10 &&
+        Math.abs(ev.mp.changedTouches[0].clientY - startY) < 10) {
+        this.changeStencilPng(ev.target.dataset.stencil)
+      }
+    },
+    changeKindsTouchEndHandler (ev) {
+      if (Date.now() - startTime < 250 &&
+        Math.abs(ev.mp.changedTouches[0].clientX - startX) < 10 &&
+        Math.abs(ev.mp.changedTouches[0].clientY - startY) < 10) {
+        this.changeKinds(ev.target.dataset.cate)
+      }
+    },
     getStencil (noChange) {
       wx.request({
         url: API,
@@ -209,16 +241,22 @@ export default {
         this.drawMask()
       })
       this.$root.$mp.page.setData({
-        icon_id: item.id,
-        icon_name: item.name
+        icon_id: item.icon_id,
+        icon_name: item.icon_name
       })
-      console.log(this)
     },
     changeKinds (val) {
       this.curkinds = val
       this.currentIndex = this.kinds.indexOf(val)
     },
     choosePhoto (name){
+      this.copy = {
+        show: true,
+        photoH: this.photoH,
+        photoW: this.photoW,
+        transform: this.photoStyle,
+        photoPath: this.photoPath
+      }
       wx.chooseImage({
         count: 1, // 默认9
         sizeType: ['compressed', 'original'], // 可以指定是原图还是压缩图，默认二者都有
@@ -229,6 +267,9 @@ export default {
             src: path,
             success: (data) => {
               const {width, height} = data
+              this.photoPath = ''
+              this.scale = 1
+              this.photoPath = path
               if (width > height) {
                 this.photoH = this.photoContentWidth
                 this.photoW = this.photoContentWidth * (width / height)
@@ -240,8 +281,11 @@ export default {
                 this.translateY = -(this.photoH - this.photoW) / 2
                 this.translateX = 0
               }
-              this.scale = 1
-              this.photoPath = path
+              this.$nextTick(() => {
+                setTimeout(() => {
+                  this.copy.show = false
+                }, 100)
+              })
             }
           })
         }
@@ -257,7 +301,9 @@ export default {
           ctx.fillRect(0, 0, this.viewW, this.viewW)
           ctx.clearRect(l, l, this.photoContentWidth, this.photoContentWidth)
           ctx.drawImage(path, l, l, this.photoContentWidth, this.photoContentWidth)
-          ctx.draw()
+          ctx.draw(false, () => {
+            wx.hideLoading()
+          })
           this.loadedPath = path
         }
       })
@@ -301,6 +347,17 @@ export default {
         QRX: 0,
         QRY: 332,
         QRL: 43
+      }
+      if (this.viewW < 375) {
+        const s = this.viewW / 375
+        Object.keys(goal).forEach((key) => {
+          if (isNaN(goal[key]) || key === 'QRL') return
+          if (key === 'QRY') {
+            goal[key] = this.viewW - 43
+          } else {
+            goal[key] = goal[key] * s | 0
+          }
+        })
       }
 
       const scale = goal.puzzleW / this.photoContentWidth
@@ -367,6 +424,9 @@ export default {
     this.getSysInfo()
   },
   onReady() {
+    wx.showLoading({
+      mask: true
+    })
     this.getRectData()
   },
   onShow () {
@@ -374,9 +434,9 @@ export default {
   },
   onShareAppMessage() {
     return {
-      title: 'Keke',
+      title: 'keke',
       path: '/pages/index/main',
-      imageUrl: 'http://imglf3.nosdn0.126.net/img/Qmx2R2tOVVFNcjB2UDFEZjE3MExrZjkrVTRXZEhPWnhNSTF4K0xYSnNlenJzOEp3UXluaFJRPT0.jpg?imageView&thumbnail=1680x0&quality=96&stripmeta=0&type=jpg'
+      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/images/58932d14069b519c207f030200cd256b.jpg'
     }
   }
 }
@@ -415,6 +475,9 @@ export default {
         width: 100%;
         height: 100%;
         z-index: 8;
+        &.copy{
+          z-index: 9;
+        }
       }
     }
     .shape-mask{

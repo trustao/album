@@ -73,9 +73,9 @@ export default {
   },
   onShareAppMessage() {
     return {
-      title: 'Keke',
+      title: 'keke',
       path: '/pages/index/main',
-      imageUrl: 'http://imglf3.nosdn0.126.net/img/Qmx2R2tOVVFNcjB2UDFEZjE3MExrZjkrVTRXZEhPWnhNSTF4K0xYSnNlenJzOEp3UXluaFJRPT0.jpg?imageView&thumbnail=1680x0&quality=96&stripmeta=0&type=jpg'
+      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/images/58932d14069b519c207f030200cd256b.jpg'
     }
   }
 }

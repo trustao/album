@@ -313,6 +313,7 @@ class TapHelper {
   }
 
   setout (x, y) {
+    console.log(this.triggersSet)
     this.triggersSet.forEach((trigger, index) => {
       if (trigger.inside(x, y)) {
         const handle = {
@@ -331,12 +332,13 @@ class TapHelper {
   }
 
   invoke () {
+    console.log('task queue', this.runningQueue)
     while (this.runningQueue.length) {
       const handle =  this.runningQueue.shift()
-      handle.handler()
       if (this.zIndexModel) {
         this.triggersSet.push(this.triggersSet.splice(handle.index, 1)[0])
       }
+      handle.handler()
     }
   }
 
@@ -387,12 +389,18 @@ class Trigger {
       console.err('add watch failed')
       return
     }
-    if (this.triggersSet.indexOf(this) < 0) this.triggersSet.push(this)
+    const index = this.triggersSet.indexOf(this)
+    if (index < 0)  {
+      this.triggersSet.push(this)
+    } else {
+      this.triggersSet.push(this.triggersSet.splice(index, 1)[0])
+    }
   }
   clear () {
     if (!this.triggersSet) return
     const index = this.triggersSet.indexOf(this)
-    if (index >= 0) this.triggersSet.splice(this, 1)
+    if (index >= 0) this.triggersSet.splice(index, 1)
+    return this
   }
 }
 

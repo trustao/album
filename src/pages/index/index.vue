@@ -50,9 +50,9 @@
 const API = 'https://api.pintuxiangce.com/icon/index'
 
 import icon from '@/images/ic_changePic.png'
-import {TapHelper, Trigger} from './draw'
+import {TapHelper, Trigger, requestAnimationFrame} from './draw'
 
-const tapHelper = new TapHelper({zIndexModel: false})
+const tapHelper = new TapHelper({zIndexModel: true})
 let startTouch = {}
 let startTime = 0
 let startX = 0
@@ -212,6 +212,7 @@ export default {
     },
     photoTouchMove (ev) {
       if (this.chartletControl) return
+      const {x, y} = ev.touches[0]
       this.translateX = startTouch.translate.x + (x - startTouch.x)
       this.translateY = startTouch.translate.y + (y - startTouch.y)
       if (ev.touches.length > 1) {
@@ -227,7 +228,7 @@ export default {
     },
     chartletTouchMove (ev) {
       if (!this.chartletControl) return
-      chartletController
+      // chartletController
     },
     photoTouchEnd (ev) {
       if (this.chartletControl) return
@@ -243,14 +244,12 @@ export default {
     initController () {
       let x = 0
       let y = 0
-      let w = 0
-      let h = 0
       const iconSize = 22
       chartletController = {
         show: false,
-        closeTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet),
-        scaleTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet),
-        reversalTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet),
+        closeTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet).clear(),
+        scaleTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet).clear(),
+        reversalTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet).clear(),
         curChartlet: null
       }
       Object.defineProperties(chartletController, {
@@ -261,7 +260,7 @@ export default {
           set (val) {
             x = val
             this.closeTrigger.x = x - iconSize / 2
-            this.scaleTrigger.x = x + w - iconSize / 2
+            this.scaleTrigger.x = x + this.w - iconSize / 2
             this.reversalTrigger.x = x - iconSize / 2
           }
         },
@@ -272,45 +271,59 @@ export default {
           set (val) {
             y  = val
             this.closeTrigger.y = y - iconSize / 2
-            this.scaleTrigger.x = y + h - iconSize / 2
-            this.reversalTrigger.x = y + h - iconSize / 2
+            this.scaleTrigger.y = y + this.h - iconSize / 2
+            this.reversalTrigger.y = y + this.h - iconSize / 2
           }
         },
         w: {
           get () {
-            return w
-          },
-          set (val, old) {
-            w = val
-            this.x =  this.x - (val - old) / 2
+            return this.curChartlet.w
           }
         },
         h: {
           get () {
-            return h
-          },
-          set (val, old) {
-            h = val
-            this.y =  this.h - (val - old) / 2
+            return this.curChartlet.h
           }
         }
       })
       chartletController.closeTrigger.bindCb(() => {
+        console.log('close')
         this.closeChartlet()
       })
       chartletController.reversalTrigger.bindCb(() => {
         this.reversalChartlet()
       })
+      this.initControllerIcon()
     },
     initControllerIcon () {
       chartletController.closeTrigger.path =  '/static/ic_delete.png'
       chartletController.scaleTrigger.path = '/static/ic_drag.png'
       chartletController.reversalTrigger.path = '/static/ic_reverse.png'
     },
-    drawController (ctx) {
-      if (!chartletController.show) return
-
+    addControllerTrigger (){
+      chartletController.closeTrigger.addWatch()
+      chartletController.scaleTrigger.addWatch()
+      chartletController.reversalTrigger.addWatch()
     },
+    clearControllerTrigger () {
+      chartletController.closeTrigger.clear()
+      chartletController.scaleTrigger.clear()
+      chartletController.reversalTrigger.clear()
+    },
+    drawController (ctx) {
+      if (!chartletController.show || !chartletController.curChartlet) return
+      const {x, y, w, h} = chartletController.curChartlet
+      ctx.save()
+      ctx.setStrokeStyle('#FFE200')
+      ctx.strokeRect(x, y, w, h)
+      ctx.drawImage(chartletController.closeTrigger.path, chartletController.closeTrigger.x,
+        chartletController.closeTrigger.y,chartletController.closeTrigger.w,chartletController.closeTrigger.h)
+      ctx.drawImage(chartletController.scaleTrigger.path, chartletController.scaleTrigger.x,
+        chartletController.scaleTrigger.y,chartletController.scaleTrigger.w,chartletController.scaleTrigger.h)
+      ctx.drawImage(chartletController.reversalTrigger.path, chartletController.reversalTrigger.x,
+        chartletController.reversalTrigger.y,chartletController.reversalTrigger.w,chartletController.reversalTrigger.h)
+    },
+
     closeChartlet () {
       chartletController.show = false
       chartletController.curChartlet.clear()
@@ -318,6 +331,10 @@ export default {
       if (index >= 0) {
         chartlets.splice(index, 1)
       }
+      chartletController.curChartlet = null
+      this.clearControllerTrigger()
+      console.log(chartlets, tapHelper.triggersSet)
+      this.chartletControl = false
     },
     scaleChartlet (ev) {
 
@@ -341,7 +358,7 @@ export default {
     getRectData (){
       wx.createSelectorQuery().select('.shape-content').boundingClientRect((rect) => {
         this.photoW = this.photoH = this.photoContentWidth = rect.width
-        this.drawMask()
+        this.drawChartlet()
       }).exec()
     },
     changeStencil (name){
@@ -423,11 +440,17 @@ export default {
           trigger.icon_id = info.icon_id
           trigger.icon_name = info.icon_name
           trigger.bindCb(() => {
+            // 点击贴纸
             console.log(trigger.icon_name)
+            chartletController.curChartlet = trigger
+            chartletController.x = trigger.x
+            chartletController.y = trigger.y
+            chartletController.show = true
+            this.chartletControl = true
+            this.addControllerTrigger()
           })
           this.loadedPath = path
           chartlets.push(trigger)
-          this.drawChartlet()
         }
       })
     },
@@ -439,9 +462,11 @@ export default {
         ctx.drawImage(item.path, item.reversalX * item.x, item.reversalY * item.y, item.w, item.h)
         ctx.restore()
       })
+      this.drawController(ctx)
       ctx.draw(false, () => {
         wx.hideLoading()
       })
+      requestAnimationFrame(this.drawChartlet)
     },
     drawMask () {
       wx.getImageInfo({
@@ -574,12 +599,14 @@ export default {
   created () {
     this.getStencil()
     this.getSysInfo()
+    this.initController()
   },
   onReady() {
     wx.showLoading({
       mask: true
     })
     this.getRectData()
+
   },
   onShow () {
     this.getStencil(true)

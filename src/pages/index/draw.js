@@ -304,31 +304,60 @@ function requestAnimationFrame (callback) {
 
 let helperId = 0
 class TapHelper {
-  constructor () {
+  constructor (options) {
     helperId++
     this.id = '_help_id_' + helperId
-    this.invokeArr = []
+    this.triggersSet = []
+    this.runningQueue = []
+    this.zIndexModel = options && !!options.zIndexModel
   }
 
-  invoke (x, y) {
-    this.invokeArr.forEach(trigger => {
-      if (trigger.inside(x, y)) trigger.invoke()
+  setout (x, y) {
+    this.triggersSet.forEach((trigger, index) => {
+      if (trigger.inside(x, y)) {
+        const handle = {
+          index: index,
+          handler: () => {
+            trigger.invoke()
+          }
+        }
+        if (this.zIndexModel && this.runningQueue[0]) {
+          this.runningQueue.splice(0, 1, handle)
+        } else {
+          this.runningQueue.push(handle)
+        }
+      }
     })
   }
+
+  invoke () {
+    while (this.runningQueue.length) {
+      const handle =  this.runningQueue.shift()
+      handle.handler()
+      if (this.zIndexModel) {
+        this.triggersSet.push(this.triggersSet.splice(handle.index, 1)[0])
+      }
+    }
+  }
+
+  release () {
+    this.runningQueue.splice(0, this.runningQueue.length)
+  }
+
   clearTapHelper () {
-    this.invokeArr.splice(0, this.invokeArr.length)
+    this.triggersSet.splice(0, this.triggersSet.length)
   }
 }
 
 class Trigger {
-  constructor (x, y, w, h, invokeArr) {
+  constructor (x, y, w, h, triggersSet) {
     if ([x, y, w, h].some(i => isNaN(i))) throw new Error('params type error.')
     this.x = x
     this.y = y
     this.w = w
     this.h = h
     this.cbs = []
-    this.invokeArr = invokeArr
+    this.triggersSet = triggersSet
     this.addWatch()
   }
 
@@ -354,16 +383,16 @@ class Trigger {
     if (index >= 0) this.cbs.splice(index, 1)
   }
   addWatch () {
-    if (!this.invokeArr) {
+    if (!this.triggersSet) {
       console.err('add watch failed')
       return
     }
-    if (this.invokeArr.indexOf(this) < 0) this.invokeArr.push(this)
+    if (this.triggersSet.indexOf(this) < 0) this.triggersSet.push(this)
   }
   clear () {
-    if (!this.invokeArr) return
-      const index = this.invokeArr.indexOf(this)
-    if (index >= 0) this.invokeArr.splice(this, 1)
+    if (!this.triggersSet) return
+    const index = this.triggersSet.indexOf(this)
+    if (index >= 0) this.triggersSet.splice(this, 1)
   }
 }
 
@@ -440,10 +469,10 @@ class CvsDiv {
     }
     this.initPadding()
     this.autoSize()
-    this.initTrigger(options.invokeArr)
+    this.initTrigger(options.triggersSet)
   }
-  initTrigger (invokeArr) {
-    this.trigger = new Trigger(this.x, this.y, this.w, this.h, invokeArr)
+  initTrigger (triggersSet) {
+    this.trigger = new Trigger(this.x, this.y, this.w, this.h, triggersSet)
   }
   autoSize () {
     this.ctx.save()
@@ -484,7 +513,7 @@ class CvsDiv {
     this.paddingBottom = +bottom
   }
 }
-export default {
+export {
   getSVGPath,
   drawColorBackground,
   drawImageBackground,

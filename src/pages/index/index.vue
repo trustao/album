@@ -50,29 +50,19 @@
 const API = 'https://api.pintuxiangce.com/icon/index'
 
 import icon from '@/images/ic_changePic.png'
+import {TapHelper, Trigger} from './draw'
 
-import shape1 from '@/images/stencilPng/shape1-small.png'
-import shape2 from '@/images/stencilPng/shape2-small.png'
-import shape3 from '@/images/stencilPng/shape1-small-2.4.png'
-import shape4 from '@/images/stencilPng/shape2-small-2.4.png'
-import shape5 from '@/images/stencilPng/shape1-small-3.png'
-import shape6 from '@/images/stencilPng/shape2-small-3.png'
-
+const tapHelper = new TapHelper({zIndexModel: false})
 let startTouch = {}
 let startTime = 0
 let startX = 0
 let startY = 0
+const chartlets = []
+let chartletController = null
 export default {
 
   data () {
     return {
-      pngs: {
-        shape1, shape2,
-        'shape1-2.4': shape3,
-        'shape2-2.4': shape4,
-        'shape1-3': shape5,
-        'shape2-3': shape6
-      },
       kinds: [],
       icon,
       iphoneX: false,
@@ -101,7 +91,10 @@ export default {
         photoW: 0,
         photoStyle: '',
         photoPath: ''
-      }
+      },
+      chartletW: 40,
+      chartletH: 40,
+      chartletControl: false
     }
   },
   computed: {
@@ -179,21 +172,46 @@ export default {
           x: this.translateX,
           y: this.translateY
         },
-        identifiers: '' + ev.touches[0].identifier
+        identifiers: '' + ev.touches[0].identifier,
+        timeStamp: Date.now()
       }
+      tapHelper.setout(startTouch.x, startTouch.y)
       if (ev.touches.length > 1) {
-        const {x, y} = ev.touches[1]
-        startTouch.distance = Math.sqrt((y - startTouch.y)**2 + (x - startTouch.x)**2)
-        let slope = (y - startTouch.y) / (x - startTouch.x)
-        if(isNaN(slope)) return
-        startTouch.slope = slope
-        startTouch.scale = this.scale
-        startTouch.rotate = this.rotate
-        startTouch.identifiers += ev.touches[1].identifier
+        tapHelper.release()
+        this.photoTouchStart(ev)
       }
     },
     touchMoveHandler(ev) {
       const {x, y} = ev.touches[0]
+      if (Math.abs(x - startTouch.x) > 10 || Math.abs(y - startTouch.y) > 10) tapHelper.release()
+      this.photoTouchMove(ev)
+    },
+    touchEndHandler (ev) {
+      const {x, y} = ev.mp.changedTouches[0]
+      if (
+        Date.now() - startTouch.timeStamp < 300 &&
+        Math.abs(x - startTouch.x) < 10 &&
+        Math.abs(y - startTouch.y) < 10
+      ) {
+        tapHelper.invoke()
+      } else {
+        tapHelper.release()
+      }
+      this.photoTouchEnd(ev)
+    },
+    photoTouchStart (ev) {
+      if (this.chartletControl) return
+      const {x, y} = ev.touches[1]
+      startTouch.distance = Math.sqrt((y - startTouch.y)**2 + (x - startTouch.x)**2)
+      let slope = (y - startTouch.y) / (x - startTouch.x)
+      if(isNaN(slope)) return
+      startTouch.slope = slope
+      startTouch.scale = this.scale
+      startTouch.rotate = this.rotate
+      startTouch.identifiers += ev.touches[1].identifier
+    },
+    photoTouchMove (ev) {
+      if (this.chartletControl) return
       this.translateX = startTouch.translate.x + (x - startTouch.x)
       this.translateY = startTouch.translate.y + (y - startTouch.y)
       if (ev.touches.length > 1) {
@@ -207,8 +225,12 @@ export default {
         console.log(this.rotate)
       }
     },
-    touchEndHandler (ev) {
-      console.log(ev)
+    chartletTouchMove (ev) {
+      if (!this.chartletControl) return
+      chartletController
+    },
+    photoTouchEnd (ev) {
+      if (this.chartletControl) return
       if (ev.touches) {
         const identifiers = ev.touches.reduce((a, b) => {
           return a + b.identifier
@@ -216,6 +238,104 @@ export default {
         if (identifiers !== startTouch.identifiers) {
           this.touchStartHandler(ev)
         }
+      }
+    },
+    initController () {
+      let x = 0
+      let y = 0
+      let w = 0
+      let h = 0
+      const iconSize = 22
+      chartletController = {
+        show: false,
+        closeTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet),
+        scaleTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet),
+        reversalTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet),
+        curChartlet: null
+      }
+      Object.defineProperties(chartletController, {
+        x: {
+          get () {
+            return x
+          },
+          set (val) {
+            x = val
+            this.closeTrigger.x = x - iconSize / 2
+            this.scaleTrigger.x = x + w - iconSize / 2
+            this.reversalTrigger.x = x - iconSize / 2
+          }
+        },
+        y: {
+          get () {
+            return y
+          },
+          set (val) {
+            y  = val
+            this.closeTrigger.y = y - iconSize / 2
+            this.scaleTrigger.x = y + h - iconSize / 2
+            this.reversalTrigger.x = y + h - iconSize / 2
+          }
+        },
+        w: {
+          get () {
+            return w
+          },
+          set (val, old) {
+            w = val
+            this.x =  this.x - (val - old) / 2
+          }
+        },
+        h: {
+          get () {
+            return h
+          },
+          set (val, old) {
+            h = val
+            this.y =  this.h - (val - old) / 2
+          }
+        }
+      })
+      chartletController.closeTrigger.bindCb(() => {
+        this.closeChartlet()
+      })
+      chartletController.reversalTrigger.bindCb(() => {
+        this.reversalChartlet()
+      })
+    },
+    initControllerIcon () {
+      chartletController.closeTrigger.path =  '/static/ic_delete.png'
+      chartletController.scaleTrigger.path = '/static/ic_drag.png'
+      chartletController.reversalTrigger.path = '/static/ic_reverse.png'
+    },
+    drawController (ctx) {
+      if (!chartletController.show) return
+
+    },
+    closeChartlet () {
+      chartletController.show = false
+      chartletController.curChartlet.clear()
+      const index = chartlets.indexOf(chartletController.curChartlet)
+      if (index >= 0) {
+        chartlets.splice(index, 1)
+      }
+    },
+    scaleChartlet (ev) {
+
+    },
+    reversalChartlet () {
+      const cur = chartletController.curChartlet
+      if (cur.reversalX === 1 && cur.reversalY === 1) {
+        cur.reversalX = -1
+        cur.reversalY = 1
+      } else if (cur.reversalX === -1 && cur.reversalY === 1) {
+        cur.reversalX = -1
+        cur.reversalY = -1
+      } else if (cur.reversalX === -1 && cur.reversalY === -1) {
+        cur.reversalX = 1
+        cur.reversalY = -1
+      } else {
+        cur.reversalX = 1
+        cur.reversalY = 1
       }
     },
     getRectData (){
@@ -236,10 +356,8 @@ export default {
       }
     },
     changeStencilPng (item) {
+      this.createChartlet(item)
       this.stencilPng = item.full_url
-      this.$nextTick(() => {
-        this.drawMask()
-      })
       this.$root.$mp.page.setData({
         icon_id: item.icon_id,
         icon_name: item.icon_name
@@ -289,6 +407,40 @@ export default {
             }
           })
         }
+      })
+    },
+    createChartlet (info) {
+      console.warn('create')
+      wx.getImageInfo({
+        src: info.full_url,
+        success: ({path}) => {
+          const x = (this.viewW - this.chartletW) / 2
+          const y = (this.viewW - this.chartletH) / 2
+          const trigger = new Trigger(x, y, this.chartletW, this.chartletH, tapHelper.triggersSet)
+          trigger.reversalX = 1
+          trigger.reversalY = 1
+          trigger.path = path
+          trigger.icon_id = info.icon_id
+          trigger.icon_name = info.icon_name
+          trigger.bindCb(() => {
+            console.log(trigger.icon_name)
+          })
+          this.loadedPath = path
+          chartlets.push(trigger)
+          this.drawChartlet()
+        }
+      })
+    },
+    drawChartlet () {
+      const ctx = wx.createCanvasContext('shape-mask')
+      chartlets.forEach(item => {
+        ctx.save()
+        ctx.scale(item.reversalX, item.reversalY)
+        ctx.drawImage(item.path, item.reversalX * item.x, item.reversalY * item.y, item.w, item.h)
+        ctx.restore()
+      })
+      ctx.draw(false, () => {
+        wx.hideLoading()
       })
     },
     drawMask () {

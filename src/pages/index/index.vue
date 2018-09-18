@@ -1,15 +1,37 @@
 <template>
   <container title="keke" background="#FFE200">
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
-      <div class="shape-wrap">
+      <div class="shape-wrap"
+           @touchend="touchEndHandler"
+           @touchmove="touchMoveHandler">
         <div class="shape-content">
           <img class="shape-img copy" v-if="copy.show" :style="{width: copy.photoW + 'px', height: copy.photoH + 'px', transform: copy.photoStyle}" :src="copy.photoPath" alt="">
           <img class="shape-img" :style="{width: photoW + 'px', height: photoH + 'px', transform: photoStyle}" :src="photoPath" alt="">
         </div>
-        <canvas class="shape-mask" canvas-id="shape-mask" :disable-scroll="true"
-                @touchstart="touchStartHandler"
-                @touchend="touchEndHandler"
-                @touchmove="touchMoveHandler"></canvas>
+        <div class="shape-mask" canvas-id="shape-mask" :disable-scroll="true"
+                @touchstart="touchStartHandler"></div>
+        <div class="tie-wrap">
+          <img class="tie" v-for="(item, index) in tieList"
+               :key="index"
+               :style="{
+                transform: 'translateX(' + item.x + 'px) translateY(' + item.y + 'px) scale(' + item.scale + ') rotate(' + item.rotate + 'deg)',
+                width: item.w + 'px',
+                height: item.h + 'px',
+                'z-index': item.z
+               }"
+               :src="item.path2"
+               @click="controlTie(item, $event)"
+               @touchstart="tieTouchStart(item, $event)"
+          >
+          <div class="controller" v-if="tieChanging" :style="{
+              width: controller.w + 'px',height: controller.h + 'px',
+              transform: 'translateX(' + controller.x + 'px) translateY(' + controller.y + 'px) scale(' + controller.scale + ') rotate(' + controller.rotate + 'deg)'
+            }">
+            <img class="close" src="/static/ic_delete.png" @click="closeHandler"/>
+            <img class="reversal" src="/static/ic_reverse.png" @click="reversalHandler"/>
+            <img class="scale" src="/static/ic_drag.png" @touchstart="scaleHandler"/>
+          </div>
+        </div>
       </div>
       <div scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
         <scroll-view scroll-y scroll-x  @touchstart.stop="fn" @touchend="changeKindsTouchEndHandler" class="kinds">
@@ -50,15 +72,12 @@
 const API = 'https://api.pintuxiangce.com/icon/index'
 
 import icon from '@/images/ic_changePic.png'
-import {TapHelper, Trigger, requestAnimationFrame} from './draw'
 
-const tapHelper = new TapHelper({zIndexModel: true})
 let startTouch = {}
 let startTime = 0
 let startX = 0
 let startY = 0
-const chartlets = []
-let chartletController = null
+let zIndexBase = 10
 export default {
 
   data () {
@@ -92,9 +111,17 @@ export default {
         photoStyle: '',
         photoPath: ''
       },
-      chartletW: 40,
-      chartletH: 40,
-      chartletControl: false
+      tieList: [],
+      tieChanging: false,
+      tieMoving: false,
+      controller: {
+        x: 0,
+        y: 0,
+        w: 0,
+        h: 0,
+        scale: 1,
+        rotate: 0
+      }
     }
   },
   computed: {
@@ -166,219 +193,136 @@ export default {
     },
     touchStartHandler (ev) {
       startTouch = {
-        x: ev.touches[0].x,
-        y: ev.touches[0].y,
+        x: ev.mp.touches[0].clientX,
+        y: ev.mp.touches[0].clientY,
         translate: {
           x: this.translateX,
           y: this.translateY
         },
-        identifiers: '' + ev.touches[0].identifier,
-        timeStamp: Date.now()
+        identifiers: '' + ev.mp.touches[0].identifier
       }
-      tapHelper.setout(startTouch.x, startTouch.y)
       if (ev.touches.length > 1) {
-        tapHelper.release()
-        this.photoTouchStart(ev)
+        const {x, y} = {
+          x:  ev.mp.touches[1].clientX,
+          y:  ev.mp.touches[1].clientY
+        }
+        startTouch.distance = Math.sqrt((y - startTouch.y)**2 + (x - startTouch.x)**2)
+        let slope = (y - startTouch.y) / (x - startTouch.x)
+        if(isNaN(slope)) return
+        startTouch.slope = slope
+        startTouch.scale = this.scale
+        startTouch.rotate = this.rotate
+        startTouch.identifiers += ev.mp.touches[1].identifier
       }
     },
     touchMoveHandler(ev) {
-      const {x, y} = ev.touches[0]
-      if (Math.abs(x - startTouch.x) > 10 || Math.abs(y - startTouch.y) > 10) tapHelper.release()
-      this.photoTouchMove(ev)
+      const {x, y} = {
+        x:  ev.mp.touches[0].clientX,
+        y:  ev.mp.touches[0].clientY
+      }
+      if (!this.tieMoving) {
+        this.translateX = startTouch.translate.x + (x - startTouch.x)
+        this.translateY = startTouch.translate.y + (y - startTouch.y)
+        if (ev.touches.length > 1) {
+          const X2 = ev.mp.touches[1].clientX
+          const Y2 = ev.mp.touches[1].clientY
+          const distance = Math.sqrt((y - Y2)**2 + (x - X2)**2)
+          let slope = (Y2 - y) / (X2 - x)
+          if(isNaN(slope)) return
+          this.scale = startTouch.scale * (distance / startTouch.distance)
+          this.rotate = startTouch.rotate + Math.atan(slope - startTouch.slope) / Math.PI * 180
+          console.log(this.rotate)
+        }
+      } else {
+        this.tieMove(x, y, ev)
+      }
     },
     touchEndHandler (ev) {
-      const {x, y} = ev.mp.changedTouches[0]
-      if (
-        Date.now() - startTouch.timeStamp < 300 &&
-        Math.abs(x - startTouch.x) < 10 &&
-        Math.abs(y - startTouch.y) < 10
-      ) {
-        tapHelper.invoke()
-      } else {
-        tapHelper.release()
-      }
-      this.photoTouchEnd(ev)
-    },
-    photoTouchStart (ev) {
-      if (this.chartletControl) return
-      const {x, y} = ev.touches[1]
-      startTouch.distance = Math.sqrt((y - startTouch.y)**2 + (x - startTouch.x)**2)
-      let slope = (y - startTouch.y) / (x - startTouch.x)
-      if(isNaN(slope)) return
-      startTouch.slope = slope
-      startTouch.scale = this.scale
-      startTouch.rotate = this.rotate
-      startTouch.identifiers += ev.touches[1].identifier
-    },
-    photoTouchMove (ev) {
-      if (this.chartletControl) return
-      const {x, y} = ev.touches[0]
-      this.translateX = startTouch.translate.x + (x - startTouch.x)
-      this.translateY = startTouch.translate.y + (y - startTouch.y)
-      if (ev.touches.length > 1) {
-        const X2 = ev.touches[1].x
-        const Y2 = ev.touches[1].y
-        const distance = Math.sqrt((y - Y2)**2 + (x - X2)**2)
-        let slope = (Y2 - y) / (X2 - x)
-        if(isNaN(slope)) return
-        this.scale = startTouch.scale * (distance / startTouch.distance)
-        this.rotate = startTouch.rotate + Math.atan(slope - startTouch.slope) / Math.PI * 180
-        console.log(this.rotate)
-      }
-    },
-    chartletTouchMove (ev) {
-      if (!this.chartletControl) return
-      // chartletController
-    },
-    photoTouchEnd (ev) {
-      if (this.chartletControl) return
+      console.log(ev)
       if (ev.touches) {
-        const identifiers = ev.touches.reduce((a, b) => {
+        const identifiers = ev.mp.touches.reduce((a, b) => {
           return a + b.identifier
         }, '').slice(0, 2)
         if (identifiers !== startTouch.identifiers) {
           this.touchStartHandler(ev)
         }
       }
+      this.tieMoving = false
     },
-    initController () {
-      let x = 0
-      let y = 0
-      const iconSize = 22
-      chartletController = {
-        show: false,
-        closeTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet).clear(),
-        scaleTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet).clear(),
-        reversalTrigger: new Trigger(0, 0, iconSize, iconSize, tapHelper.triggersSet).clear(),
-        curChartlet: null
+    tieMove(x, y, ev){
+      const change = {
+        x: this.controller.x +  x - startTouch.controller.x,
+        y: this.controller.y +  y - startTouch.controller.y,
+        w: this.controller.w, // +  w - startTouch.controller.w,
+        h: this.controller.h, // +  x - startTouch.controller.h,
+        scale: this.controller.scale, // +  x - startTouch.controller.scale,
+        rotate: this.controller.rotate// +  x - startTouch.controller.rotate
       }
-      Object.defineProperties(chartletController, {
-        x: {
-          get () {
-            return x
-          },
-          set (val) {
-            x = val
-            this.closeTrigger.x = x - iconSize / 2
-            this.scaleTrigger.x = x + this.w - iconSize / 2
-            this.reversalTrigger.x = x - iconSize / 2
-          }
-        },
-        y: {
-          get () {
-            return y
-          },
-          set (val) {
-            y  = val
-            this.closeTrigger.y = y - iconSize / 2
-            this.scaleTrigger.y = y + this.h - iconSize / 2
-            this.reversalTrigger.y = y + this.h - iconSize / 2
-          }
-        },
-        w: {
-          get () {
-            return this.curChartlet.w
-          }
-        },
-        h: {
-          get () {
-            return this.curChartlet.h
-          }
-        }
-      })
-      chartletController.closeTrigger.bindCb(() => {
-        console.log('close')
-        this.closeChartlet()
-      })
-      chartletController.reversalTrigger.bindCb(() => {
-        this.reversalChartlet()
-      })
-      this.initControllerIcon()
+      console.log(change)
+      Object.assign(this.controller.current, change)
+      Object.assign(this.controller, change)
+      console.log(this.controller)
     },
-    initControllerIcon () {
-      chartletController.closeTrigger.path =  '/static/ic_delete.png'
-      chartletController.scaleTrigger.path = '/static/ic_drag.png'
-      chartletController.reversalTrigger.path = '/static/ic_reverse.png'
-    },
-    addControllerTrigger (){
-      chartletController.closeTrigger.addWatch()
-      chartletController.scaleTrigger.addWatch()
-      chartletController.reversalTrigger.addWatch()
-    },
-    clearControllerTrigger () {
-      chartletController.closeTrigger.clear()
-      chartletController.scaleTrigger.clear()
-      chartletController.reversalTrigger.clear()
-    },
-    drawController (ctx) {
-      if (!chartletController.show || !chartletController.curChartlet) return
-      const {x, y, w, h} = chartletController.curChartlet
-      ctx.save()
-      ctx.setStrokeStyle('#FFE200')
-      ctx.strokeRect(x, y, w, h)
-      ctx.drawImage(chartletController.closeTrigger.path, chartletController.closeTrigger.x,
-        chartletController.closeTrigger.y,chartletController.closeTrigger.w,chartletController.closeTrigger.h)
-      ctx.drawImage(chartletController.scaleTrigger.path, chartletController.scaleTrigger.x,
-        chartletController.scaleTrigger.y,chartletController.scaleTrigger.w,chartletController.scaleTrigger.h)
-      ctx.drawImage(chartletController.reversalTrigger.path, chartletController.reversalTrigger.x,
-        chartletController.reversalTrigger.y,chartletController.reversalTrigger.w,chartletController.reversalTrigger.h)
-    },
-
-    closeChartlet () {
-      chartletController.show = false
-      chartletController.curChartlet.clear()
-      const index = chartlets.indexOf(chartletController.curChartlet)
-      if (index >= 0) {
-        chartlets.splice(index, 1)
-      }
-      chartletController.curChartlet = null
-      this.clearControllerTrigger()
-      console.log(chartlets, tapHelper.triggersSet)
-      this.chartletControl = false
-    },
-    scaleChartlet (ev) {
-
-    },
-    reversalChartlet () {
-      const cur = chartletController.curChartlet
-      if (cur.reversalX === 1 && cur.reversalY === 1) {
-        cur.reversalX = -1
-        cur.reversalY = 1
-      } else if (cur.reversalX === -1 && cur.reversalY === 1) {
-        cur.reversalX = -1
-        cur.reversalY = -1
-      } else if (cur.reversalX === -1 && cur.reversalY === -1) {
-        cur.reversalX = 1
-        cur.reversalY = -1
-      } else {
-        cur.reversalX = 1
-        cur.reversalY = 1
+    tieTouchStart (item, ev) {
+      console.log(item, ev)
+      this.tieMoving = true
+      this.controller.current = item
+      startTouch.controller = {
+        x: this.controller.x,
+        y: this.controller.y,
+        w: this.controller.w,
+        h: this.controller.h,
+        scale: this.controller.scale,
+        rotate: this.controller.rotate
       }
     },
+    controlTie (item, ev) {
+      console.log(item, ev)
+      this.controller.x = item.x
+      this.controller.y = item.y
+      this.controller.w = item.w
+      this.controller.h = item.h
+      this.controller.scale = item.scale
+      this.controller.rotate = item.rotate
+      this.controller.current = item
+      this.tieChanging = true
+    },
+    closeHandler() {},
+    scaleHandler() {},
+    reversalHandler() {},
     getRectData (){
       wx.createSelectorQuery().select('.shape-content').boundingClientRect((rect) => {
         this.photoW = this.photoH = this.photoContentWidth = rect.width
-        this.drawChartlet()
+        this.drawMask()
       }).exec()
     },
-    changeStencil (name){
-      if (name !== this.stencil) {
-        this.stencil = name
-        wx.showLoading({
-          title: '图片渲染中',
-          mask: true
-        })
-        this.ctx.draw()
-        this.drawStencil(true)
-      }
-    },
     changeStencilPng (item) {
-      this.createChartlet(item)
+      this.createTie(item)
+      //
       this.stencilPng = item.full_url
       this.$root.$mp.page.setData({
         icon_id: item.icon_id,
         icon_name: item.icon_name
       })
+    },
+    createTie (item) {
+      const originW = 60
+      const originH = 60
+      zIndexBase++
+      const tie = {
+        x: (this.viewW - originW) / 2,
+        y: (this.viewW - originH) / 2,
+        w: originW,
+        h: originH,
+        z: zIndexBase,
+        scale: 1,
+        rotate: 0,
+        path: item.full_url,
+        path2: item.full_icon_url,
+        name: item.icon_name,
+        id: item.icon_id
+      }
+      this.tieList.push(tie)
     },
     changeKinds (val) {
       this.curkinds = val
@@ -425,48 +369,6 @@ export default {
           })
         }
       })
-    },
-    createChartlet (info) {
-      console.warn('create')
-      wx.getImageInfo({
-        src: info.full_url,
-        success: ({path}) => {
-          const x = (this.viewW - this.chartletW) / 2
-          const y = (this.viewW - this.chartletH) / 2
-          const trigger = new Trigger(x, y, this.chartletW, this.chartletH, tapHelper.triggersSet)
-          trigger.reversalX = 1
-          trigger.reversalY = 1
-          trigger.path = path
-          trigger.icon_id = info.icon_id
-          trigger.icon_name = info.icon_name
-          trigger.bindCb(() => {
-            // 点击贴纸
-            console.log(trigger.icon_name)
-            chartletController.curChartlet = trigger
-            chartletController.x = trigger.x
-            chartletController.y = trigger.y
-            chartletController.show = true
-            this.chartletControl = true
-            this.addControllerTrigger()
-          })
-          this.loadedPath = path
-          chartlets.push(trigger)
-        }
-      })
-    },
-    drawChartlet () {
-      const ctx = wx.createCanvasContext('shape-mask')
-      chartlets.forEach(item => {
-        ctx.save()
-        ctx.scale(item.reversalX, item.reversalY)
-        ctx.drawImage(item.path, item.reversalX * item.x, item.reversalY * item.y, item.w, item.h)
-        ctx.restore()
-      })
-      this.drawController(ctx)
-      ctx.draw(false, () => {
-        wx.hideLoading()
-      })
-      requestAnimationFrame(this.drawChartlet)
     },
     drawMask () {
       wx.getImageInfo({
@@ -599,14 +501,12 @@ export default {
   created () {
     this.getStencil()
     this.getSysInfo()
-    this.initController()
   },
   onReady() {
-    wx.showLoading({
-      mask: true
-    })
+    // wx.showLoading({
+    //   mask: true
+    // })
     this.getRectData()
-
   },
   onShow () {
     this.getStencil(true)
@@ -666,6 +566,43 @@ export default {
       width: 100vw;
       height: 100vw;
       z-index: 9;
+    }
+    .tie-wrap{
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 0;
+      .tie{
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    }
+    .controller {
+      position: absolute;
+      box-sizing: border-box;
+      top: 0;
+      left: 0;
+      border: 1px solid #FFE000;
+      z-index: 9999;
+      &>img{
+        position: absolute;
+        width: 44rpx;
+        height: 44rpx;
+      }
+      .close {
+        left: -22rpx;
+        top: -22rpx;
+      }
+      .scale {
+        right: -22rpx;
+        bottom: -22rpx;
+      }
+      .reversal {
+        left: -22rpx;
+        bottom: -22rpx;
+      }
     }
   }
 

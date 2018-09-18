@@ -9,12 +9,13 @@
           <img class="shape-img" :style="{width: photoW + 'px', height: photoH + 'px', transform: photoStyle}" :src="photoPath" alt="">
         </div>
         <div class="shape-mask" canvas-id="shape-mask" :disable-scroll="true"
-                @touchstart="touchStartHandler"></div>
+                @touchstart="touchStartHandler" @touchend="nullEnd"></div>
         <div class="tie-wrap">
           <img class="tie" v-for="(item, index) in tieList"
                :key="index"
                :style="{
-                transform: 'translateX(' + item.x + 'px) translateY(' + item.y + 'px) scale(' + item.scale + ') rotate(' + item.rotate + 'deg)',
+                transform: 'translateX(' + item.x + 'px) translateY(' + item.y + 'px) scale(' + item.scaleX +
+                 ',' + item.scaleY + ') rotate(' + item.rotate + 'deg)',
                 width: item.w + 'px',
                 height: item.h + 'px',
                 'z-index': item.z
@@ -25,11 +26,13 @@
           >
           <div class="controller" v-if="tieChanging" :style="{
               width: controller.w + 'px',height: controller.h + 'px',
-              transform: 'translateX(' + controller.x + 'px) translateY(' + controller.y + 'px) scale(' + controller.scale + ') rotate(' + controller.rotate + 'deg)'
-            }">
+              transform: 'translateX(' + controller.x + 'px) translateY(' + controller.y + 'px) rotate(' + controller.rotate + 'deg)'
+            }"
+               @touchstart="controllerStart"
+          >
             <img class="close" src="/static/ic_delete.png" @click="closeHandler"/>
             <img class="reversal" src="/static/ic_reverse.png" @click="reversalHandler"/>
-            <img class="scale" src="/static/ic_drag.png" @touchstart="scaleHandler"/>
+            <img class="scale" src="/static/ic_drag.png" @touchstart.stop="scaleHandler"/>
           </div>
         </div>
       </div>
@@ -114,12 +117,12 @@ export default {
       tieList: [],
       tieChanging: false,
       tieMoving: false,
+      tieScaling: false,
       controller: {
         x: 0,
         y: 0,
         w: 0,
         h: 0,
-        scale: 1,
         rotate: 0
       }
     }
@@ -220,6 +223,10 @@ export default {
         x:  ev.mp.touches[0].clientX,
         y:  ev.mp.touches[0].clientY
       }
+      if (this.tieScaling && this.tieChanging) {
+        this.tieScaleMove(x, y, ev)
+        return
+      }
       if (!this.tieMoving) {
         this.translateX = startTouch.translate.x + (x - startTouch.x)
         this.translateY = startTouch.translate.y + (y - startTouch.y)
@@ -248,33 +255,52 @@ export default {
         }
       }
       this.tieMoving = false
+      this.tieScaling = false
+    },
+    nullEnd(){
+      this.tieChanging = false
+    },
+    tieScaleMove (x, y, ev) {
+      const curTie = this.controller.current
+      const r = (Math.atan2(y - startTouch.tieStatus.oriY, x - startTouch.tieStatus.oriX) - Math.atan2(startTouch.y - startTouch.tieStatus.oriY, startTouch.x - startTouch.tieStatus.oriX)) / Math.PI * 180
+      const c = Math.max(x - startTouch.x, y - startTouch.y)
+      this.controller.w = curTie.w = startTouch.tieStatus.w + c
+      this.controller.h = curTie.h = startTouch.tieStatus.h + c
+      this.controller.x = curTie.x = startTouch.tieStatus.x - c / 2
+      this.controller.y = curTie.y = startTouch.tieStatus.y - c / 2
+      this.controller.rotate =  startTouch.tieStatus.rotate + r
+      curTie.rotate  = startTouch.tieStatus.rotate + r * curTie.scaleX * curTie.scaleY
     },
     tieMove(x, y, ev){
       const change = {
-        x: this.controller.x +  x - startTouch.controller.x,
-        y: this.controller.y +  y - startTouch.controller.y,
-        w: this.controller.w, // +  w - startTouch.controller.w,
-        h: this.controller.h, // +  x - startTouch.controller.h,
-        scale: this.controller.scale, // +  x - startTouch.controller.scale,
-        rotate: this.controller.rotate// +  x - startTouch.controller.rotate
+        x: startTouch.controller.x +  x - startTouch.x,
+        y: startTouch.controller.y +  y - startTouch.y,
+        w: startTouch.controller.w, // +  w - startTouch.controller.w,
+        h: startTouch.controller.h, // +  x - startTouch.controller.h,
+        rotate: startTouch.controller.rotate// +  x - startTouch.controller.rotate
       }
       console.log(change)
       Object.assign(this.controller.current, change)
       Object.assign(this.controller, change)
       console.log(this.controller)
     },
+    controllerStart(ev) {
+      this.tieTouchStart(this.controller.current, ev)
+    },
     tieTouchStart (item, ev) {
-      console.log(item, ev)
+      console.log('tie start', item, ev)
       this.tieMoving = true
       this.controller.current = item
       startTouch.controller = {
-        x: this.controller.x,
-        y: this.controller.y,
-        w: this.controller.w,
-        h: this.controller.h,
-        scale: this.controller.scale,
-        rotate: this.controller.rotate
+        x: item.x,
+        y: item.y,
+        w: item.w,
+        h: item.h,
+        rotate: item.rotate
       }
+      startTouch.x = ev.mp.touches[0].clientX
+      startTouch.y = ev.mp.touches[0].clientY
+      if (item.z !== zIndexBase) item.z = ++zIndexBase
     },
     controlTie (item, ev) {
       console.log(item, ev)
@@ -282,14 +308,43 @@ export default {
       this.controller.y = item.y
       this.controller.w = item.w
       this.controller.h = item.h
-      this.controller.scale = item.scale
       this.controller.rotate = item.rotate
       this.controller.current = item
       this.tieChanging = true
     },
-    closeHandler() {},
-    scaleHandler() {},
-    reversalHandler() {},
+    closeHandler() {
+      const index = this.tieList.indexOf(this.controller.current)
+      if (index >= 0) {
+        this.tieList.splice(index, 1)
+        this.tieChanging = false
+      }
+    },
+    scaleHandler(ev) {
+      console.log('scale',ev)
+      this.tieScaling = true
+      startTouch.x = ev.mp.touches[0].clientX
+      startTouch.y = ev.mp.touches[0].clientY
+      const {x, y, w, h, rotate} = this.controller.current
+      const oriX = x + w /2
+      const oriY = y + h /2
+      startTouch.tieStatus = {x, y, w, h, rotate, oriX, oriY}
+    },
+    reversalHandler() {
+      const {scaleX, scaleY} = this.controller.current
+      if (scaleX === 1 && scaleY === 1) {
+        this.controller.current.scaleX = -1
+        this.controller.current.scaleY = 1
+      } else if (scaleX === -1 && scaleY === 1) {
+        this.controller.current.scaleX = -1
+        this.controller.current.scaleY = -1
+      } else if (scaleX === -1 && scaleY === -1) {
+        this.controller.current.scaleX = 1
+        this.controller.current.scaleY = -1
+      } else{
+        this.controller.current.scaleX = 1
+        this.controller.current.scaleY = 1
+      }
+    },
     getRectData (){
       wx.createSelectorQuery().select('.shape-content').boundingClientRect((rect) => {
         this.photoW = this.photoH = this.photoContentWidth = rect.width
@@ -315,14 +370,17 @@ export default {
         w: originW,
         h: originH,
         z: zIndexBase,
-        scale: 1,
+        scaleX: 1,
+        scaleY: 1,
         rotate: 0,
         path: item.full_url,
         path2: item.full_icon_url,
         name: item.icon_name,
         id: item.icon_id
       }
+      console.log(tie)
       this.tieList.push(tie)
+      this.tieChanging = false
     },
     changeKinds (val) {
       this.curkinds = val
@@ -577,6 +635,7 @@ export default {
         position: absolute;
         top: 0;
         left: 0;
+        transform-origin: center center;
       }
     }
     .controller {

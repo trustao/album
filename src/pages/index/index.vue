@@ -7,29 +7,29 @@
         <div class="shape-content">
           <img class="shape-img copy" v-if="copy.show" :style="{width: copy.photoW + 'px', height: copy.photoH + 'px', transform: copy.photoStyle}" :src="copy.photoPath" alt="">
           <img class="shape-img" :style="{width: photoW + 'px', height: photoH + 'px', transform: photoStyle}" :src="photoPath" alt="">
-        </div>
-        <div class="shape-mask" canvas-id="shape-mask" :disable-scroll="true"
-                @touchstart="touchStartHandler" @touchend="nullEnd"></div>
-        <div class="tie-wrap">
-          <img class="tie" v-for="(item, index) in tieList"
-               :key="index"
-               :style="{
+          <div class="shape-mask" canvas-id="shape-mask" :disable-scroll="true"
+               @touchstart="touchStartHandler" @touchend="nullEnd"></div>
+          <div class="tie-wrap">
+            <img class="tie" v-for="(item, index) in tieList"
+                 :key="index"
+                 :style="{
                 transform: 'translateX(' + item.x + 'px) translateY(' + item.y + 'px) scale(' + item.scaleX +
                  ',' + item.scaleY + ') rotate(' + item.rotate + 'deg)',
                 width: item.w + 'px',
                 height: item.h + 'px',
                 'z-index': item.z
                }"
-               :src="item.path2"
-               @click="controlTie(item, $event)"
-               @touchstart="tieTouchStart(item, $event)"
-          >
+                 :src="item.path2"
+                 @click="controlTie(item, $event)"
+                 @touchstart="tieTouchStart(item, $event)"
+            >
+          </div>
+        </div>
+        <div class="controller-wrap">
           <div class="controller" v-if="tieChanging" :style="{
-              width: controller.w + 'px',height: controller.h + 'px',
-              transform: 'translateX(' + controller.x + 'px) translateY(' + controller.y + 'px) rotate(' + controller.rotate + 'deg)'
-            }"
-               @touchstart="controllerStart"
-          >
+            width: controller.w + 'px',height: controller.h + 'px',
+            transform: 'translateX(' + controller.x + 'px) translateY(' + controller.y + 'px) rotate(' + controller.rotate + 'deg)'
+          }" @touchstart="controllerStart">
             <img class="close" src="/static/ic_delete.png" @click="closeHandler"/>
             <img class="reversal" src="/static/ic_reverse.png" @click="reversalHandler"/>
             <img class="scale" src="/static/ic_drag.png" @touchstart.stop="scaleHandler"/>
@@ -66,7 +66,7 @@
         <cover-view class="btn" id="save-img" @click="saveImage">保存图片</cover-view>
       </cover-view>
     </div>
-    <canvas class="to-images" :style="{left: left, top: top}" canvas-id="to-images"></canvas>
+    <canvas class="to-images" canvas-id="to-images"></canvas>
   </container>
 </template>
 
@@ -81,6 +81,8 @@ let startTime = 0
 let startX = 0
 let startY = 0
 let zIndexBase = 10
+let nowR = 0
+let rot = 0
 export default {
 
   data () {
@@ -102,8 +104,8 @@ export default {
       photoContentWidth: 0,
       photoW: 0,
       photoH: 0,
-      left: null,
-      top: null,
+      left: 0,
+      top: 0,
       currentIndex: 0,
       kindsData: [],
       loadedPath: '',
@@ -263,26 +265,25 @@ export default {
     tieScaleMove (x, y, ev) {
       const curTie = this.controller.current
       const r = (Math.atan2(y - startTouch.tieStatus.oriY, x - startTouch.tieStatus.oriX) - Math.atan2(startTouch.y - startTouch.tieStatus.oriY, startTouch.x - startTouch.tieStatus.oriX)) / Math.PI * 180
-      const c = Math.max(x - startTouch.x, y - startTouch.y)
-      this.controller.w = curTie.w = startTouch.tieStatus.w + c
-      this.controller.h = curTie.h = startTouch.tieStatus.h + c
-      this.controller.x = curTie.x = startTouch.tieStatus.x - c / 2
-      this.controller.y = curTie.y = startTouch.tieStatus.y - c / 2
+      const c = Math.sqrt(2) / 2 * (Math.sqrt((x - startTouch.tieStatus.oriX)**2 + (y - startTouch.tieStatus.oriY)**2) - Math.sqrt((startTouch.x - startTouch.tieStatus.oriX)**2 + (startTouch.y - startTouch.tieStatus.oriY)**2))
+      if (-c * 2 > startTouch.tieStatus.w) return
+      this.controller.w = curTie.w = startTouch.tieStatus.w + c * 2
+      this.controller.h = curTie.h = startTouch.tieStatus.h + c * 2
+      this.controller.x = curTie.x = startTouch.tieStatus.x - c
+      this.controller.y = curTie.y = startTouch.tieStatus.y - c
       this.controller.rotate =  startTouch.tieStatus.rotate + r
       curTie.rotate  = startTouch.tieStatus.rotate + r * curTie.scaleX * curTie.scaleY
     },
-    tieMove(x, y, ev){
+    tieMove (x, y, ev) {
       const change = {
         x: startTouch.controller.x +  x - startTouch.x,
         y: startTouch.controller.y +  y - startTouch.y,
-        w: startTouch.controller.w, // +  w - startTouch.controller.w,
-        h: startTouch.controller.h, // +  x - startTouch.controller.h,
-        rotate: startTouch.controller.rotate// +  x - startTouch.controller.rotate
+        w: startTouch.controller.w,
+        h: startTouch.controller.h,
+        rotate: startTouch.controller.rotate
       }
-      console.log(change)
       Object.assign(this.controller.current, change)
       Object.assign(this.controller, change)
-      console.log(this.controller)
     },
     controllerStart(ev) {
       this.tieTouchStart(this.controller.current, ev)
@@ -325,8 +326,8 @@ export default {
       startTouch.x = ev.mp.touches[0].clientX
       startTouch.y = ev.mp.touches[0].clientY
       const {x, y, w, h, rotate} = this.controller.current
-      const oriX = x + w /2
-      const oriY = y + h /2
+      const oriX = x + w / 2 + this.left
+      const oriY = y + h / 2 + this.top
       startTouch.tieStatus = {x, y, w, h, rotate, oriX, oriY}
     },
     reversalHandler() {
@@ -348,6 +349,8 @@ export default {
     getRectData (){
       wx.createSelectorQuery().select('.shape-content').boundingClientRect((rect) => {
         this.photoW = this.photoH = this.photoContentWidth = rect.width
+        this.left = rect.left
+        this.top = rect.top
         this.drawMask()
       }).exec()
     },
@@ -365,14 +368,14 @@ export default {
       const originH = 60
       zIndexBase++
       const tie = {
-        x: (this.viewW - originW) / 2,
-        y: (this.viewW - originH) / 2,
+        x: (this.photoContentWidth - originW) / 2,
+        y: (this.photoContentWidth - originH) / 2,
         w: originW,
         h: originH,
         z: zIndexBase,
         scaleX: 1,
         scaleY: 1,
-        rotate: 0,
+        rotate: 360,
         path: item.full_url,
         path2: item.full_icon_url,
         name: item.icon_name,
@@ -518,7 +521,9 @@ export default {
       ctx.translate(this.translateX * scale, this.translateY * scale)
       ctx.drawImage(this.photoPath, goal.puzzleX - width * (this.scale - 1) / 2, goal.puzzleY - height * (this.scale - 1) / 2, width *  this.scale, height *  this.scale)
       ctx.restore()
-      ctx.drawImage(this.loadedPath, goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
+
+      // ctx.drawImage(this.loadedPath, goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
+
       ctx.drawImage(goal.QRCode, goal.QRX, goal.QRY, goal.QRL, goal.QRL)
       ctx.setFillStyle('#9C9C9C')
       ctx.setFontSize(10)

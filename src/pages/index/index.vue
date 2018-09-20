@@ -81,8 +81,6 @@ let startTime = 0
 let startX = 0
 let startY = 0
 let zIndexBase = 10
-let nowR = 0
-let rot = 0
 export default {
 
   data () {
@@ -363,6 +361,15 @@ export default {
         icon_name: item.icon_name
       })
     },
+    getImgLocalPath (item) {
+      console.log(item)
+      wx.getImageInfo({
+        src: item.path2,
+        success (info) {
+          item.drawPath = info.path
+        }
+      })
+    },
     createTie (item) {
       const originW = 60
       const originH = 60
@@ -375,13 +382,13 @@ export default {
         z: zIndexBase,
         scaleX: 1,
         scaleY: 1,
-        rotate: 360,
+        rotate: 0,
         path: item.full_url,
         path2: item.full_icon_url,
         name: item.icon_name,
         id: item.icon_id
       }
-      console.log(tie)
+      this.getImgLocalPath(tie)
       this.tieList.push(tie)
       this.tieChanging = false
     },
@@ -459,6 +466,23 @@ export default {
         // Do something when catch error
       }
     },
+    drawTie (ctx) {
+      const list = this.tieList.slice().sort((a, b) => a.z - b.z)
+      const baseScale = 375 / this.photoContentWidth
+      console.log(list)
+      list.forEach(item => {
+        ctx.save()
+        ctx.translate(amend(item.x) + amend(item.w) / 2, amend(item.y) + amend(item.h) / 2)
+        ctx.scale(item.scaleX, item.scaleY)
+        ctx.rotate(item.rotate * Math.PI / 180)
+        ctx.drawImage(item.drawPath, amend(-item.w) / 2, amend(-item.h) / 2, amend(item.w), amend(item.h))
+        ctx.restore()
+      })
+
+      function amend (val) {
+        return val * baseScale
+      }
+    },
     saveImage () {
       wx.showLoading({
         title: '图片生成中',
@@ -477,10 +501,10 @@ export default {
       }, 10000)
       const goal = {
         name: '个人头像',
-        puzzleX: 20,
-        puzzleY: 20,
-        puzzleW: 335,
-        puzzleH: 335,
+        puzzleX: 0,
+        puzzleY: 0,
+        puzzleW: 375,
+        puzzleH: 375,
         imgW: 375,
         imgH: 375,
         QRCode: '/static/QRCode.png',
@@ -488,6 +512,7 @@ export default {
         QRY: 332,
         QRL: 43
       }
+
       if (this.viewW < 375) {
         const s = this.viewW / 375
         Object.keys(goal).forEach((key) => {
@@ -513,16 +538,18 @@ export default {
       ctx.beginPath()
       ctx.setFillStyle('#fff')
       ctx.fillRect(0, 0, this.viewW, this.viewW)
-      ctx.rect(goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
       ctx.save()
-      ctx.clip()
-      ctx.setFillStyle('#000')
+      // ctx.rect(goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
+      // ctx.save()
+      // ctx.clip()
+      // ctx.setFillStyle('#000')
       ctx.fill()
       ctx.translate(this.translateX * scale, this.translateY * scale)
       ctx.drawImage(this.photoPath, goal.puzzleX - width * (this.scale - 1) / 2, goal.puzzleY - height * (this.scale - 1) / 2, width *  this.scale, height *  this.scale)
       ctx.restore()
 
       // ctx.drawImage(this.loadedPath, goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
+      this.drawTie(ctx)
 
       ctx.drawImage(goal.QRCode, goal.QRX, goal.QRY, goal.QRL, goal.QRL)
       ctx.setFillStyle('#9C9C9C')
@@ -537,10 +564,10 @@ export default {
           width: goal.imgW,
           height: goal.imgH,
           success: function (res) {
+            clearTimeout(timer)
             wx.saveImageToPhotosAlbum({
               filePath: res.tempFilePath,
               success () {
-                clearTimeout(timer)
                 wx.hideLoading()
                 const url = '../result/main'
                 wx.navigateTo({ url })
@@ -600,7 +627,7 @@ export default {
   .shape-wrap{
     position: relative;
     box-sizing: border-box;
-    padding: 40rpx;
+    /*padding: 40rpx;*/
     width: 100vw;
     height: 100vw;
     background: #fff;

@@ -68,6 +68,7 @@ export default {
       })
     },
     backHome () {
+      events.$emit('clearList')
       wx.navigateBack()
     }
   },

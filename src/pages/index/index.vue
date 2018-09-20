@@ -13,8 +13,8 @@
             <img class="tie" v-for="(item, index) in tieList"
                  :key="index"
                  :style="{
-                transform: 'translateX(' + item.x + 'px) translateY(' + item.y + 'px) scale(' + item.scaleX +
-                 ',' + item.scaleY + ') rotate(' + item.rotate + 'deg)',
+                transform: 'translateX(' + item.x + 'px) translateY(' + item.y + 'px)  rotate(' + item.rotate + 'deg) scale(' + item.scaleX +
+                 ',' + item.scaleY + ')',
                 width: item.w + 'px',
                 height: item.h + 'px',
                 'z-index': item.z
@@ -62,8 +62,8 @@
 
       </div>
       <cover-view class="btns" id="create-puzzle">
-        <cover-view class="btn" id="choose-img" @click="choosePhoto">选择图片</cover-view>
-        <cover-view class="btn" id="save-img" @click="saveImage">保存图片</cover-view>
+        <cover-view class="btn" id="choose-img" @click="choosePhoto">选图</cover-view>
+        <cover-view class="btn" id="save-img" @click="saveImage">保存</cover-view>
       </cover-view>
     </div>
     <canvas class="to-images" canvas-id="to-images"></canvas>
@@ -74,6 +74,7 @@
 /* global getCurrentPages */
 const API = 'https://api.pintuxiangce.com/icon/index'
 
+import events from '../../../static/events'
 import icon from '@/images/ic_changePic.png'
 
 let startTouch = {}
@@ -177,16 +178,16 @@ export default {
           this.kinds = kinds
           this.kindsData = kindsData
           if (noChange) return
-          if (this.photoContentWidth) {
-            this.changeStencilPng(this.kindsData[0][0])
-            this.changeKinds(this.kinds[0])
-          } else {
-            const unWatch = this.$watch('photoContentWidth',() => {
-              this.changeStencilPng(this.kindsData[0][0])
-              this.changeKinds(this.kinds[0])
-              unWatch()
-            })
-          }
+          // if (this.photoContentWidth) {
+          //   this.changeStencilPng(this.kindsData[0][0])
+          //   this.changeKinds(this.kinds[0])
+          // } else {
+          //   const unWatch = this.$watch('photoContentWidth',() => {
+          //     this.changeStencilPng(this.kindsData[0][0])
+          //     this.changeKinds(this.kinds[0])
+          //     unWatch()
+          //   })
+          // }
         }
       })
     },
@@ -228,6 +229,7 @@ export default {
         return
       }
       if (!this.tieMoving) {
+        return
         this.translateX = startTouch.translate.x + (x - startTouch.x)
         this.translateY = startTouch.translate.y + (y - startTouch.y)
         if (ev.touches.length > 1) {
@@ -265,22 +267,21 @@ export default {
       const r = (Math.atan2(y - startTouch.tieStatus.oriY, x - startTouch.tieStatus.oriX) - Math.atan2(startTouch.y - startTouch.tieStatus.oriY, startTouch.x - startTouch.tieStatus.oriX)) / Math.PI * 180
       const c = Math.sqrt(2) / 2 * (Math.sqrt((x - startTouch.tieStatus.oriX)**2 + (y - startTouch.tieStatus.oriY)**2) - Math.sqrt((startTouch.x - startTouch.tieStatus.oriX)**2 + (startTouch.y - startTouch.tieStatus.oriY)**2))
       if (-c * 2 > startTouch.tieStatus.w) return
-      this.controller.w = curTie.w = startTouch.tieStatus.w + c * 2
-      this.controller.h = curTie.h = startTouch.tieStatus.h + c * 2
-      this.controller.x = curTie.x = startTouch.tieStatus.x - c
-      this.controller.y = curTie.y = startTouch.tieStatus.y - c
+      this.controller.w =  40 + (curTie.w = startTouch.tieStatus.w + c * 2)
+      this.controller.h = 40 + (curTie.h = startTouch.tieStatus.h + c * 2)
+      this.controller.x = (curTie.x = startTouch.tieStatus.x - c) - 20
+      this.controller.y = (curTie.y = startTouch.tieStatus.y - c) - 20
       this.controller.rotate =  startTouch.tieStatus.rotate + r
-      curTie.rotate  = startTouch.tieStatus.rotate + r * curTie.scaleX * curTie.scaleY
+      curTie.rotate  = startTouch.tieStatus.rotate + r// * curTie.scaleX * curTie.scaleY
     },
     tieMove (x, y, ev) {
       const change = {
         x: startTouch.controller.x +  x - startTouch.x,
         y: startTouch.controller.y +  y - startTouch.y,
-        w: startTouch.controller.w,
-        h: startTouch.controller.h,
-        rotate: startTouch.controller.rotate
       }
       Object.assign(this.controller.current, change)
+      change.x -= 20
+      change.y -= 20
       Object.assign(this.controller, change)
     },
     controllerStart(ev) {
@@ -288,25 +289,27 @@ export default {
     },
     tieTouchStart (item, ev) {
       console.log('tie start', item, ev)
+      const x = item.x - 20
+      const y = item.y - 20
+      const w = item.w + 40
+      const h = item.h + 40
+      const rotate = item.rotate
+      if (this.tieChanging && item !== this.controller.current) {
+        Object.assign(this.controller, { x, y, w, h, rotate })
+      }
       this.tieMoving = true
       this.controller.current = item
-      startTouch.controller = {
-        x: item.x,
-        y: item.y,
-        w: item.w,
-        h: item.h,
-        rotate: item.rotate
-      }
+      startTouch.controller = { x, y, w, h, rotate }
       startTouch.x = ev.mp.touches[0].clientX
       startTouch.y = ev.mp.touches[0].clientY
       if (item.z !== zIndexBase) item.z = ++zIndexBase
     },
     controlTie (item, ev) {
       console.log(item, ev)
-      this.controller.x = item.x
-      this.controller.y = item.y
-      this.controller.w = item.w
-      this.controller.h = item.h
+      this.controller.w = item.w + 40
+      this.controller.h = item.h + 40
+      this.controller.x = item.x - 20
+      this.controller.y = item.y - 20
       this.controller.rotate = item.rotate
       this.controller.current = item
       this.tieChanging = true
@@ -349,7 +352,6 @@ export default {
         this.photoW = this.photoH = this.photoContentWidth = rect.width
         this.left = rect.left
         this.top = rect.top
-        this.drawMask()
       }).exec()
     },
     changeStencilPng (item) {
@@ -473,8 +475,8 @@ export default {
       list.forEach(item => {
         ctx.save()
         ctx.translate(amend(item.x) + amend(item.w) / 2, amend(item.y) + amend(item.h) / 2)
-        ctx.scale(item.scaleX, item.scaleY)
         ctx.rotate(item.rotate * Math.PI / 180)
+        ctx.scale(item.scaleX, item.scaleY)
         ctx.drawImage(item.drawPath, amend(-item.w) / 2, amend(-item.h) / 2, amend(item.w), amend(item.h))
         ctx.restore()
       })
@@ -488,6 +490,7 @@ export default {
         title: '图片生成中',
         mask: true
       })
+      this.tieChanging = false
       const timer = setTimeout(() => {
         wx.hideLoading()
         wx.showModal({
@@ -536,7 +539,7 @@ export default {
         height = goal.puzzleW / (this.photoW / this.photoH)
       }
       ctx.beginPath()
-      ctx.setFillStyle('#fff')
+      ctx.setFillStyle('#000')
       ctx.fillRect(0, 0, this.viewW, this.viewW)
       ctx.save()
       // ctx.rect(goal.puzzleX, goal.puzzleY, goal.puzzleW, goal.puzzleH)
@@ -552,10 +555,10 @@ export default {
       this.drawTie(ctx)
 
       ctx.drawImage(goal.QRCode, goal.QRX, goal.QRY, goal.QRL, goal.QRL)
-      ctx.setFillStyle('#9C9C9C')
-      ctx.setFontSize(10)
-      ctx.setTextBaseline('bottom')
-      ctx.fillText('小程序keke', goal.QRL + 1, goal.imgH)
+      // ctx.setFillStyle('#9C9C9C')
+      // ctx.setFontSize(10)
+      // ctx.setTextBaseline('bottom')
+      // ctx.fillText('小程序keke', goal.QRL + 1, goal.imgH)
       ctx.draw(false, () => {
         wx.canvasToTempFilePath({
           canvasId: 'to-images',
@@ -597,6 +600,9 @@ export default {
     //   mask: true
     // })
     this.getRectData()
+    events.$on('clearList', () => {
+      this.tieList.splice(0, this.tieList.length)
+    })
   },
   onShow () {
     this.getStencil(true)
@@ -631,6 +637,7 @@ export default {
     width: 100vw;
     height: 100vw;
     background: #fff;
+    overflow: hidden;
     .shape-content{
       position: relative;
       width: 100%;
@@ -681,18 +688,19 @@ export default {
         position: absolute;
         width: 44rpx;
         height: 44rpx;
+        padding: 16rpx;
       }
       .close {
-        left: -22rpx;
-        top: -22rpx;
+        left: -36rpx;
+        top: -36rpx;
       }
       .scale {
-        right: -22rpx;
-        bottom: -22rpx;
+        right: -36rpx;
+        bottom: -36rpx;
       }
       .reversal {
-        left: -22rpx;
-        bottom: -22rpx;
+        left: -36rpx;
+        bottom: -36rpx;
       }
     }
   }
@@ -704,12 +712,12 @@ export default {
     width: 100%;
     display: flex;
     flex-direction: row;
-    justify-content: space-around;
+    justify-content: center;
     height: 80rpx;
     .btn{
       position: relative;
       box-sizing: border-box;
-      width: 280rpx;
+      width: 200rpx;
       height: 80rpx;
       line-height: 78rpx;
       text-align: center;
@@ -721,6 +729,7 @@ export default {
       z-index: 999;
       &:first-child{
         background: #fff;
+        margin-right: 60rpx;
       }
     }
   }

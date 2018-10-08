@@ -1,0 +1,5 @@
+<view class="textarea-wrap" wx:if="{{show}}" style="{{'bottom:' + bottom + 'px'}}">
+  <textarea fixed show-confirm-bar="{{false}}" adjust-position="{{false}}" value="{{value}}" focus="{{inputFocus}}"
+            bindinput="inputHandler" bindfocus="focusHandler" bindblur="inputBlurHandler"></textarea>
+  <view class="textarea-complete" bindtap="completeHandler">完成</view>
+</view>

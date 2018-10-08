@@ -20,22 +20,47 @@
                 'z-index': item.z
                }"
                  :src="item.path2"
-                 @click="controlTie(item, $event)"
+                 @touchend.stop="tieTouchEnd(item, $event)"
                  @touchstart="tieTouchStart(item, $event)"
             >
+          </div>
+          <div class="tie-text" v-for="(item, index) in textList"
+             :id="item.id"
+             :key="index"
+             @touchend.stop="tieTouchEnd(item, $event)"
+             @touchstart="tieTouchStart(item, $event)"
+             :style="{
+                width: item.w + 'px',
+                height: item.h + 'px',
+                top: item.t,
+                left: item.l,
+                transform: 'translateX(' + item.transX + ') translateY(' + item.transY + ')  rotate(' + item.rotate + 'deg) scale(' + item.scaleX +
+                 ',' + item.scaleY + ')',
+                'z-index': item.z}">
+            <text :id="'inner' + item.id">{{item.value}}</text>
           </div>
         </div>
         <div class="controller-wrap">
           <div class="controller" v-if="tieChanging" :style="{
             width: controller.w + 'px',height: controller.h + 'px',
-            transform: 'translateX(' + controller.x + 'px) translateY(' + controller.y + 'px) rotate(' + controller.rotate + 'deg)'
-          }" @touchstart="controllerStart">
-            <img class="close" src="/static/ic_delete.png" @click="closeHandler"/>
-            <img class="reversal" src="/static/ic_reverse.png" @click="reversalHandler"/>
-            <img class="scale" src="/static/ic_drag.png" @touchstart.stop="scaleHandler"/>
+            'z-index': controller.current.z,
+            transform: 'translateX(' + controller.x + 'px) translateY(' + controller.y + 'px) rotate(' + controller.rotate + 'deg) scale(' + controller.scale + ')'
+          }" @touchstart="controllerStart" @touchend.stop="controllerEnd">
+            <div class="border border-top" :style="{transform: 'scaleY(' + (1 / controller.scale) + ')'}"></div>
+            <div class="border border-left" :style="{transform: 'scaleX(' + (1 / controller.scale) + ')'}"></div>
+            <div class="border border-bottom" :style="{transform: 'scaleY(' + (1 / controller.scale) + ')'}"></div>
+            <div class="border border-right" :style="{transform: 'scaleX(' + (1 / controller.scale) + ')'}"></div>
+            <img class="close" :style="{transform: 'scale(' + (1 / controller.scale) + ')'}" src="/static/ic_delete.png" @click="closeHandler"/>
+            <img class="reversal" src="/static/ic_reverse.png" v-if="!isText" @click="reversalHandler"/>
+            <img class="scale" :style="{transform: 'scale(' + (1 / controller.scale) + ')'}" src="/static/ic_drag.png" @touchstart.stop="scaleHandler"/>
           </div>
         </div>
       </div>
+      <inputText :value="inputText" :show="inputShow" @inputblur="inputBlurHandler" @inputcomplete="inputCompleteHandler"></inputText>
+      <!--<div class="textarea-wrap" :style="{width: photoW - 10 + 'px', bottom: inputBottom + 'px'}">-->
+        <!--<textarea class="textarea" v-if="inputShow" fixed :adjust-position="false" :value="inputText"-->
+                  <!--:focus="inputFocus" @blur="inputBlurHandler"/>-->
+      <!--</div>-->
       <div scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
         <scroll-view scroll-y scroll-x  @touchstart.stop="fn" @touchend="changeKindsTouchEndHandler" class="kinds">
           <ul class="kinds-wrap">
@@ -51,8 +76,8 @@
           <swiper-item v-for="(cate, key) in kindsData" :key="key">
             <scroll-view scroll-y class="stencils-scroll">
               <ul class="stencil-list" >
-                <li class="stencil-item" v-for="(item, index) in cate" :key="index" :data-stencil="item" :class="{active: stencilPng === item.full_url}">
-                  <img class="stencil-img" :data-stencil="item" :src="item.full_icon_url" alt="">
+                <li class="stencil-item" v-for="(item, index) in cate" :key="index" :data-stencil="item">
+                  <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item.full_icon_url" alt="">
                 </li>
                 <li class="stencil-item" v-for="item in (6 - (cate.length % 6 || 6))" :key="item"></li>
               </ul>
@@ -63,6 +88,7 @@
       </div>
       <cover-view class="btns" id="create-puzzle">
         <cover-view class="btn" id="choose-img" @click="choosePhoto">选图</cover-view>
+        <cover-view class="btn text" id="add-text" @click="addText">+文字</cover-view>
         <cover-view class="btn" id="save-img" @click="saveImage">保存</cover-view>
       </cover-view>
     </div>
@@ -82,6 +108,7 @@ let startTime = 0
 let startX = 0
 let startY = 0
 let zIndexBase = 10
+let clickTime = 0
 export default {
 
   data () {
@@ -116,16 +143,25 @@ export default {
         photoPath: ''
       },
       tieList: [],
+      textList: [],
       tieChanging: false,
       tieMoving: false,
       tieScaling: false,
+      isText: false,
       controller: {
         x: 0,
         y: 0,
         w: 0,
         h: 0,
-        rotate: 0
-      }
+        rotate: 0,
+        scale: 1,
+      },
+      inputFocus: false,
+      inputShow: false,
+      inputEdit: false,
+      inputHeight: 40,
+      inputBottom: 0,
+      inputText: ''
     }
   },
   computed: {
@@ -138,6 +174,54 @@ export default {
     }
   },
   methods: {
+    textSlice(text) {
+      const arr = text.split(/\n/)
+      for (let i = 0; i < arr.length; i++) {
+        const item = arr[i];
+        const res = []
+        if (item.length > 16) {
+          let index = 0
+          while (index < item.length) {
+            res.push(item.slice(index, index + 16))
+            index += 16
+          }
+          arr.splice(i, 1, ...res)
+          i+= res.length
+        }
+      }
+      return arr.join('\n')
+    },
+    inputCompleteHandler (ev) {
+      let {value} = ev.mp.detail
+      value = this.textSlice(value)
+      this.inputShow = false
+      this.inputFocus = false
+      if (!value) return
+      this.inputText = value
+      if (this.inputEdit) {
+        this.controller.current.w = 'auto'
+        this.controller.current.h = 'auto'
+        this.controller.current.value = value
+        setTimeout(() => {
+          wx.createSelectorQuery().select('#inner' + this.controller.current.id).boundingClientRect((rect) => {
+            console.log('#inner' + this.controller.current.id, rect.height)
+            this.controller.current.h = rect.height / this.controller.current.scaleY
+            this.controller.current.w = rect.width / this.controller.current.scaleX
+            this.controlTie(this.controller.current)
+          }).exec()
+        }, 100)
+      } else {
+        this.createTextTie(value)
+      }
+    },
+    inputBlurHandler (ev) {
+      this.inputShow = false
+      this.inputFocus = false
+    },
+    inputFocusHandler (ev) {
+      const { height } = ev.mp.detail
+      this.inputBottom = height + 10
+    },
     fn (ev) {
       startTime = Date.now()
       startX = ev.mp.changedTouches[0].clientX
@@ -177,6 +261,7 @@ export default {
           })
           this.kinds = kinds
           this.kindsData = kindsData
+          this.changeKinds(this.kinds[this.currentIndex])
           if (noChange) return
           // if (this.photoContentWidth) {
           //   this.changeStencilPng(this.kindsData[0][0])
@@ -229,7 +314,7 @@ export default {
         return
       }
       if (!this.tieMoving) {
-        return
+        return // 照片手势操作
         this.translateX = startTouch.translate.x + (x - startTouch.x)
         this.translateY = startTouch.translate.y + (y - startTouch.y)
         if (ev.touches.length > 1) {
@@ -261,38 +346,85 @@ export default {
     },
     nullEnd(){
       this.tieChanging = false
+      this.tieScaling = false
+      this.tieMoving = false
     },
     tieScaleMove (x, y, ev) {
       const curTie = this.controller.current
       const r = (Math.atan2(y - startTouch.tieStatus.oriY, x - startTouch.tieStatus.oriX) - Math.atan2(startTouch.y - startTouch.tieStatus.oriY, startTouch.x - startTouch.tieStatus.oriX)) / Math.PI * 180
       const c = Math.sqrt(2) / 2 * (Math.sqrt((x - startTouch.tieStatus.oriX)**2 + (y - startTouch.tieStatus.oriY)**2) - Math.sqrt((startTouch.x - startTouch.tieStatus.oriX)**2 + (startTouch.y - startTouch.tieStatus.oriY)**2))
       if (-c * 2 > startTouch.tieStatus.w) return
-      this.controller.w =  40 + (curTie.w = startTouch.tieStatus.w + c * 2)
-      this.controller.h = 40 + (curTie.h = startTouch.tieStatus.h + c * 2)
-      this.controller.x = (curTie.x = startTouch.tieStatus.x - c) - 20
-      this.controller.y = (curTie.y = startTouch.tieStatus.y - c) - 20
-      this.controller.rotate =  startTouch.tieStatus.rotate + r
-      curTie.rotate  = startTouch.tieStatus.rotate + r// * curTie.scaleX * curTie.scaleY
+      if (this.isText) {
+        this.controller.rotate =  startTouch.tieStatus.rotate + r
+        curTie.rotate  = startTouch.tieStatus.rotate + r
+        curTie.scaleX = curTie.scaleY = startTouch.scale * Math.sqrt((x - startTouch.tieStatus.oriX)**2 + (y - startTouch.tieStatus.oriY)**2) / Math.sqrt((startTouch.x - startTouch.tieStatus.oriX)**2 + (startTouch.y - startTouch.tieStatus.oriY)**2)
+        this.controller.w =  40 + curTie.w * curTie.scaleX
+        this.controller.h = 40 + curTie.h * curTie.scaleX
+        this.controller.x = startTouch.tieStatus.x - 20 - (curTie.w * curTie.scaleX - curTie.w) / 2
+        this.controller.y = startTouch.tieStatus.y - 20 - (curTie.h * curTie.scaleX - curTie.h) / 2
+      } else {
+        this.controller.w =  40 + (curTie.w = startTouch.tieStatus.w + c * 2)
+        this.controller.h = 40 + (curTie.h = curTie.w / startTouch.w$h)
+        this.controller.x = (curTie.x = startTouch.tieStatus.x - c) - 20
+        this.controller.y = (curTie.y = startTouch.tieStatus.y - c) - 20
+        this.controller.rotate =  startTouch.tieStatus.rotate + r
+        this.controller.scale = 1
+        curTie.rotate  = startTouch.tieStatus.rotate + r// * curTie.scaleX * curTie.scaleY
+        console.log(curTie.w, curTie.h, curTie.w / curTie.h)
+      }
     },
     tieMove (x, y, ev) {
       const change = {
-        x: startTouch.controller.x +  x - startTouch.x,
-        y: startTouch.controller.y +  y - startTouch.y,
+        x: startTouch.controller.x + x - startTouch.x,
+        y: startTouch.controller.y + y - startTouch.y,
+      }
+      if (change.x < -this.controller.w / 2) change.x = -this.controller.w / 2
+      if (change.x > this.photoW - this.controller.w / 2) change.x = this.photoW - this.controller.w / 2
+      if (change.y < -this.controller.h / 2) change.y = -this.controller.h / 2
+      if (change.y > this.photoH - this.controller.h / 2) change.y = this.photoH - this.controller.h / 2
+      Object.assign(this.controller, change)
+      change.x += 20 + (this.controller.current.w * Math.abs(this.controller.current.scaleX) - this.controller.current.w) / 2
+      change.y += 20 + (this.controller.current.h *  Math.abs(this.controller.current.scaleX) - this.controller.current.h) / 2
+      if (this.isText) {
+        change.transX = change.x + 'px'
+        change.transY = change.y + 'px'
       }
       Object.assign(this.controller.current, change)
-      change.x -= 20
-      change.y -= 20
-      Object.assign(this.controller, change)
     },
     controllerStart(ev) {
       this.tieTouchStart(this.controller.current, ev)
     },
+    controllerEnd (ev) {
+      this.tieMoving = false
+      this.tieScaling = false
+      if (Date.now() - clickTime < 300) {
+        this.dbClickController()
+        return
+      }
+      if (Date.now() - startTouch.time < 300) {
+        this.controlTie(this.controller.current, ev)
+        clickTime = Date.now()
+      } else {
+        clickTime = 0
+      }
+    },
+    dbClickController () {
+      const curTie = this.controller.current
+      if (curTie.type !== 'text') return
+      this.inputEdit = true
+      this.inputText = curTie.value
+      this.inputShow = true
+      setTimeout(() => {
+        events.$emit('inputFocus')
+      }, 300)
+    },
     tieTouchStart (item, ev) {
       console.log('tie start', item, ev)
-      const x = item.x - 20
-      const y = item.y - 20
-      const w = item.w + 40
-      const h = item.h + 40
+      this.isText = item.type === 'text'
+      const x = (this.isText ? (item.x - (item.w * item.scaleX - item.w) / 2) : item.x) - 20
+      const y = (this.isText ? (item.y - (item.h * item.scaleX - item.h) / 2) : item.y) - 20
+      const w = (this.isText ? (item.w * item.scaleX) : item.w) + 40
+      const h = (this.isText ? (item.h * item.scaleX) : item.h) + 40
       const rotate = item.rotate
       if (this.tieChanging && item !== this.controller.current) {
         Object.assign(this.controller, { x, y, w, h, rotate })
@@ -302,22 +434,45 @@ export default {
       startTouch.controller = { x, y, w, h, rotate }
       startTouch.x = ev.mp.touches[0].clientX
       startTouch.y = ev.mp.touches[0].clientY
-      if (item.z !== zIndexBase) item.z = ++zIndexBase
+      startTouch.time = Date.now()
+      this.controlTie(item, ev, true)
     },
-    controlTie (item, ev) {
-      console.log(item, ev)
-      this.controller.w = item.w + 40
-      this.controller.h = item.h + 40
-      this.controller.x = item.x - 20
-      this.controller.y = item.y - 20
+    tieTouchEnd (item, ev) {
+      if (Date.now() - clickTime < 300) {
+        this.dbClickController()
+        return
+      }
+      if (Date.now() - startTouch.time < 300) {
+        this.controlTie(item, ev)
+        clickTime = Date.now()
+      } else {
+        clickTime = 0
+      }
+    },
+    controlTie (item, ev, notChangeZ) {
+      this.isText = item.type === 'text'
+      if (item.type === 'text') {
+        this.controller.w = item.w * item.scaleX + 40
+        this.controller.h = item.h * item.scaleX + 40
+        this.controller.x = item.x - (item.w * item.scaleX - item.w) / 2 - 20
+        this.controller.y = item.y - (item.h * item.scaleX - item.h) / 2 - 20
+      } else {
+        this.controller.w = item.w + 40
+        this.controller.h = item.h + 40
+        this.controller.x = item.x - 20
+        this.controller.y = item.y - 20
+      }
       this.controller.rotate = item.rotate
       this.controller.current = item
+      // this.controller.scale = this.isText ? item.scaleX : 1
       this.tieChanging = true
+      if (!notChangeZ && item.z !== zIndexBase) item.z = ++zIndexBase
     },
     closeHandler() {
-      const index = this.tieList.indexOf(this.controller.current)
+      const list = this.controller.current.type === 'text' ? this.textList : this.tieList
+      const index = list.indexOf(this.controller.current)
       if (index >= 0) {
-        this.tieList.splice(index, 1)
+        list.splice(index, 1)
         this.tieChanging = false
       }
     },
@@ -326,10 +481,14 @@ export default {
       this.tieScaling = true
       startTouch.x = ev.mp.touches[0].clientX
       startTouch.y = ev.mp.touches[0].clientY
-      const {x, y, w, h, rotate} = this.controller.current
+      const {x, y, w, h, rotate, scaleX} = this.controller.current
+      this.isText = this.controller.current.type === 'text'
       const oriX = x + w / 2 + this.left
       const oriY = y + h / 2 + this.top
+      console.log(x, y, w, h, rotate, oriX, oriY, scaleX)
       startTouch.tieStatus = {x, y, w, h, rotate, oriX, oriY}
+      startTouch.scale = scaleX
+      startTouch.w$h = w / h
     },
     reversalHandler() {
       const {scaleX, scaleY} = this.controller.current
@@ -355,6 +514,7 @@ export default {
       }).exec()
     },
     changeStencilPng (item) {
+      if (!item) return
       this.createTie(item)
       //
       this.stencilPng = item.full_url
@@ -367,8 +527,17 @@ export default {
       console.log(item)
       wx.getImageInfo({
         src: item.path2,
-        success (info) {
+        success: (info) => {
           item.drawPath = info.path
+          const {width, height} = info
+          console.log('图片宽高：', width, height)
+          if (width > height) {
+            item.h *= height / width
+          } else {
+            item.h *= width / height
+          }
+          this.tieList.push(item)
+          this.controlTie(item)
         }
       })
     },
@@ -390,11 +559,51 @@ export default {
         name: item.icon_name,
         id: item.icon_id
       }
+      this.isText = false
       this.getImgLocalPath(tie)
-      this.tieList.push(tie)
-      this.tieChanging = false
+      // this.tieChanging = false
+    },
+    createTextTie (value) {
+      const text = {
+        transX: '-50%',
+        transY: '-50%',
+        l: '50%',
+        t: '50%',
+        x: 0,
+        y: 0,
+        w: undefined,
+        h: undefined,
+        z: ++zIndexBase,
+        scaleX: 1,
+        scaleY: 1,
+        rotate: 0,
+        id: 'tie-text-' + zIndexBase,
+        type: 'text',
+        value: value.trim()
+      }
+      this.textList.push(text)
+      this.$nextTick(() => {
+        setTimeout(() => {
+          this.textTieInit(text)
+        }, 100)
+      })
+    },
+    textTieInit (item) {
+      wx.createSelectorQuery().select('#' + item.id).boundingClientRect((rect) => {
+        const {left, top, width, height} = rect
+        item.x = left
+        item.y = top - this.top
+        item.w = width
+        item.h = height
+        item.l = 0
+        item.t = 0
+        item.transX = item.x + 'px'
+        item.transY = item.y + 'px'
+        this.controlTie(item)
+      }).exec()
     },
     changeKinds (val) {
+      if (!val) return
       this.curkinds = val
       this.currentIndex = this.kinds.indexOf(val)
     },
@@ -469,16 +678,30 @@ export default {
       }
     },
     drawTie (ctx) {
-      const list = this.tieList.slice().sort((a, b) => a.z - b.z)
+      const list = this.tieList.slice().concat(this.textList).sort((a, b) => a.z - b.z)
       const baseScale = 375 / this.photoContentWidth
       console.log(list)
       list.forEach(item => {
-        ctx.save()
-        ctx.translate(amend(item.x) + amend(item.w) / 2, amend(item.y) + amend(item.h) / 2)
-        ctx.rotate(item.rotate * Math.PI / 180)
-        ctx.scale(item.scaleX, item.scaleY)
-        ctx.drawImage(item.drawPath, amend(-item.w) / 2, amend(-item.h) / 2, amend(item.w), amend(item.h))
-        ctx.restore()
+        if (item.type === 'text') {
+          ctx.save()
+          ctx.translate(amend(item.x) + amend(item.w) / 2, amend(item.y) + amend(item.h) / 2)
+          ctx.rotate(item.rotate * Math.PI / 180)
+          ctx.scale(item.scaleX, item.scaleY)
+          ctx.setFontSize(16)
+          ctx.setFillStyle('#000')
+          ctx.setTextBaseline('top')
+          item.value.split(/\n/).forEach((text, index, arr) => {
+            ctx.fillText(text, amend(-item.w) / 2, amend(-item.h) / 2 + amend(index * item.h / arr.length),  amend(item.w))
+          })
+          ctx.restore()
+        } else {
+          ctx.save()
+          ctx.translate(amend(item.x) + amend(item.w) / 2, amend(item.y) + amend(item.h) / 2)
+          ctx.rotate(item.rotate * Math.PI / 180)
+          ctx.scale(item.scaleX, item.scaleY)
+          ctx.drawImage(item.drawPath, amend(-item.w) / 2, amend(-item.h) / 2, amend(item.w), amend(item.h))
+          ctx.restore()
+        }
       })
 
       function amend (val) {
@@ -495,7 +718,7 @@ export default {
         wx.hideLoading()
         wx.showModal({
           title: 'ERROR',
-          content: 'Canvas Crashed',//'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
+          content: 'Canvas Crashed', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
           showCancel: false,
           success: function(res) {
 
@@ -589,6 +812,14 @@ export default {
           }
         })
       })
+    },
+    addText () {
+      this.inputText = ''
+      this.inputShow = true
+      this.inputEdit = false
+      setTimeout(() => {
+        events.$emit('inputFocus')
+      }, 300)
     }
   },
   created () {
@@ -602,6 +833,7 @@ export default {
     this.getRectData()
     events.$on('clearList', () => {
       this.tieList.splice(0, this.tieList.length)
+      this.textList.splice(0, this.textList.length)
     })
   },
   onShow () {
@@ -677,12 +909,24 @@ export default {
         transform-origin: center center;
       }
     }
+    .tie-text{
+      position: absolute;
+      transform-origin: center center;
+      padding: 0;
+      margin: 0;
+      font-size: 32rpx;
+      line-height: 40rpx;
+      vertical-align: middle;
+      text{
+        white-space:nowrap;
+      }
+    }
     .controller {
       position: absolute;
       box-sizing: border-box;
       top: 0;
       left: 0;
-      border: 1px solid #FFE000;
+      /*border: 1px solid #FFE000;*/
       z-index: 9999;
       &>img{
         position: absolute;
@@ -701,6 +945,34 @@ export default {
       .reversal {
         left: -36rpx;
         bottom: -36rpx;
+      }
+      .border{
+        position: absolute;
+        background: #FFE000;
+      }
+      .border-top {
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 1px;
+      }
+      .border-left {
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 1px;
+      }
+      .border-right {
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 1px;
+      }
+      .border-bottom {
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 1px;
       }
     }
   }
@@ -729,7 +1001,12 @@ export default {
       z-index: 999;
       &:first-child{
         background: #fff;
-        margin-right: 60rpx;
+      }
+      &.text {
+        margin: 0 40rpx;
+        width: 160rpx;
+        background: rgb(251, 14, 55);
+        color: #fff;
       }
     }
   }
@@ -829,5 +1106,4 @@ export default {
   height: 100vw;
   opacity: 0;
 }
-
 </style>

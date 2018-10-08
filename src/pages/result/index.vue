@@ -8,6 +8,7 @@
           <p>keke</p>
       </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
+        <button class="btn re" id="re" @click="back">重新编辑</button>
         <button class="btn" id="back" @click="backHome">回到主页</button>
         <button class="btn share" id="share"  open-type="share">推荐给朋友</button>
         <button class="btn share" id="advance" open-type="contact">我要反馈</button>
@@ -70,6 +71,9 @@ export default {
     backHome () {
       events.$emit('clearList')
       wx.navigateBack()
+    },
+    back () {
+      wx.navigateBack()
     }
   },
   onShareAppMessage() {
@@ -85,7 +89,7 @@ export default {
 <style lang="less" scoped>
   .wrap{
     width: 100%;
-    height: 780rpx;
+    height: 920rpx;
     text-align: center;
     &:after{
       content: '';
@@ -121,6 +125,11 @@ export default {
         color: #000;
         &.share{
           background: transparent;
+        }
+        &.re{
+          background: rgb(251, 14, 55);
+          color: #fff;
+          border: 2rpx solid #000;
         }
       }
       .contact{

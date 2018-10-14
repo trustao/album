@@ -102,7 +102,9 @@ const API = 'https://api.pintuxiangce.com/icon/index'
 
 import events from '../../../static/events'
 import icon from '@/images/ic_changePic.png'
+import Task from './taskQueue'
 
+const reversalTask = new Task()
 let startTouch = {}
 let startTime = 0
 let startX = 0
@@ -538,8 +540,110 @@ export default {
           }
           this.tieList.push(item)
           this.controlTie(item)
+          this.createReversalImg(item)
         }
       })
+    },
+    createReversalImg (item) {
+      item.reversalPath = []
+      item.w = item.w | 0
+      item.h = item.h | 0
+      reversalTask.addTask(() => {
+        return new Promise(resolve => {
+          const ctx = wx.createCanvasContext('to-images')
+          ctx.drawImage(item.drawPath, 0, 0, item.w * 2, item.h * 2)
+          ctx.draw(false, () => {
+            setTimeout(() => {
+              wx.canvasGetImageData({
+                canvasId: 'to-images',
+                x: 0,
+                y: 0,
+                width: item.w * 2,
+                height: item.h * 2,
+                success: (res) => {
+                  console.log('get', item.w, item.h)
+                  const reversalXArr = new Uint8ClampedArray(item.w * 2 * item.h * 2 * 4)
+                  const reversalXYArr = new Uint8ClampedArray(item.w * 2 * item.h * 2 * 4)
+                  const reversalYArr = new Uint8ClampedArray(item.w * 2 * item.h * 2 * 4)
+                  this.reversalX(res.data, reversalXArr, item.w * 2, item.h * 2)
+                  this.reversalY(reversalXArr, reversalXYArr, item.w * 2, item.h * 2)
+                  this.reversalY(res.data, reversalYArr, item.w * 2, item.h * 2);
+                  [reversalXArr, reversalXYArr, reversalYArr].forEach((arr, index) => {
+                    console.log('put')
+                    reversalTask.addTask(() => new Promise((resolveFn, reject) => {
+                      wx.canvasPutImageData({
+                        canvasId: 'to-images',
+                        x: 0,
+                        y: 0,
+                        width: item.w * 2,
+                        height: item.h * 2,
+                        data: arr,
+                        success (res) {
+                          console.log('save')
+                          wx.canvasToTempFilePath({
+                            canvasId: 'to-images',
+                            x: 0,
+                            y: 0,
+                            width: item.w * 2,
+                            height: item.h * 2,
+                            success: function (res) {
+                              item.reversalPath[index] = res.tempFilePath
+                              resolveFn()
+                            },
+                            fail (err) {
+                              console.log(err)
+                            }
+                          })
+                        },
+                        fail (er) {
+                          console.log('drawImageFromU8 failed', er)
+                          reject(er)
+                        }
+                      })
+                    }))
+                  })
+                  resolve()
+                },
+                fail (err) {
+                  console.log('get stencil imageData failed', err)
+                }
+              })
+            }, 50)
+          })
+        })
+      })
+    },
+    reversalX (source, target, width, height) {
+      if (source.length !== width * height * 4) {
+        console.error('length error')
+        return
+      }
+      for (let i = 0; i < height; i++) {
+        for (let j = 0; j < width; j++) {
+          const sourceIndex = (j + width * i) * 4
+          const targetIndex = (width - 1 - j + width * i) * 4
+          target[targetIndex] = source[sourceIndex]
+          target[targetIndex + 1] = source[sourceIndex + 1]
+          target[targetIndex + 2] = source[sourceIndex + 2]
+          target[targetIndex + 3] = source[sourceIndex + 3]
+        }
+      }
+    },
+    reversalY (source, target, width, height) {
+      if (source.length !== width * height * 4) {
+        console.error('length error')
+        return
+      }
+      for (let i = 0; i < height; i++) {
+        for (let j = 0; j < width; j++) {
+          const sourceIndex = (j + width * i) * 4
+          const targetIndex = (j + width * (height - 1 - i)) * 4
+          target[targetIndex] = source[sourceIndex]
+          target[targetIndex + 1] = source[sourceIndex + 1]
+          target[targetIndex + 2] = source[sourceIndex + 2]
+          target[targetIndex + 3] = source[sourceIndex + 3]
+        }
+      }
     },
     createTie (item) {
       const originW = 60
@@ -608,13 +712,13 @@ export default {
       this.currentIndex = this.kinds.indexOf(val)
     },
     choosePhoto (name){
-      this.copy = {
-        show: true,
-        photoH: this.photoH,
-        photoW: this.photoW,
-        transform: this.photoStyle,
-        photoPath: this.photoPath
-      }
+      // this.copy = {
+      //   show: true,
+      //   photoH: this.photoH,
+      //   photoW: this.photoW,
+      //   transform: this.photoStyle,
+      //   photoPath: this.photoPath
+      // }
       wx.chooseImage({
         count: 1, // 默认9
         sizeType: ['compressed', 'original'], // 可以指定是原图还是压缩图，默认二者都有
@@ -699,7 +803,23 @@ export default {
           ctx.translate(amend(item.x) + amend(item.w) / 2, amend(item.y) + amend(item.h) / 2)
           ctx.rotate(item.rotate * Math.PI / 180)
           ctx.scale(item.scaleX, item.scaleY)
-          ctx.drawImage(item.drawPath, amend(-item.w) / 2, amend(-item.h) / 2, amend(item.w), amend(item.h))
+          let path = item.drawPath
+          if (this.ios) {
+            if (item.scaleX > 0) {
+              if (item.scaleY > 0) {
+                path = item.drawPath
+              } else {
+                path = item.reversalPath[2]
+              }
+            } else {
+              if (item.scaleY > 0) {
+                path = item.reversalPath[0]
+              } else {
+                path = item.reversalPath[1]
+              }
+            }
+          }
+          ctx.drawImage(path, amend(-item.w) / 2, amend(-item.h) / 2, amend(item.w), amend(item.h))
           ctx.restore()
         }
       })
@@ -843,7 +963,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/index/main',
-      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/images/58932d14069b519c207f030200cd256b.jpg'
+      imageUrl: 'https://img3.doubanio.com/view/photo/l/public/p2536986425.webp'
     }
   }
 }

@@ -8,8 +8,8 @@
           <p>keke</p>
       </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
-        <button class="btn re" id="re" @click="back">重新编辑</button>
-        <button class="btn" id="back" @click="backHome">回到主页</button>
+        <div class="btn re" id="re" @click="back">重新编辑</div>
+        <div class="btn" id="back" @click="backHome">回到主页</div>
         <button class="btn share" id="share"  open-type="share">推荐给朋友</button>
         <button class="btn share" id="advance" open-type="contact">我要反馈</button>
       </div>
@@ -30,8 +30,7 @@
         </swiper-item>
       </swiper>
       <div class="bottom">
-        <button class="btn" id="jump" @click="jumpShapin
-">我要使用</button>
+        <div class="btn" id="jump" @click="jumpShapin">我要使用</div>
       </div>
     </div>
   </container>
@@ -80,7 +79,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/index/main',
-      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/images/58932d14069b519c207f030200cd256b.jpg'
+      imageUrl: 'https://img3.doubanio.com/view/photo/l/public/p2536986425.webp'
     }
   }
 }
@@ -123,6 +122,9 @@ export default {
         background: #FFE200;
         text-align: center;
         color: #000;
+        &:after, &:before{
+          display: none;
+        }
         &.share{
           background: transparent;
         }

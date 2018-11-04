@@ -1,11 +1,11 @@
 <template>
-  <container title="keke" background="#FFE200">
+  <container title="创作四格故事" background="#FFE200">
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <div class="play-wrap">
         <div class="play-list">
           <div class="play-item" v-for="(item, index) in playList" :key="index" @click="choosePlay(item)" :style="{'border-color': curIndex === index ? '#000' : '#FFE200'}">
             <img class="play-img" mode="aspectFill" :src="item.photoPath" alt="">
-            <img class="play-delete" src="/static/ic_delete (2).png" @click.stop="deletePlay(index)"/>
+            <cover-image class="play-delete" src="/static/ic_delete_2.png" @click.stop="deletePlay(index)"/>
           </div>
         </div>
         <img class="play-add" src="/static/ic_add.png" alt="" @click="addPlay">
@@ -100,9 +100,9 @@
 
       </div>
       <cover-view class="btns" id="create-puzzle">
-        <cover-view class="btn text" id="choose-img" @click="choosePhoto">+图片</cover-view>
+        <cover-view class="btn text" id="choose-img" @click="choosePhoto">+背景图</cover-view>
         <cover-view class="btn text" id="add-text" @click="addText">+文字</cover-view>
-        <cover-view class="btn save" id="save-img" @click="saveImage">生成图片剧</cover-view>
+        <cover-view class="btn save" id="save-img" @click="saveImage">生成</cover-view>
       </cover-view>
     </div>
     <canvas class="to-images" canvas-id="to-images"></canvas>
@@ -117,6 +117,7 @@ import events from '../../../static/events'
 import icon from '@/images/ic_changePic.png'
 
 const task = new Task()
+const TEMPLATET_API = ''
 const reversalTask = new Task()
 let startTouch = {}
 let startTime = 0
@@ -624,8 +625,71 @@ export default {
         this.photoW = this.photoH = this.photoContentWidth = rect.width
         this.left = rect.left
         this.top = rect.top
-        this.choosePlay(this.playList[0])
+        if (this.$mp.query.id) {
+          this.getTemplate(this.$mp.query.id)
+        } else {
+          this.choosePlay(this.playList[0])
+        }
       }).exec()
+    },
+    getTemplate () {
+      this.playList = [
+        {
+          photoPath: '',
+          tieList: [],
+          textList: [],
+          translateX: 0,
+          translateY: 0,
+          photoW: 0,
+          photoH: 0,
+          scale: 1
+        },{
+          photoPath: '',
+          tieList: [],
+          textList: [],
+          translateX: 0,
+          translateY: 0,
+          photoW: 0,
+          photoH: 0,
+          scale: 1
+        },{
+          photoPath: '',
+          tieList: [],
+          textList: [],
+          translateX: 0,
+          translateY: 0,
+          photoW: 0,
+          photoH: 0,
+          scale: 1
+        },{
+          photoPath: '',
+          tieList: [],
+          textList: [],
+          translateX: 0,
+          translateY: 0,
+          photoW: 0,
+          photoH: 0,
+          scale: 1
+        }
+      ]
+      this.$nextTick(() => {
+        this.choosePlay(this.playList[0])
+      })
+      return
+      wx.showLoading({
+        title: '',
+        mask: true
+      })
+      wx.request({
+        url: TEMPLATET_API,
+        success: (res) => {
+          this.playList = res.data
+          this.$nextTick(() => {
+            this.choosePlay(this.playList[0])
+            wx.hideLoading()
+          })
+        }
+      })
     },
     changeStencilPng (item) {
       if (!item) return
@@ -653,7 +717,7 @@ export default {
           const {width, height} = info
           console.log('图片宽高：', width, height)
           if (width > height) {
-            item.h *= height / width
+            item.w *= height / width
           } else {
             item.h *= width / height
           }
@@ -666,25 +730,31 @@ export default {
     createReversalImg (item) {
       item.reversalPath = []
       reversalTask.addTask(() => {
+        let toW = item.w * 4 | 0
+        let toH = item.h * 4 | 0
+        if (toW > 415) {
+          toW = 415
+          toH = toW * item.h / item.w | 0
+        }
         return new Promise(resolve => {
           const ctx = wx.createCanvasContext('to-images')
-          ctx.drawImage(item.drawPath, 0, 0, item.w * 2, item.h * 2)
+          ctx.drawImage(item.drawPath, 0, 0, toW, toH)
           ctx.draw(false, () => {
             setTimeout(() => {
               wx.canvasGetImageData({
                 canvasId: 'to-images',
                 x: 0,
                 y: 0,
-                width: item.w * 2,
-                height: item.h * 2,
+                width: toW,
+                height: toH,
                 success: (res) => {
                   console.log('get')
-                  const reversalXArr = new Uint8ClampedArray(item.w * 2 * item.h * 2 * 4)
-                  const reversalXYArr = new Uint8ClampedArray(item.w * 2 * item.h * 2 * 4)
-                  const reversalYArr = new Uint8ClampedArray(item.w * 2 * item.h * 2 * 4)
-                  this.reversalX(res.data, reversalXArr, item.w * 2, item.h * 2)
-                  this.reversalY(reversalXArr, reversalXYArr, item.w * 2, item.h * 2)
-                  this.reversalY(res.data, reversalYArr, item.w * 2, item.h * 2);
+                  const reversalXArr = new Uint8ClampedArray(toW * toH * 4)
+                  const reversalXYArr = new Uint8ClampedArray(toW * toH * 4)
+                  const reversalYArr = new Uint8ClampedArray(toW * toH * 4)
+                  this.reversalX(res.data, reversalXArr, toW, toH)
+                  this.reversalY(reversalXArr, reversalXYArr, toW, toH)
+                  this.reversalY(res.data, reversalYArr, toW, toH);
                   [reversalXArr, reversalXYArr, reversalYArr].forEach((arr, index) => {
                     console.log('put')
                     reversalTask.addTask(() => new Promise((resolveFn, reject) => {
@@ -692,8 +762,8 @@ export default {
                         canvasId: 'to-images',
                         x: 0,
                         y: 0,
-                        width: item.w * 2,
-                        height: item.h * 2,
+                        width: toW,
+                        height: toH,
                         data: arr,
                         success (res) {
                           console.log('save')
@@ -701,8 +771,8 @@ export default {
                             canvasId: 'to-images',
                             x: 0,
                             y: 0,
-                            width: item.w * 2,
-                            height: item.h * 2,
+                            width: toW,
+                            height: toH,
                             success: function (res) {
                               item.reversalPath[index] = res.tempFilePath
                               resolveFn()
@@ -842,35 +912,40 @@ export default {
         sourceType: ['album'], // 可以指定来源是相册还是相机，默认二者都有
         success: (res) => {
           const path = res.tempFilePaths[0]
-          wx.getImageInfo({
-            src: path,
-            success: (data) => {
-              const {width, height} = data
-              this.photoPath = ''
-              this.scale = 1
-              this.photoPath = path
-              this.curPlay.photoPath = path
-              if (width > height) {
-                this.photoH = this.photoContentWidth
-                this.photoW = this.photoContentWidth * (width / height)
-                this.translateX = -(this.photoW - this.photoH) / 2
-                this.translateY = 0
-              } else {
-                this.photoW = this.photoContentWidth
-                this.photoH = this.photoContentWidth / (width / height)
-                this.translateY = -(this.photoH - this.photoW) / 2
-                this.translateX = 0
-              }
-              this.curPlay.translateX = this.translateX
-              this.curPlay.translateY = this.translateY
-              this.curPlay.photoW = this.photoW
-              this.curPlay.photoH = this.photoH
-              this.$nextTick(() => {
-                setTimeout(() => {
-                  this.copy.show = false
-                }, 100)
-              })
-            }
+          this.setImage(path)
+          const url = '../cropped/main?imgPath=' + path
+          wx.navigateTo({ url })
+        }
+      })
+    },
+    setImage (path) {
+      wx.getImageInfo({
+        src: path,
+        success: (data) => {
+          const {width, height} = data
+          this.photoPath = ''
+          this.scale = 1
+          this.photoPath = path
+          this.curPlay.photoPath = path
+          if (width > height) {
+            this.photoH = this.photoContentWidth
+            this.photoW = this.photoContentWidth * (width / height)
+            this.translateX = -(this.photoW - this.photoH) / 2
+            this.translateY = 0
+          } else {
+            this.photoW = this.photoContentWidth
+            this.photoH = this.photoContentWidth / (width / height)
+            this.translateY = -(this.photoH - this.photoW) / 2
+            this.translateX = 0
+          }
+          this.curPlay.translateX = this.translateX
+          this.curPlay.translateY = this.translateY
+          this.curPlay.photoW = this.photoW
+          this.curPlay.photoH = this.photoH
+          this.$nextTick(() => {
+            setTimeout(() => {
+              this.copy.show = false
+            }, 100)
           })
         }
       })
@@ -975,9 +1050,9 @@ export default {
         puzzleH: 375,
         imgW: 375,
         imgH: 375,
-        QRCode: '/static/code.png',
-        QRX: 71,
-        QRY: 12,
+        QRCode: '/static/new_qrcode.png',
+        QRX: 59,
+        QRY: 3,
         QRL: 43
       }
 
@@ -1049,25 +1124,60 @@ export default {
         }))
       })
       task.setQueueEmptyCb(() => {
-        const allH = 395 * drawList.length + 67
+        console.log('res：', drawList)
+        let phW, phH
+        const allW = 395
+        let allH = 445
+        if (drawList.length === 2 ) {
+          allH -= 195
+        }
+        if (drawList.length > 1) {
+          phW = phH = 183
+        } else {
+          phW = phH = 375
+        }
         ctx.setFillStyle('#FFF')
         ctx.setStrokeStyle('#000')
-        ctx.fillRect(0,0, 415, allH)
+        ctx.fillRect(0,0, allW, allH)
         drawList.forEach((item, index) => {
-          ctx.drawImage(item.resPath, 20,  20 +  395 * index, 375, 375)
-          ctx.strokeRect(20,  20 +  395 * index, 375, 375)
+          if (drawList.length - 1 === index && drawList.length % 2) {
+            ctx.drawImage(item.resPath, (allW - phW) / 2,  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
+            ctx.strokeRect((allW - phW) / 2,  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
+            console.log((allW - phW) / 2,  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
+          } else {
+            ctx.drawImage(item.resPath, 10 + (index % 2) * (phW + 10),  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
+            ctx.strokeRect(10 + (index % 2) * (phW + 10),  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
+            console.log(10 + (index % 2) * (phW + 10),  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
+          }
         })
+        ctx.save()
+        ctx.setFillStyle('#FFE200')
+        ctx.fillRect(0, allH - 50, allW, 50)
+        ctx.restore()
         ctx.drawImage(goal.QRCode, goal.QRX, allH - goal.QRY - goal.QRL, goal.QRL, goal.QRL)
         ctx.setFillStyle('#333')
         ctx.setFontSize(18)
         ctx.setTextBaseline('bottom')
-        ctx.fillText('快来创作你的图片剧，keke', 125, allH - 22)
+        ctx.fillText('快来创作你的四格故事，keke', 112, allH - 14)
+        // const allH = 395 * drawList.length + 67
+        // ctx.setFillStyle('#FFF')
+        // ctx.setStrokeStyle('#000')
+        // ctx.fillRect(0,0, allW, allH)
+        // drawList.forEach((item, index) => {
+        //   ctx.drawImage(item.resPath, 20,  20 +  395 * index, 375, 375)
+        //   ctx.strokeRect(20,  20 +  395 * index, 375, 375)
+        // })
+        // ctx.drawImage(goal.QRCode, goal.QRX, allH - goal.QRY - goal.QRL, goal.QRL, goal.QRL)
+        // ctx.setFillStyle('#333')
+        // ctx.setFontSize(18)
+        // ctx.setTextBaseline('bottom')
+        // ctx.fillText('快来创作你的图片剧，keke', 125, allH - 22)
         ctx.draw(false, () => {
           wx.canvasToTempFilePath({
             canvasId: 'to-images',
             x: 0,
             y: 0,
-            width: 415,
+            width: allW,
             height: allH,
             success: function (res) {
               clearTimeout(timer)
@@ -1095,6 +1205,7 @@ export default {
 
       })
     },
+
     addText () {
       if (!this.curPlay.photoPath) {
         wx.showToast({
@@ -1120,9 +1231,13 @@ export default {
     //   mask: true
     // })
     this.getRectData()
+    events.$off(['clearList', 'setImage'])
     events.$on('clearList', () => {
       this.tieList.splice(0, this.tieList.length)
       this.textList.splice(0, this.textList.length)
+    })
+    events.$on('setImage', (path) => {
+      this.setImage(path)
     })
   },
   onShow () {
@@ -1422,8 +1537,8 @@ export default {
         position: absolute;
         right: -12rpx;
         top: -12rpx;
-        width: 24rpx;
-        height: 24rpx;
+        width: 28rpx;
+        height: 28rpx;
       }
     }
   }

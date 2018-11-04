@@ -55,6 +55,7 @@ function $off (eventStr, fn) {
     eventStr.forEach(item => {
       $off(item, fn)
     })
+    return
   }
   if (typeof eventStr !== 'string') {
     throw new Error('events name must be a string.')

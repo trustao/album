@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="wrap">
     <mpvue-cropper
       ref="cropper"
       :option="cropperOpt"
@@ -8,18 +8,18 @@
       @beforeImageLoad="cropperBeforeImageLoad"
       @beforeLoad="cropperLoad"
     ></mpvue-cropper>
-    <div class="cropper-buttons">
-      <div
+    <cover-view class="cropper-buttons">
+      <cover-view
         class="upload"
         @tap="uploadTap">
         重新选择
-      </div>
-      <div
+      </cover-view>
+      <cover-view
         class="getCropperImage"
         @tap="getCropperImage">
         裁剪
-      </div>
-    </div>
+      </cover-view>
+    </cover-view>
   </div>
 </template>
 
@@ -31,7 +31,7 @@
 
   const device = wx.getSystemInfoSync()
   const width = device.windowWidth
-  const height = device.windowHeight - 50
+  const height = device.windowHeight - 40
 
   export default {
     data () {
@@ -105,7 +105,11 @@
   }
 </script>
 
-<style>
+<style scoped lang="less">
+  .wrap{
+    width: 100%;
+    height: 100%;
+  }
   .cropper-wrapper{
     position: relative;
     display: flex;
@@ -143,7 +147,7 @@
   }
 
   .cropper-buttons{
-    background-color: rgba(0, 0, 0, 0.95);
+    background-color: #000;
     color: #04b00f;
   }
 </style>

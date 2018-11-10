@@ -1,5 +1,5 @@
 <template>
-  <container title="创作四格故事" background="#FFE200">
+  <container title="创作四格故事" background="#FFE200" beforeBack="backHome">
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <div class="play-wrap">
         <div class="play-list">
@@ -14,8 +14,8 @@
            @touchend="touchEndHandler"
            @touchmove="touchMoveHandler">
         <div class="shape-content">
-          <img class="shape-img copy" v-if="copy.show" :style="{width: copy.photoW + 'px', height: copy.photoH + 'px', transform: copy.photoStyle}" :src="copy.photoPath" alt="">
-          <img class="shape-img" :style="{width: photoW + 'px', height: photoH + 'px', transform: photoStyle}" :src="photoPath" alt="">
+          <img class="shape-img copy" v-if="copy.show" :style="{width: copy.photoW + 1 + 'px', height: copy.photoH + 1 + 'px', transform: copy.photoStyle}" :src="copy.photoPath" alt="">
+          <img class="shape-img" :style="{width: photoW + 1 + 'px', height: photoH + 1 + 'px', transform: photoStyle}" :src="photoPath" alt="">
           <div class="tip">
             <p>这是第{{curIndexText}}幕</p>
             <p>请点击+图片</p>
@@ -45,12 +45,12 @@
              :style="{
                 width: item.w + 'px',
                 height: item.h + 'px',
-                top: item.t,
-                left: item.l,
-                transform: 'translateX(' + item.transX + ') translateY(' + item.transY + ') translateZ(1px) rotate(' + item.rotate + 'deg) scale(' + item.scaleX +
-                 ',' + item.scaleY + ')',
+                transform: 'translateX(' + item.transX + ') translateY(' + item.transY + ') translateZ(1px) rotate(' + item.rotate + 'deg)',
+                 // scale(' + item.scaleX +',' + item.scaleY + ')',
+                 'font-size': 16 * item.scaleX + 'px',
+                 opacity: item.opacity,
                 'z-index': item.z}">
-            <text :id="'inner' + item.id">{{item.value}}</text>
+            <text :style="{left: -item.w  * (item.scaleX - 1) / 2 + 'px'}" :id="'inner' + item.id">{{item.value}}</text>
           </div>
         </div>
         <div class="controller-wrap">
@@ -93,6 +93,9 @@
                   <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item.full_icon_url" alt="">
                 </li>
                 <li class="stencil-item" v-for="item in (6 - (cate.length % 6 || 6))" :key="item"></li>
+                <li class="stencil-item" v-for="(item, index) in debugImg" :key="index">
+                  <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item" alt="">
+                </li>
               </ul>
             </scroll-view>
           </swiper-item>
@@ -217,16 +220,16 @@ export default {
       inputEdit: false,
       inputHeight: 40,
       inputBottom: 0,
-      inputText: ''
+      inputText: '',
+      debugImg: []
     }
   },
   computed: {
     maskPath () {
-      console.log(this.stencilPng)
       return this.stencilPng
     },
     photoStyle () {
-      return `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`
+      return `translate(${~~this.translateX}px, ${~~this.translateY}px) scale(${this.scale})`
     },
     curIndex () {
       return this.playList.indexOf(this.curPlay)
@@ -310,15 +313,14 @@ export default {
       value = this.textSlice(value)
       this.inputShow = false
       this.inputFocus = false
-      if (!value) return
       this.inputText = value
+      if (!value) return
       if (this.inputEdit) {
         this.controller.current.w = 'auto'
         this.controller.current.h = 'auto'
         this.controller.current.value = value
         setTimeout(() => {
           wx.createSelectorQuery().select('#inner' + this.controller.current.id).boundingClientRect((rect) => {
-            console.log('#inner' + this.controller.current.id, rect.height)
             this.controller.current.h = rect.height / this.controller.current.scaleY
             this.controller.current.w = rect.width / this.controller.current.scaleX
             this.controlTie(this.controller.current)
@@ -439,14 +441,12 @@ export default {
           if(isNaN(slope)) return
           this.scale = startTouch.scale * (distance / startTouch.distance)
           this.rotate = startTouch.rotate + Math.atan(slope - startTouch.slope) / Math.PI * 180
-          console.log(this.rotate)
         }
       } else {
         this.tieMove(x, y, ev)
       }
     },
     touchEndHandler (ev) {
-      console.log(ev)
       if (ev.touches) {
         const identifiers = ev.mp.touches.reduce((a, b) => {
           return a + b.identifier
@@ -484,7 +484,6 @@ export default {
         this.controller.rotate =  startTouch.tieStatus.rotate + r
         this.controller.scale = 1
         curTie.rotate  = startTouch.tieStatus.rotate + r// * curTie.scaleX * curTie.scaleY
-        console.log(curTie.w, curTie.h, curTie.w / curTie.h)
       }
     },
     tieMove (x, y, ev) {
@@ -533,7 +532,6 @@ export default {
       }, 300)
     },
     tieTouchStart (item, ev) {
-      console.log('tie start', item, ev)
       this.isText = item.type === 'text'
       const x = (this.isText ? (item.x - (item.w * item.scaleX - item.w) / 2) : item.x) - 20
       const y = (this.isText ? (item.y - (item.h * item.scaleX - item.h) / 2) : item.y) - 20
@@ -591,7 +589,6 @@ export default {
       }
     },
     scaleHandler(ev) {
-      console.log('scale',ev)
       this.tieScaling = true
       startTouch.x = ev.mp.touches[0].clientX
       startTouch.y = ev.mp.touches[0].clientY
@@ -599,7 +596,6 @@ export default {
       this.isText = this.controller.current.type === 'text'
       const oriX = x + w / 2 + this.left
       const oriY = y + h / 2 + this.top
-      console.log(x, y, w, h, rotate, oriX, oriY, scaleX)
       startTouch.tieStatus = {x, y, w, h, rotate, oriX, oriY}
       startTouch.scale = scaleX
       startTouch.w$h = w / h
@@ -633,63 +629,175 @@ export default {
       }).exec()
     },
     getTemplate () {
-      this.playList = [
-        {
-          photoPath: '',
-          tieList: [],
-          textList: [],
-          translateX: 0,
-          translateY: 0,
-          photoW: 0,
-          photoH: 0,
-          scale: 1
-        },{
-          photoPath: '',
-          tieList: [],
-          textList: [],
-          translateX: 0,
-          translateY: 0,
-          photoW: 0,
-          photoH: 0,
-          scale: 1
-        },{
-          photoPath: '',
-          tieList: [],
-          textList: [],
-          translateX: 0,
-          translateY: 0,
-          photoW: 0,
-          photoH: 0,
-          scale: 1
-        },{
-          photoPath: '',
-          tieList: [],
-          textList: [],
-          translateX: 0,
-          translateY: 0,
-          photoW: 0,
-          photoH: 0,
-          scale: 1
-        }
-      ]
-      this.$nextTick(() => {
-        this.choosePlay(this.playList[0])
-      })
-      return
-      wx.showLoading({
-        title: '',
-        mask: true
-      })
-      wx.request({
-        url: TEMPLATET_API,
-        success: (res) => {
-          this.playList = res.data
+      events.$emit('getTemplate', (data) => {
+        // console.log(data)
+        // const data = {
+        //   templateName: 'xxx',
+        //   image: 'http://tmp/wx4a9a55a260001198.o6zAJs0pznlgX_lAKTeGRWx_9WOs.cvcpsoWWQmHnc2dc20f56f2594a9337958ce547a3b4e.png',
+        //   photo: [{
+        //     "photoPath": "http://tmp/wx4a9a55a260001198.o6zAJs0pznlgX_lAKTeGRWx_9WOs.cvcpsoWWQmHnc2dc20f56f2594a9337958ce547a3b4e.png",
+        //     "materials": [{
+        //       "type": "icon",
+        //       "x": 70.88945652203031,
+        //       "y": 59.88945652203032,
+        //       "w": 176.22108695593937,
+        //       "h": 153.6965871194659,
+        //       "z": 11,
+        //       "scaleX": 1,
+        //       "scaleY": 1,
+        //       "rotate": -9.090382638587906,
+        //       path: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
+        //       path2: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
+        //       name: "sdfsdfsd",
+        //       id: 12314
+        //     },{
+        //       "type": "icon",
+        //       "x": 120.88945652203031,
+        //       "y": 159.88945652203032,
+        //       "w": 88.22108695593937,
+        //       "h": 77.6965871194659,
+        //       "z": 11,
+        //       "scaleX": 1,
+        //       "scaleY": 1,
+        //       "rotate": -29.090382638587906,
+        //       path: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
+        //       path2: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
+        //       name: "sdfsdfsd",
+        //       id: 12334214
+        //     }
+        //     ],
+        //     "textList": [{
+        //       "type": "text",
+        //       "x": 115.00000000000001,
+        //       "y": 110.99999999999997,
+        //       "w": 48,
+        //       "h": 22,
+        //       "z": 13,
+        //       "scaleX": 2.124979148967239,
+        //       "scaleY": 2.124979148967239,
+        //       "rotate": -6.818814791596894,
+        //       "value": "阿道夫"
+        //     },{
+        //       "type": "text",
+        //       "x": 315.00000000000001,
+        //       "y": 210.99999999999997,
+        //       "w": 48,
+        //       "h": 22,
+        //       "z": 14,
+        //       "scaleX": 2.124979148967239,
+        //       "scaleY": 2.124979148967239,
+        //       "rotate": -6.818814791596894,
+        //       "value": "难以置信"
+        //     }],
+        //     translateX: 0,
+        //     translateY: 0,
+        //     "photoW": 414,
+        //     "photoH": 414,
+        //     "scale": 1
+        //   },{
+        //     "photoPath": "http://tmp/wx4a9a55a260001198.o6zAJs0pznlgX_lAKTeGRWx_9WOs.cvcpsoWWQmHnc2dc20f56f2594a9337958ce547a3b4e.png",
+        //     "materials": [{
+        //       "type": "icon",
+        //       "x": 70.88945652203031,
+        //       "y": 59.88945652203032,
+        //       "w": 176.22108695593937,
+        //       "h": 153.6965871194659,
+        //       "z": 11,
+        //       "scaleX": 1,
+        //       "scaleY": 1,
+        //       "rotate": -9.090382638587906,
+        //       path: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
+        //       path2: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
+        //       name: "sdfsdfsd",
+        //       id: 12314
+        //     },{
+        //       "type": "icon",
+        //       "x": 120.88945652203031,
+        //       "y": 159.88945652203032,
+        //       "w": 88.22108695593937,
+        //       "h": 77.6965871194659,
+        //       "z": 11,
+        //       "scaleX": 1,
+        //       "scaleY": 1,
+        //       "rotate": -29.090382638587906,
+        //       path: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
+        //       path2: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
+        //       name: "sdfsdfsd",
+        //       id: 12334214
+        //     }
+        //     ],
+        //     "textList": [{
+        //       "type": "text",
+        //       "x": 115.00000000000001,
+        //       "y": 110.99999999999997,
+        //       "w": 48,
+        //       "h": 22,
+        //       "z": 13,
+        //       "scaleX": 2.124979148967239,
+        //       "scaleY": 2.124979148967239,
+        //       "rotate": -6.818814791596894,
+        //       "value": "阿道夫"
+        //     },{
+        //       "type": "text",
+        //       "x": 315.00000000000001,
+        //       "y": 210.99999999999997,
+        //       "w": 48,
+        //       "h": 22,
+        //       "z": 14,
+        //       "scaleX": 2.124979148967239,
+        //       "scaleY": 2.124979148967239,
+        //       "rotate": -6.818814791596894,
+        //       "value": "难以置信"
+        //     }],
+        //     translateX: 0,
+        //     translateY: 0,
+        //     "photoW": 414,
+        //     "photoH": 414,
+        //     "scale": 1
+        //   }]
+        // }
+        try {
+          data = JSON.parse(data.arrange)
+        } catch (e) {
+          this.clear()
           this.$nextTick(() => {
             this.choosePlay(this.playList[0])
-            wx.hideLoading()
           })
+          return
         }
+        this.playList = data.photo.map(photo => {
+          const res = {
+            photoPath: '',
+            tieList: [],
+            textList: [],
+            translateX: 0,
+            translateY: 0,
+            photoW: 0,
+            photoH: 0,
+            scale: 1
+          }
+          Object.keys(res).forEach(key => {
+            res[key] = photo[key]
+          })
+          res.textList = photo.textList.map(text => {
+            return Object.assign(text, {
+              transX: text.x + 'px',
+              transY: text.y + 'px',
+              opacity: 1,
+              id: 'tie-text-' + text.z
+            })
+          })
+          res.tieList = photo.materials.map(item => {
+            this.getImgLocalPath(item, true)
+            return item
+          })
+          return res
+        })
+        this.$nextTick(() => {
+          this.choosePlay(this.playList[0])
+        })
       })
+
     },
     changeStencilPng (item) {
       if (!item) return
@@ -708,26 +816,25 @@ export default {
         icon_name: item.icon_name
       })
     },
-    getImgLocalPath (item) {
-      console.log(item)
+    getImgLocalPath (item, noControl) {
       wx.getImageInfo({
         src: item.path2,
         success: (info) => {
           item.drawPath = info.path
           const {width, height} = info
-          console.log('图片宽高：', width, height)
           if (width > height) {
-            item.w *= height / width
+            item.h *= height / width
           } else {
-            item.h *= width / height
+            item.w *= width / height
           }
-          this.tieList.push(item)
-          this.controlTie(item)
+          if (!noControl) this.tieList.push(item)
+          if (!noControl) this.controlTie(item)
           this.createReversalImg(item)
         }
       })
     },
     createReversalImg (item) {
+      if (!this.ios) return
       item.reversalPath = []
       reversalTask.addTask(() => {
         let toW = item.w * 4 | 0
@@ -765,7 +872,7 @@ export default {
                         width: toW,
                         height: toH,
                         data: arr,
-                        success (res) {
+                        success: (res) =>{
                           console.log('save')
                           wx.canvasToTempFilePath({
                             canvasId: 'to-images',
@@ -773,7 +880,7 @@ export default {
                             y: 0,
                             width: toW,
                             height: toH,
-                            success: function (res) {
+                            success: (res) => {
                               item.reversalPath[index] = res.tempFilePath
                               resolveFn()
                             },
@@ -868,6 +975,7 @@ export default {
         scaleX: 1,
         scaleY: 1,
         rotate: 0,
+        opacity: 0,
         id: 'tie-text-' + zIndexBase,
         type: 'text',
         value: value.trim()
@@ -886,11 +994,12 @@ export default {
         item.y = top - this.top
         item.w = width
         item.h = height
-        item.l = 0
-        item.t = 0
         item.transX = item.x + 'px'
         item.transY = item.y + 'px'
         this.controlTie(item)
+        setTimeout(() => {
+          item.opacity = 1
+        }, 100)
       }).exec()
     },
     changeKinds (val) {
@@ -981,13 +1090,13 @@ export default {
     drawTie (ctx, play) {
       const list = play.tieList.slice().concat(play.textList).sort((a, b) => a.z - b.z)
       const baseScale = 375 / this.photoContentWidth
-      console.log(list)
       list.forEach(item => {
         if (item.type === 'text') {
           ctx.save()
           ctx.translate(amend(item.x) + amend(item.w) / 2, amend(item.y) + amend(item.h) / 2)
           ctx.rotate(item.rotate * Math.PI / 180)
           ctx.scale(item.scaleX, item.scaleY)
+          console.log(item.scaleX, item.scaleY)
           ctx.setFontSize(16)
           ctx.setFillStyle('#000')
           ctx.setTextBaseline('top')
@@ -1090,7 +1199,6 @@ export default {
           // ctx.setFillStyle('#000')
           ctx.fill()
           ctx.translate(play.translateX * scale, play.translateY * scale)
-          console.log(play.photoPath, goal.puzzleX - width * (play.scale - 1) / 2, goal.puzzleY - height * (play.scale - 1) / 2, width *  play.scale, height *  play.scale)
           ctx.drawImage(play.photoPath, goal.puzzleX - width * (play.scale - 1) / 2, goal.puzzleY - height * (play.scale - 1) / 2, width *  play.scale, height *  play.scale)
           ctx.restore()
 
@@ -1112,7 +1220,6 @@ export default {
               success: function (res) {
                 clearTimeout(timer)
                 play.resPath = res.tempFilePath
-                console.log('draw success', res.tempFilePath)
                 resolve()
               },
               fail (err) {
@@ -1136,6 +1243,10 @@ export default {
         } else {
           phW = phH = 375
         }
+        // if (this.photoContentWidth < 375) {
+        //   const scale = 320 / allW
+        //   ctx.scale(scale, scale)
+        // }
         ctx.setFillStyle('#FFF')
         ctx.setStrokeStyle('#000')
         ctx.fillRect(0,0, allW, allH)
@@ -1143,11 +1254,9 @@ export default {
           if (drawList.length - 1 === index && drawList.length % 2) {
             ctx.drawImage(item.resPath, (allW - phW) / 2,  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
             ctx.strokeRect((allW - phW) / 2,  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
-            console.log((allW - phW) / 2,  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
           } else {
             ctx.drawImage(item.resPath, 10 + (index % 2) * (phW + 10),  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
             ctx.strokeRect(10 + (index % 2) * (phW + 10),  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
-            console.log(10 + (index % 2) * (phW + 10),  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
           }
         })
         ctx.save()
@@ -1220,11 +1329,65 @@ export default {
       setTimeout(() => {
         events.$emit('inputFocus')
       }, 300)
+    },
+    clear () {
+      this.tieList.splice(0, this.tieList.length)
+      this.textList.splice(0, this.textList.length)
+      this.playList = [
+        {
+          photoPath: '',
+          tieList: [],
+          textList: [],
+          translateX: 0,
+          translateY: 0,
+          photoW: 0,
+          photoH: 0,
+          scale: 1
+        },{
+          photoPath: '',
+          tieList: [],
+          textList: [],
+          translateX: 0,
+          translateY: 0,
+          photoW: 0,
+          photoH: 0,
+          scale: 1
+        },{
+          photoPath: '',
+          tieList: [],
+          textList: [],
+          translateX: 0,
+          translateY: 0,
+          photoW: 0,
+          photoH: 0,
+          scale: 1
+        },{
+          photoPath: '',
+          tieList: [],
+          textList: [],
+          translateX: 0,
+          translateY: 0,
+          photoW: 0,
+          photoH: 0,
+          scale: 1
+        }
+      ]
     }
   },
   created () {
     this.getStencil()
     this.getSysInfo()
+    events.$on('backHome', (back) => {
+      wx.showModal({
+        content: '返回将清空内容', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
+        success: (res) => {
+          if (res.confirm) {
+            events.$emit('clearList')
+            back()
+          }
+        }
+      })
+    })
   },
   onReady() {
     // wx.showLoading({
@@ -1233,8 +1396,7 @@ export default {
     this.getRectData()
     events.$off(['clearList', 'setImage'])
     events.$on('clearList', () => {
-      this.tieList.splice(0, this.tieList.length)
-      this.textList.splice(0, this.textList.length)
+      this.clear()
     })
     events.$on('setImage', (path) => {
       this.setImage(path)
@@ -1332,6 +1494,10 @@ export default {
       vertical-align: middle;
       text{
         white-space:nowrap;
+        /*top: 50%;*/
+        /*left: 50%;*/
+        position: relative;
+        left: -50%;
       }
     }
     .controller {
@@ -1424,6 +1590,7 @@ export default {
 
   .cvs-operation{
     position: relative;
+    box-sizing: border-box;
     height: calc(100% - 100vw);
     width: 100vw;
     // padding: 2.5vw;
@@ -1551,9 +1718,9 @@ export default {
 }
 .to-images{
   position: fixed;
-  left: -415px;
+  left: -600px;
   top: 0;
-  width: 415px;
+  width: 600px;
   height: 1746px;
   opacity: 0;
 }

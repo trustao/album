@@ -54,6 +54,9 @@ Component({
     completeHandler: function(ev) {
       this.setData({isComplete: true})
       this.triggerEvent('inputcomplete', {value: this.data.inputText || ''})
+      setTimeout(() => {
+        this.setData({inputText: ''})
+      })
     }
   },
   attached () {

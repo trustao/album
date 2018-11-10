@@ -35,6 +35,7 @@ function $on (eventStr, fn) {
 
 function $emit () {
   const eventStr = arguments[0]
+  console.log('emit ', eventStr)
   const args = [].slice.call(arguments, 1)
   if (Array.isArray(eventStr)) {
     eventStr.forEach(item => {

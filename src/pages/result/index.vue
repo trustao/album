@@ -10,8 +10,8 @@
       <div class="bottom" :class="{iphoneX: iphoneX}">
         <div class="btn re" id="re" @click="back">重新编辑</div>
         <div class="btn" id="back" @click="backHome">回到主页</div>
-        <div class="btn share" id="share"  open-type="share">推荐给朋友</div>
-        <div class="btn share" id="advance" open-type="contact">我要反馈</div>
+        <button class="btn share" id="share"  open-type="share">推荐给朋友</button>
+        <button class="btn share" id="advance" open-type="contact">我要反馈</button>
       </div>
     </div>
     <div class="wrap-jump">
@@ -70,7 +70,9 @@ export default {
     },
     backHome () {
       events.$emit('clearList')
-      wx.navigateBack()
+      wx.navigateBack({
+        delta: 2
+      })
     },
     back () {
       wx.navigateBack()
@@ -130,6 +132,9 @@ export default {
           background: rgb(251, 14, 55);
           color: #fff;
           border: 2rpx solid #000;
+        }
+        &:after, &:before{
+          display: none;
         }
       }
       .contact{

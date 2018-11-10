@@ -1,10 +1,10 @@
 <template>
   <container title="keke" background="#FFE200">
       <div class="list-wrap">
-        <div class="item" v-for="item in list" :key="item.id">
-          <img :src="item.bannerImg" alt="">
-          <div class="name">{{item.name}}</div>
-          <div class="btn" @click="goEditPage(item.id)">拍同款</div>
+        <div class="item" v-for="item in list" :key="item.template_id">
+          <img :src="item.full_img_url" alt="">
+          <div class="name">{{item.template_name}}</div>
+          <div class="btn" @click="goEditPage(item)">拍同款</div>
         </div>
       </div>
       <div class="footer-btn" @click="goEditPage('')">创作你的四格故事</div>
@@ -17,33 +17,18 @@ import  img1 from '@/images/1.jpg'
 import  img2 from '@/images/2.jpg'
 import  img3 from '@/images/3.jpg'
 
-const TEMPLATET_LIST_API = ''
+const TEMPLATET_LIST_API = 'https://api.pintuxiangce.com/template/index'
 
 export default {
   data () {
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
     return {
       iphoneX,
-      list: [
-        {
-          id: 1,
-          bannerImg: 'https://img1.doubanio.com/view/photo/l/public/p2536986009.webp',
-          name: 'ABC'
-        },
-        {
-          id: 2,
-          bannerImg: 'https://img1.doubanio.com/view/photo/l/public/p2536986009.webp',
-          name: 'ABC'
-        },
-        {
-          id: 3,
-          bannerImg: 'https://img1.doubanio.com/view/photo/l/public/p2536986009.webp',
-          name: 'ABC'
-        }
-      ],
+      list: [],
       imgUrls: [
         img1, img2, img3
-      ]
+      ],
+      activeTemplate: null
     }
   },
 
@@ -52,14 +37,27 @@ export default {
       wx.request({
         url: TEMPLATET_LIST_API,
         success: (res) => {
-
+          console.log(res)
+          if (res.statusCode === 200) {
+            this.list = res.data.data
+          }
         }
       })
     },
-    goEditPage (id) {
-      const url = '../index/main' + (id && `?id=${id}`)
-      wx.navigateTo({ url })
+    goEditPage (template) {
+      this.activeTemplate = template
+      this.$nextTick(() => {
+        const url = '../index/main' + (template && `?id=${template.template_id}`)
+        wx.navigateTo({ url })
+      })
     }
+  },
+  created () {
+    this.getData()
+    events.$off('getTemplate')
+    events.$on('getTemplate', (cb) => {
+      cb(this.activeTemplate)
+    })
   },
   onShareAppMessage() {
     return {

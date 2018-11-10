@@ -23,7 +23,7 @@
           <div class="shape-mask" canvas-id="shape-mask" :disable-scroll="true"
                @touchstart="touchStartHandler" @touchend="nullEnd"></div>
           <div class="tie-wrap">
-            <img class="tie" v-for="(item, index) in tieList"
+            <img class="tie" v-for="(item, index) in materials"
                  :key="index"
                  :style="{
                 transform: 'translateX(' + item.x + 'px) translateY(' + item.y + 'px) translateZ(1px)  rotate(' + item.rotate + 'deg) scale(' + item.scaleX +
@@ -45,6 +45,8 @@
              :style="{
                 width: item.w + 'px',
                 height: item.h + 'px',
+                top: item.t,
+                left: item.l,
                 transform: 'translateX(' + item.transX + ') translateY(' + item.transY + ') translateZ(1px) rotate(' + item.rotate + 'deg)',
                  // scale(' + item.scaleX +',' + item.scaleY + ')',
                  'font-size': 16 * item.scaleX + 'px',
@@ -115,12 +117,13 @@
 <script>
 /* global getCurrentPages */
 const API = 'https://api.pintuxiangce.com/icon/index'
+const UPLOAD_API = 'https://api.pintuxiangce.com/admin/upload/template'
 import Task from './taskQueue'
 import events from '../../../static/events'
 import icon from '@/images/ic_changePic.png'
 
 const task = new Task()
-const TEMPLATET_API = ''
+const TEMPLATET_API = 'https://api.pintuxiangce.com/admin/template/create'
 const reversalTask = new Task()
 let startTouch = {}
 let startTime = 0
@@ -128,6 +131,16 @@ let startX = 0
 let startY = 0
 let zIndexBase = 10
 let clickTime = 0
+
+const upParams = {
+  name: '',
+  img_url: '',
+  bg1_url: '',
+  bg2_url: '',
+  bg3_url: '',
+  bg4_url: '',
+  arrange: ''
+  }
 export default {
 
   data () {
@@ -135,7 +148,7 @@ export default {
       playList: [
         {
           photoPath: '',
-          tieList: [],
+          materials: [],
           textList: [],
           translateX: 0,
           translateY: 0,
@@ -144,7 +157,7 @@ export default {
           scale: 1
         },{
           photoPath: '',
-          tieList: [],
+          materials: [],
           textList: [],
           translateX: 0,
           translateY: 0,
@@ -153,7 +166,7 @@ export default {
           scale: 1
         },{
           photoPath: '',
-          tieList: [],
+          materials: [],
           textList: [],
           translateX: 0,
           translateY: 0,
@@ -162,7 +175,7 @@ export default {
           scale: 1
         },{
           photoPath: '',
-          tieList: [],
+          materials: [],
           textList: [],
           translateX: 0,
           translateY: 0,
@@ -201,7 +214,7 @@ export default {
         photoStyle: '',
         photoPath: ''
       },
-      tieList: [],
+      materials: [],
       textList: [],
       tieChanging: false,
       tieMoving: false,
@@ -241,7 +254,7 @@ export default {
   methods: {
     choosePlay (item) {
       this.tieChanging = false
-      this.tieList = item.tieList
+      this.materials = item.materials
       this.textList = item.textList
       this.curPlay = item
       this.photoPath = item.photoPath
@@ -262,7 +275,7 @@ export default {
               this.curPlay.photoPath = ''
               this.photoPath = ''
               this.curPlay.textList.splice(0, this.curPlay.textList.length)
-              this.curPlay.tieList.splice(0, this.curPlay.tieList.length)
+              this.curPlay.materials.splice(0, this.curPlay.materials.length)
             }
           }
         }
@@ -280,7 +293,7 @@ export default {
       }
       const play = {
         photoPath: '',
-        tieList: [],
+        materials: [],
         textList: [],
         translateX: 0,
         translateY: 0,
@@ -581,7 +594,7 @@ export default {
       if (!notChangeZ && item.z !== zIndexBase) item.z = ++zIndexBase
     },
     closeHandler() {
-      const list = this.controller.current.type === 'text' ? this.textList : this.tieList
+      const list = this.controller.current.type === 'text' ? this.textList : this.materials
       const index = list.indexOf(this.controller.current)
       if (index >= 0) {
         list.splice(index, 1)
@@ -630,145 +643,24 @@ export default {
     },
     getTemplate () {
       events.$emit('getTemplate', (data) => {
-        // console.log(data)
-        // const data = {
-        //   templateName: 'xxx',
-        //   image: 'http://tmp/wx4a9a55a260001198.o6zAJs0pznlgX_lAKTeGRWx_9WOs.cvcpsoWWQmHnc2dc20f56f2594a9337958ce547a3b4e.png',
-        //   photo: [{
-        //     "photoPath": "http://tmp/wx4a9a55a260001198.o6zAJs0pznlgX_lAKTeGRWx_9WOs.cvcpsoWWQmHnc2dc20f56f2594a9337958ce547a3b4e.png",
-        //     "materials": [{
-        //       "type": "icon",
-        //       "x": 70.88945652203031,
-        //       "y": 59.88945652203032,
-        //       "w": 176.22108695593937,
-        //       "h": 153.6965871194659,
-        //       "z": 11,
-        //       "scaleX": 1,
-        //       "scaleY": 1,
-        //       "rotate": -9.090382638587906,
-        //       path: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
-        //       path2: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
-        //       name: "sdfsdfsd",
-        //       id: 12314
-        //     },{
-        //       "type": "icon",
-        //       "x": 120.88945652203031,
-        //       "y": 159.88945652203032,
-        //       "w": 88.22108695593937,
-        //       "h": 77.6965871194659,
-        //       "z": 11,
-        //       "scaleX": 1,
-        //       "scaleY": 1,
-        //       "rotate": -29.090382638587906,
-        //       path: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
-        //       path2: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
-        //       name: "sdfsdfsd",
-        //       id: 12334214
-        //     }
-        //     ],
-        //     "textList": [{
-        //       "type": "text",
-        //       "x": 115.00000000000001,
-        //       "y": 110.99999999999997,
-        //       "w": 48,
-        //       "h": 22,
-        //       "z": 13,
-        //       "scaleX": 2.124979148967239,
-        //       "scaleY": 2.124979148967239,
-        //       "rotate": -6.818814791596894,
-        //       "value": "阿道夫"
-        //     },{
-        //       "type": "text",
-        //       "x": 315.00000000000001,
-        //       "y": 210.99999999999997,
-        //       "w": 48,
-        //       "h": 22,
-        //       "z": 14,
-        //       "scaleX": 2.124979148967239,
-        //       "scaleY": 2.124979148967239,
-        //       "rotate": -6.818814791596894,
-        //       "value": "难以置信"
-        //     }],
-        //     translateX: 0,
-        //     translateY: 0,
-        //     "photoW": 414,
-        //     "photoH": 414,
-        //     "scale": 1
-        //   },{
-        //     "photoPath": "http://tmp/wx4a9a55a260001198.o6zAJs0pznlgX_lAKTeGRWx_9WOs.cvcpsoWWQmHnc2dc20f56f2594a9337958ce547a3b4e.png",
-        //     "materials": [{
-        //       "type": "icon",
-        //       "x": 70.88945652203031,
-        //       "y": 59.88945652203032,
-        //       "w": 176.22108695593937,
-        //       "h": 153.6965871194659,
-        //       "z": 11,
-        //       "scaleX": 1,
-        //       "scaleY": 1,
-        //       "rotate": -9.090382638587906,
-        //       path: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
-        //       path2: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
-        //       name: "sdfsdfsd",
-        //       id: 12314
-        //     },{
-        //       "type": "icon",
-        //       "x": 120.88945652203031,
-        //       "y": 159.88945652203032,
-        //       "w": 88.22108695593937,
-        //       "h": 77.6965871194659,
-        //       "z": 11,
-        //       "scaleX": 1,
-        //       "scaleY": 1,
-        //       "rotate": -29.090382638587906,
-        //       path: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
-        //       path2: "https://api.pintuxiangce.com/resources/uploads/icons/b9fb032d16c4a5d5ecfffcd657b31d17.png",
-        //       name: "sdfsdfsd",
-        //       id: 12334214
-        //     }
-        //     ],
-        //     "textList": [{
-        //       "type": "text",
-        //       "x": 115.00000000000001,
-        //       "y": 110.99999999999997,
-        //       "w": 48,
-        //       "h": 22,
-        //       "z": 13,
-        //       "scaleX": 2.124979148967239,
-        //       "scaleY": 2.124979148967239,
-        //       "rotate": -6.818814791596894,
-        //       "value": "阿道夫"
-        //     },{
-        //       "type": "text",
-        //       "x": 315.00000000000001,
-        //       "y": 210.99999999999997,
-        //       "w": 48,
-        //       "h": 22,
-        //       "z": 14,
-        //       "scaleX": 2.124979148967239,
-        //       "scaleY": 2.124979148967239,
-        //       "rotate": -6.818814791596894,
-        //       "value": "难以置信"
-        //     }],
-        //     translateX: 0,
-        //     translateY: 0,
-        //     "photoW": 414,
-        //     "photoH": 414,
-        //     "scale": 1
-        //   }]
-        // }
+        console.log('get template:', data)
         try {
+          upParams.name = data.template_name
           data = JSON.parse(data.arrange)
         } catch (e) {
+          console.error(e)
           this.clear()
           this.$nextTick(() => {
             this.choosePlay(this.playList[0])
           })
           return
         }
-        this.playList = data.photo.map(photo => {
+        console.log('get template success', data)
+        this.playList = data.photo.map((photo, i) => {
+          upParams[`bg${i + 1}_url`] = photo.photoPath.replace('https://api.pintuxiangce.com/', '')
           const res = {
             photoPath: '',
-            tieList: [],
+            materials: [],
             textList: [],
             translateX: 0,
             translateY: 0,
@@ -787,7 +679,7 @@ export default {
               id: 'tie-text-' + text.z
             })
           })
-          res.tieList = photo.materials.map(item => {
+          res.materials = photo.materials.map(item => {
             this.getImgLocalPath(item, true)
             return item
           })
@@ -821,13 +713,15 @@ export default {
         src: item.path2,
         success: (info) => {
           item.drawPath = info.path
-          const {width, height} = info
-          if (width > height) {
-            item.h *= height / width
-          } else {
-            item.w *= width / height
+          if (!noControl) {
+            const {width, height} = info
+            if (width > height) {
+              item.h *= height / width
+            } else {
+              item.w *= width / height
+            }
           }
-          if (!noControl) this.tieList.push(item)
+          if (!noControl) this.materials.push(item)
           if (!noControl) this.controlTie(item)
           this.createReversalImg(item)
         }
@@ -994,6 +888,8 @@ export default {
         item.y = top - this.top
         item.w = width
         item.h = height
+        item.l = 0
+        item.t = 0
         item.transX = item.x + 'px'
         item.transY = item.y + 'px'
         this.controlTie(item)
@@ -1021,7 +917,7 @@ export default {
         sourceType: ['album'], // 可以指定来源是相册还是相机，默认二者都有
         success: (res) => {
           const path = res.tempFilePaths[0]
-          this.setImage(path)
+          // this.setImage(path)
           const url = '../cropped/main?imgPath=' + path
           wx.navigateTo({ url })
         }
@@ -1058,6 +954,7 @@ export default {
           })
         }
       })
+      this.uploadImage(path, this.curIndex + 1)
     },
     drawMask () {
       wx.getImageInfo({
@@ -1087,8 +984,46 @@ export default {
         // Do something when catch error
       }
     },
+    uploadImage (path, index) {
+      wx.uploadFile({
+        url: UPLOAD_API, //仅为示例，非真实的接口地址
+        filePath: path,
+        name: 'template_file',
+        success: (res) => {
+          console.log(res)
+          if (res.statusCode !== 200) {
+            wx.showModal({
+              content: '图片上传失败，是否重新上传', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
+              success: (res) => {
+                if (res.confirm) {
+                  this.uploadImage(path, index)
+                }
+              }
+            })
+            return
+          }
+          const data = JSON.parse(res.data).data
+          if (index === 0){
+            upParams.img_url = data.path
+          } else {
+            upParams[`bg${index}_url`] = data.path
+          }
+          console.log(upParams)
+        },
+        fail: () => {
+          wx.showModal({
+            content: '图片上传失败，是否重新上传', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
+            success: (res) => {
+              if (res.confirm) {
+               this.uploadImage(path, index)
+              }
+            }
+          })
+        }
+      })
+    },
     drawTie (ctx, play) {
-      const list = play.tieList.slice().concat(play.textList).sort((a, b) => a.z - b.z)
+      const list = play.materials.slice().concat(play.textList).sort((a, b) => a.z - b.z)
       const baseScale = 375 / this.photoContentWidth
       list.forEach(item => {
         if (item.type === 'text') {
@@ -1135,6 +1070,17 @@ export default {
       }
     },
     saveImage () {
+      if (reversalTask.invoking) {
+        wx.showModal({
+          title: '生成失败',
+          content: '图片处理中...请重试', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
+          showCancel: false,
+          success: function(res) {
+
+          }
+        })
+        return
+      }
       wx.showLoading({
         title: '图片生成中',
         mask: true
@@ -1234,7 +1180,7 @@ export default {
         console.log('res：', drawList)
         let phW, phH
         const allW = 395
-        let allH = 445
+        let allH = 395
         if (drawList.length === 2 ) {
           allH -= 195
         }
@@ -1259,15 +1205,15 @@ export default {
             ctx.strokeRect(10 + (index % 2) * (phW + 10),  10 +  (phH + 10) * (index / 2 | 0), phW, phH)
           }
         })
-        ctx.save()
-        ctx.setFillStyle('#FFE200')
-        ctx.fillRect(0, allH - 50, allW, 50)
-        ctx.restore()
-        ctx.drawImage(goal.QRCode, goal.QRX, allH - goal.QRY - goal.QRL, goal.QRL, goal.QRL)
-        ctx.setFillStyle('#333')
-        ctx.setFontSize(18)
-        ctx.setTextBaseline('bottom')
-        ctx.fillText('快来创作你的四格故事，keke', 112, allH - 14)
+        // ctx.save()
+        // ctx.setFillStyle('#FFE200')
+        // ctx.fillRect(0, allH - 50, allW, 50)
+        // ctx.restore()
+        // ctx.drawImage(goal.QRCode, goal.QRX, allH - goal.QRY - goal.QRL, goal.QRL, goal.QRL)
+        // ctx.setFillStyle('#333')
+        // ctx.setFontSize(18)
+        // ctx.setTextBaseline('bottom')
+        // ctx.fillText('快来创作你的四格故事，keke', 112, allH - 14)
         // const allH = 395 * drawList.length + 67
         // ctx.setFillStyle('#FFF')
         // ctx.setStrokeStyle('#000')
@@ -1288,12 +1234,15 @@ export default {
             y: 0,
             width: allW,
             height: allH,
-            success: function (res) {
+            fileType: 'jpg',
+            quality: .8,
+            success: (res) => {
               clearTimeout(timer)
               wx.saveImageToPhotosAlbum({
                 filePath: res.tempFilePath,
-                success () {
+                success: () => {
                   wx.hideLoading()
+                  this.uploadImage(res.tempFilePath, 0)
                   const url = '../result/main'
                   wx.navigateTo({ url })
                 },
@@ -1314,7 +1263,44 @@ export default {
 
       })
     },
+    sendData (name) {
+      console.log(upParams)
+      const photo = JSON.parse(JSON.stringify(this.playList.filter(item => item.photoPath)))
+      photo.forEach((item, index) => {
+        item.photoPath = 'https://api.pintuxiangce.com/' + upParams[`bg${index + 1}_url`]
+        item.materials.forEach(ma => {
+          delete ma.reversalPath
+          delete ma.drawPath
+          ma.path = ''
+        })
+        delete item.resPath
+      })
+      upParams.arrange = JSON.stringify({
+        templateName: name,
+        image: upParams.img_url,
+        photo
+      })
+      upParams.name = name
+      wx.request({
+        url: TEMPLATET_API,
+        data: upParams,
+        method: 'POST',
+        header: {
+          'content-type': 'application/x-www-form-urlencoded'
+        },
+        success: (res) => {
+          console.log(res)
+          events.$emit('getTemplateList')
+          wx.showModal({
+            content: '上传成功',
+            showCancel: false,
+            success: (res) => {
 
+            }
+          })
+        }
+      })
+    },
     addText () {
       if (!this.curPlay.photoPath) {
         wx.showToast({
@@ -1331,12 +1317,12 @@ export default {
       }, 300)
     },
     clear () {
-      this.tieList.splice(0, this.tieList.length)
+      this.materials.splice(0, this.materials.length)
       this.textList.splice(0, this.textList.length)
       this.playList = [
         {
           photoPath: '',
-          tieList: [],
+          materials: [],
           textList: [],
           translateX: 0,
           translateY: 0,
@@ -1345,7 +1331,7 @@ export default {
           scale: 1
         },{
           photoPath: '',
-          tieList: [],
+          materials: [],
           textList: [],
           translateX: 0,
           translateY: 0,
@@ -1354,7 +1340,7 @@ export default {
           scale: 1
         },{
           photoPath: '',
-          tieList: [],
+          materials: [],
           textList: [],
           translateX: 0,
           translateY: 0,
@@ -1363,7 +1349,7 @@ export default {
           scale: 1
         },{
           photoPath: '',
-          tieList: [],
+          materials: [],
           textList: [],
           translateX: 0,
           translateY: 0,
@@ -1372,6 +1358,9 @@ export default {
           scale: 1
         }
       ]
+      Object.keys(upParams).forEach(key => {
+        upParams[key] = ''
+      })
     }
   },
   created () {
@@ -1394,16 +1383,20 @@ export default {
     //   mask: true
     // })
     this.getRectData()
-    events.$off(['clearList', 'setImage'])
+    events.$off(['clearList', 'setImage', 'sendData'])
     events.$on('clearList', () => {
       this.clear()
     })
     events.$on('setImage', (path) => {
       this.setImage(path)
     })
+    events.$on('sendData', (name) => {
+      if (!name) return
+      this.sendData(name)
+    })
   },
   onShow () {
-    this.getStencil(true)
+    // this.getStencil(true)
   },
   onShareAppMessage() {
     return {

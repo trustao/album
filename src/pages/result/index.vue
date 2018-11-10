@@ -4,34 +4,19 @@
       <div class="res-tip">
          <icon type="success" size="50" color="#6ac259"/>
           <p>已保存到手机相册</p>
-          <p>快去分享你的作品</p>
-          <p>keke</p>
+          <p>是否上传模板</p>
+
       </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
+        <div>
+          <span>模板名称：</span>
+          <input class="input" type="text" v-model="templateName">
+          <div class="btn" @click="send">上传</div>
+        </div>
         <div class="btn re" id="re" @click="back">重新编辑</div>
         <div class="btn" id="back" @click="backHome">回到主页</div>
         <button class="btn share" id="share"  open-type="share">推荐给朋友</button>
         <button class="btn share" id="advance" open-type="contact">我要反馈</button>
-      </div>
-    </div>
-    <div class="wrap-jump">
-      <h1>想要制作精致的形状拼图？<br>
-        快用小程序“Shapin”</h1>
-      <swiper
-        :indicator-dots="true"
-        :autoplay="true"
-        :circular="true"
-        indicator-active-color="#FFE200"
-        :interval="5000"
-        class="banner"
-      >
-        <swiper-item v-for="(item, index) in imgUrls" :key="index" class="s-item">
-          <img class="img" :src="item"/>
-        </swiper-item>
-      </swiper>
-      <div class="bottom">
-        <button class="btn" id="jump" @click="jumpShapin
-">我要使用</button>
       </div>
     </div>
   </container>
@@ -50,11 +35,15 @@ export default {
       iphoneX,
       imgUrls: [
         img1, img2, img3
-      ]
+      ],
+      templateName: ''
     }
   },
 
   methods: {
+    send () {
+      events.$emit('sendData', this.templateName)
+    },
     jumpShapin () {
       console.log('jump')
       wx.navigateToMiniProgram({
@@ -91,7 +80,7 @@ export default {
 <style lang="less" scoped>
   .wrap{
     width: 100%;
-    height: 920rpx;
+    height: 1020rpx;
     text-align: center;
     &:after{
       content: '';
@@ -110,6 +99,15 @@ export default {
     }
     .bottom{
       width: 100%;
+      .input{
+        width: 70vw;
+        border: 1px solid #ccc;
+        border-radius: 10rpx;
+        height: 60rpx;
+        padding: 20rpx;
+        line-height: 60rpx;
+        margin: 20rpx auto;
+      }
       .btn {
         display: block;
         margin: 0 auto 32rpx;

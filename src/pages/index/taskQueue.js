@@ -13,7 +13,9 @@ class TaskQueue {
   addTask (item) {
     if (typeof item === 'function') {
       this.queue.push(item)
-      this.invoke()
+      setTimeout(() => {
+        this.invoke()
+      })
     } else {
       console.error('error. must be a function and return a promise.')
     }
@@ -34,6 +36,7 @@ class TaskQueue {
   }
 
   invoke() {
+    console.log(this.invoking)
     if (this.invoking) return
     this.invoking = true
     this[_invoke]()
@@ -47,7 +50,9 @@ class TaskQueue {
       })
       res.finally(() => {
         if (this.queue.length) {
-          this[_invoke]()
+          setTimeout(() => {
+            this[_invoke]()
+          })
           return
         }
         this.invoking = false

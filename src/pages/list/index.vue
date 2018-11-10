@@ -2,7 +2,7 @@
   <container title="keke" background="#FFE200">
       <div class="list-wrap">
         <div class="item" v-for="item in list" :key="item.template_id">
-          <img :src="item.full_img_url" alt="">
+          <img :src="item.full_img_url" alt="" mode="aspectFit">
           <div class="name">{{item.template_name}}</div>
           <div class="btn" @click="goEditPage(item)">拍同款</div>
         </div>
@@ -54,9 +54,12 @@ export default {
   },
   created () {
     this.getData()
-    events.$off('getTemplate')
+    events.$off(['getTemplate', 'getTemplateList'])
     events.$on('getTemplate', (cb) => {
       cb(this.activeTemplate)
+    })
+    events.$on('getTemplateList', () => {
+      this.getData()
     })
   },
   onShareAppMessage() {

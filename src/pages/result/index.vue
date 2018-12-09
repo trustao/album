@@ -1,5 +1,5 @@
 <template>
-  <container title="保存成功" background="#FFE200">
+  <container title="生成作品" background="#FFE200">
     <div class="wrap">
       <div class="res-tip">
          <icon type="success" size="50" color="#6ac259"/>
@@ -14,34 +14,31 @@
         <button class="btn share" id="advance" open-type="contact">我要反馈</button>
       </div>
     </div>
-    <div class="wrap-jump">
-      <h1>想要制作精致的形状拼图？<br>
-        快用小程序“Shapin”</h1>
-      <swiper
-        :indicator-dots="true"
-        :autoplay="true"
-        :circular="true"
-        indicator-active-color="#FFE200"
-        :interval="5000"
-        class="banner"
-      >
-        <swiper-item v-for="(item, index) in imgUrls" :key="index" class="s-item">
-          <img class="img" :src="item"/>
-        </swiper-item>
-      </swiper>
-      <div class="bottom">
-        <button class="btn" id="jump" @click="jumpShapin
-">我要使用</button>
-      </div>
-    </div>
+    <!--<div class="wrap-jump">-->
+      <!--<h1>想要制作精致的形状拼图？<br>-->
+        <!--快用小程序“Shapin”</h1>-->
+      <!--<swiper-->
+        <!--:indicator-dots="true"-->
+        <!--:autoplay="true"-->
+        <!--:circular="true"-->
+        <!--indicator-active-color="#FFE200"-->
+        <!--:interval="5000"-->
+        <!--class="banner"-->
+      <!--&gt;-->
+        <!--<swiper-item v-for="(item, index) in imgUrls" :key="index" class="s-item">-->
+          <!--<img class="img" :src="item"/>-->
+        <!--</swiper-item>-->
+      <!--</swiper>-->
+      <!--<div class="bottom">-->
+        <!--<button class="btn" id="jump" @click="jumpShapin-->
+<!--">我要使用</button>-->
+      <!--</div>-->
+    <!--</div>-->
   </container>
 </template>
 
 <script>
 import events from '../../../static/events'
-import  img1 from '@/images/1.jpg'
-import  img2 from '@/images/2.jpg'
-import  img3 from '@/images/3.jpg'
 
 export default {
   data () {
@@ -49,7 +46,6 @@ export default {
     return {
       iphoneX,
       imgUrls: [
-        img1, img2, img3
       ]
     }
   },
@@ -71,7 +67,7 @@ export default {
     backHome () {
       events.$emit('clearList')
       wx.navigateBack({
-        delta: 2
+        delta: 4
       })
     },
     back () {
@@ -81,8 +77,8 @@ export default {
   onShareAppMessage() {
     return {
       title: 'keke',
-      path: '/pages/index/main',
-      imageUrl: 'https://img1.doubanio.com/view/photo/l/public/p2536986009.webp'
+      path: '/pages/first/main',
+      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/icons/785a09ebcb709dccc8e24035ec515501.jpg'
     }
   }
 }
@@ -98,7 +94,7 @@ export default {
       display: inline-block;
       width: 600rpx;
       height: 0;
-      border-bottom: 1px solid #C7C7C7;
+      /*border-bottom: 1px solid #C7C7C7;*/
     }
     .res-tip{
       padding: 60rpx 0;

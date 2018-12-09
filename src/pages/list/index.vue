@@ -13,9 +13,6 @@
 
 <script>
 import events from '../../../static/events'
-import  img1 from '@/images/1.jpg'
-import  img2 from '@/images/2.jpg'
-import  img3 from '@/images/3.jpg'
 
 const TEMPLATET_LIST_API = 'https://api.pintuxiangce.com/template/index'
 
@@ -26,7 +23,7 @@ export default {
       iphoneX,
       list: [],
       imgUrls: [
-        img1, img2, img3
+
       ],
       activeTemplate: null
     }
@@ -65,8 +62,8 @@ export default {
   onShareAppMessage() {
     return {
       title: 'keke',
-      path: '/pages/index/main',
-      imageUrl: 'https://img1.doubanio.com/view/photo/l/public/p2536986009.webp'
+      path: '/pages/first/main',
+      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/icons/785a09ebcb709dccc8e24035ec515501.jpg'
     }
   }
 }

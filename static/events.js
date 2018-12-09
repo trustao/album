@@ -47,7 +47,7 @@ function $emit () {
     throw new Error('events name must be a string.')
   }
   if (_events[eventStr]) {
-    _events[eventStr](...args)
+    return _events[eventStr](...args)
   }
 }
 

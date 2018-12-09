@@ -1316,8 +1316,8 @@ export default {
   onShareAppMessage() {
     return {
       title: 'keke',
-      path: '/pages/index/main',
-      imageUrl: 'https://img1.doubanio.com/view/photo/l/public/p2536986009.webp'
+      path: '/pages/first/main',
+      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/icons/785a09ebcb709dccc8e24035ec515501.jpg'
     }
   }
 }

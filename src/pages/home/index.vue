@@ -107,8 +107,34 @@ export default {
       this.maskPath = full_icon_url
       console.log(full_icon_url)
       this.$nextTick(() => {
-        const url = '../camera/main'
-        wx.navigateTo({ url })
+        wx.getSetting({
+          success(res) {
+            if (!res.authSetting['scope.camera']) {
+              wx.authorize({
+                scope: 'scope.camera',
+                success () {
+                  const url = '../camera/main'
+                  wx.navigateTo({ url })
+                },
+                fail () {
+                  wx.showModal({
+                    content: '需要授权相机才能继续，可在右上角设置中打开相机授权。', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
+                    showCancel: false,
+                    success: (res) => {
+                      if (res.confirm) {
+
+                      }
+                    }
+                  })
+                }
+              })
+            } else {
+              const url = '../camera/main'
+              wx.navigateTo({ url })
+            }
+          }
+        })
+
       })
     },
     getStencil (noChange) {

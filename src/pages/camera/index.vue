@@ -2,25 +2,25 @@
   <div style="width: 100%;height: 100%; box-sizing: border-box;background: #010101;" :style="{'padding-top': isIphoneX && '44px'}" title="" background="#010101" @touchmove="touchMoveHandler" @touchend="touchEndHandler">
     <div class="camera-wrap">
       <camera v-if="cameraShow" class="camera" :style="{width: photoW + 'px', height: photoW + 'px'}" :device-position="devicePosition" :flash="flash" @error="errorHandler"></camera>
-      <cover-image mode="aspectFit" @load="imageLoad" v-if="maskShow" class="mask-img" :style="{opacity: opacity,width: photoW + 'px', height: photoW + 'px'}" :src="imgPath"></cover-image>
+      <!--<cover-image mode="aspectFit" @load="imageLoad" v-if="maskShow" class="mask-img" :style="{opacity: opacity,width: photoW + 'px', height: photoW + 'px'}" :src="imgPath"></cover-image>-->
       <div class="i-wrap" v-if="cameraShow" :style="{height: windowHeight - photoW - (isIphoneX ? 44 : 0) + 'px'}">
-        <div class="opacity-controller-wrap">
-          <div class="opacity-controller">
-            <div class="inner-bar" :style="{width: opacityWidth}">
-              <div class="controller" @touchstart="opacityTouchStart"></div>
-            </div>
-          </div>
-        </div>
+        <!--<div class="opacity-controller-wrap">-->
+          <!--<div class="opacity-controller">-->
+            <!--<div class="inner-bar" :style="{width: opacityWidth}">-->
+              <!--<div class="controller" @touchstart="opacityTouchStart"></div>-->
+            <!--</div>-->
+          <!--</div>-->
+        <!--</div>-->
         <div class="example-img"  :style="{width: photoW + 'px', height: photoW + 'px'}">
-          <img mode="aspectFit" :src="imgPath" />
+          <img mode="aspectFit" @load="imageLoad" :src="imgPath" />
         </div>
         <div class="btns">
           <div class="back" @tap="back">取消</div>
-          <div class="take-photo" @tap="takePhoto"></div>
+          <div class="take-photo" :class="{waiting: waiting}" @tap="takePhoto">{{waitingNum}}</div>
           <img :src="cameraImg" class="change-device" @tap="changeDevice" />
         </div>
       </div>
-      <cover-image v-if="maskShow" :src="flashImg" :class="{dis: devicePosition === 'front'}" class="flash-btn" @tap="flashHandler"></cover-image>
+      <cover-image v-if="maskShow && devicePosition !== 'front'" :src="flashImg" class="flash-btn" @tap="flashHandler"></cover-image>
     </div>
   </div>
 </template>
@@ -58,7 +58,9 @@ export default {
       windowHeight,
       photoW,
       isIphoneX: model.indexOf('iPhone X') >= 0,
-      cameraShow: false
+      cameraShow: false,
+      waitingNum: '',
+      waiting: false
     }
   },
   computed: {
@@ -133,37 +135,55 @@ export default {
       wx.navigateBack()
     },
     takePhoto () {
-      const ctx = wx.createCameraContext()
-      ctx.takePhoto({
-        quality: 'high',
-        success: (res) => {
-          wx.saveImageToPhotosAlbum({
-            filePath: res.tempImagePath,
-            success () {
-              events.$off('getPhoto')
-              events.$on('getPhoto', () => {
-                return res.tempImagePath
-              })
-              const url = '../middle/main'
-              wx.navigateTo({ url })
-            },
-            fail () {
-              wx.showToast({
-                title: '保存失败，请在右上角设置中打开权限。',
-                icon: 'none'
-              })
-            }
-          })
+      if (this.waiting) return
+      this.waiting = true
+      setTimeout(() => {
+        this.waitingNum = 3
+      }, 50)
+      setTimeout(() => {
+        this.waitingNum = 2
+      }, 1050)
+      setTimeout(() => {
+        this.waitingNum = 1
+      }, 2050)
+      setTimeout(() => {
+        this.waitingNum = ''
+        const ctx = wx.createCameraContext()
+        ctx.takePhoto({
+          quality: 'high',
+          success: (res) => {
+            this.waiting = false
+            wx.saveImageToPhotosAlbum({
+              filePath: res.tempImagePath,
+              success () {
+                events.$off('getPhoto')
+                events.$on('getPhoto', () => {
+                  return res.tempImagePath
+                })
+                const url = '../middle/main'
+                wx.navigateTo({ url })
+              },
+              fail () {
+                wx.showToast({
+                  title: '保存失败，请在右上角设置中打开权限。',
+                  icon: 'none'
+                })
+              }
+            })
 
-        }
-      })
+          },
+          fail: () => {
+            this.waiting = false
+          }
+        })
+      }, 3050)
     },
     imageLoad () {
       wx.hideLoading()
     }
   },
   onLoad () {
-
+    this.imgPath = ''
   },
   onReady () {
     wx.showLoading({
@@ -175,7 +195,7 @@ export default {
     this.imgPath = path
     this.cameraShow = true
     setTimeout(() => {
-      this.getRectData()
+      // this.getRectData()
       this.maskShow = true
     }, 500)
   },
@@ -186,7 +206,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/first/main',
-      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/icons/785a09ebcb709dccc8e24035ec515501.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
     }
   }
 }
@@ -294,6 +314,15 @@ export default {
         box-shadow: 0 0 0 5px #fff;
         border-radius: 50%;
         background: #fff;
+        &.waiting {
+          border: none;
+          box-shadow: none;
+          background: transparent;
+          line-height: 80rpx;
+          text-align: center;
+          font-size: 80rpx;
+          color: #fff;
+        }
       }
       .change-device{
         width: 80rpx;

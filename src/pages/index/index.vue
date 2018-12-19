@@ -1317,7 +1317,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/first/main',
-      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/icons/785a09ebcb709dccc8e24035ec515501.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
     }
   }
 }

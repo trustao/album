@@ -27,8 +27,8 @@ export default {
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
     return {
       iphoneX,
-      imgPath: 'https://api.pintuxiangce.com/resources/uploads/icons/785a09ebcb709dccc8e24035ec515501.jpg',
-      photoPath: 'https://api.pintuxiangce.com/resources/uploads/icons/785a09ebcb709dccc8e24035ec515501.jpg'
+      imgPath:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg',
+      photoPath:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
     }
   },
 
@@ -152,7 +152,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/first/main',
-      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/icons/785a09ebcb709dccc8e24035ec515501.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
     }
   }
 }
@@ -173,6 +173,7 @@ export default {
       font-size: 28rpx;
       margin: 20rpx 0;
       text-align: center;
+      color: #D0021B;
     }
     .bottom{
       width: 100%;

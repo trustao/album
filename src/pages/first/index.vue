@@ -22,10 +22,10 @@
 </template>
 
 <script>
-import  img1 from '@/images/展示图1.jpg'
-import  img2 from '@/images/展示图2.jpg'
-import  img3 from '@/images/展示图3.jpg'
-import  img4 from '@/images/展示图4.jpg'
+import  img1 from '@/images/banner/1.jpg'
+import  img2 from '@/images/banner/2.jpg'
+import  img3 from '@/images/banner/3.jpg'
+import  img4 from '@/images/banner/4.jpg'
 
 export default {
   data () {
@@ -48,7 +48,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/first/main',
-      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/icons/785a09ebcb709dccc8e24035ec515501.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
     }
   }
 }

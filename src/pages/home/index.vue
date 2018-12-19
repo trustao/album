@@ -2,9 +2,9 @@
   <container title="选择模仿对象" background="#FFE200">
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <div scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
-        <scroll-view scroll-y scroll-x class="kinds">
+        <scroll-view scroll-y scroll-x class="kinds" :scroll-into-view="'k' + curKindsIndex" scroll-with-animation>
           <ul class="kinds-wrap">
-            <li class="kinds-item" v-for="(cate, key) in kinds" :data-cate="cate" :key="key" @tap="changeKinds(cate)" :class="{active: curkinds === cate}">{{cate}}</li>
+            <li class="kinds-item" v-for="(cate, key) in kinds" :id="'k' + key" :data-cate="cate" :key="key" @tap="changeKinds(cate)" :class="{active: curkinds === cate}">{{cate}}</li>
           </ul>
         </scroll-view>
         <swiper class="stencils"
@@ -19,7 +19,7 @@
                   <p v-text="item.icon_name"></p>
                   <!--<div class="btn" @tap="chooseImg(item)">模仿</div>-->
                 </li>
-                <li class="stencil-item no-style" v-for="item in (3 - (cate.length % 3 || 3))" :key="item"></li>
+                <!--<li class="stencil-item no-style" v-for="item in (3 - (cate.length % 3 || 3))" :key="item"></li>-->
                 <li class="stencil-item" v-for="(item, index) in debugImg" :key="index">
                   <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item" alt="">
                 </li>
@@ -35,10 +35,11 @@
 
 <script>
 /* global getCurrentPages */
+
 const API = 'https://api.pintuxiangce.com/icon/index'
 import icon from '@/images/ic_changePic.png'
 import events from '../../../static/events'
-
+let jumping = false
 export default {
 
   data () {
@@ -100,10 +101,18 @@ export default {
   computed: {
     photoStyle () {
       return `translate(${~~this.translateX}px, ${~~this.translateY}px) scale(${this.scale})`
+    },
+    curKindsIndex () {
+      return this.kinds.indexOf(this.curkinds)
     }
   },
   methods: {
     chooseImg ({full_icon_url}) {
+      if (jumping) return
+      jumping = true
+      setTimeout(() => {
+        jumping = false
+      }, 500)
       this.maskPath = full_icon_url
       console.log(full_icon_url)
       this.$nextTick(() => {
@@ -235,7 +244,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/first/main',
-      imageUrl: 'https://api.pintuxiangce.com/resources/uploads/icons/785a09ebcb709dccc8e24035ec515501.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
     }
   }
 }
@@ -314,20 +323,32 @@ export default {
       display: flex;
       flex-direction: row;
       flex-wrap: wrap;
-      justify-content: space-between;
+      justify-content: space-around;
       background: #fff;
-      padding-bottom: 120rpx;
+      padding: 0 2rpx 40rpx;
       .stencil-item{
         box-sizing: border-box;
         position: relative;
-        width: 33.2vw;
-        height: 33.2vw;
+        width: 48.5vw;
+        height: 48.5vw;
+        overflow: hidden;
         white-space: normal;
         word-break: break-all;
         text-align: center;
         background: #3D4042;
         border-collapse: collapse;
-        margin-top: 3rpx;
+        margin-top: 8rpx;
+        &:after{
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          box-sizing: border-box;
+          width: 100%;
+          height: 100%;
+          border: 1rpx solid #000;
+          background: transparent;
+        }
         &.no-style{
           background: #fff;
           border: none;
@@ -336,7 +357,6 @@ export default {
           box-sizing: border-box;
           width: 100%;
           height: 100%;
-
         }
         p{
           position: absolute;

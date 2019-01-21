@@ -13,6 +13,9 @@
         <button class="btn share" id="share"  open-type="share">推荐给朋友</button>
         <button class="btn share" id="advance" open-type="contact">我要反馈</button>
       </div>
+      <div class="ad-wrap">
+        <ad unit-id="adunit-4b3dd23d2e2a8124"></ad>
+      </div>
     </div>
     <!--<div class="wrap-jump">-->
       <!--<h1>想要制作精致的形状拼图？<br>-->
@@ -149,6 +152,12 @@ export default {
           display: none;
          }
       }
+    }
+    .ad-wrap {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100vw;
     }
   }
   .wrap-jump{

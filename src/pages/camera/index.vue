@@ -182,6 +182,9 @@ export default {
       wx.hideLoading()
     }
   },
+  onShow () {
+    this.waiting = false
+  },
   onLoad () {
     this.imgPath = ''
   },

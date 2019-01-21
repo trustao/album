@@ -1515,6 +1515,9 @@ export default {
       padding: 0 20rpx;
       background: #2F2F2F;
       overflow: hidden;
+      &::-webkit-scrollbar {
+        display: none;
+      }
       .kinds-wrap{
         height: 68rpx;
         white-space: nowrap;

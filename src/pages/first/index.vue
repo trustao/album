@@ -17,14 +17,13 @@
         <button class="btn" id="jump" @tap="jump">创作我的图片模仿秀</button>
         <button class="btn concat" id="advance" open-type="contact">我要反馈</button>
       </div>
+      <ad unit-id="adunit-c790d450da396f1c"></ad>
     </div>
   </container>
 </template>
 
 <script>
-import  img1 from '@/images/banner/1.jpg'
 import  img2 from '@/images/banner/2.jpg'
-import  img3 from '@/images/banner/3.jpg'
 import  img4 from '@/images/banner/4.jpg'
 
 export default {
@@ -33,7 +32,7 @@ export default {
     return {
       iphoneX,
       imgUrls: [
-        img1, img2, img3, img4
+         img2, img4
       ]
     }
   },
@@ -43,6 +42,33 @@ export default {
       const url = '../home/main'
       wx.navigateTo({ url })
     }
+  },
+  created () {
+    // wx.getUserInfo({
+    //   success(res) {
+    //     const userInfo = res.userInfo
+    //     const nickName = userInfo.nickName
+    //     const avatarUrl = userInfo.avatarUrl
+    //     const gender = userInfo.gender // 性别 0：未知、1：男、2：女
+    //     const province = userInfo.province
+    //     const city = userInfo.city
+    //     const country = userInfo.country
+    //     console.log(res)
+    //   }
+    // })
+    // wx.getSetting({
+    //   success(res) {
+    //     if (!res.authSetting['scope.userInfo']) {
+    //       wx.authorize({
+    //         scope: 'scope.userInfo',
+    //         success() {
+    //           // 用户已经同意小程序使用录音功能，后续调用 wx.startRecord 接口不会弹窗询问
+    //
+    //         }
+    //       })
+    //     }
+    //   }
+    // })
   },
   onShareAppMessage() {
     return {
@@ -58,7 +84,7 @@ export default {
   .wrap-jump{
     box-sizing: border-box;
     width: 100%;
-    height: 100%;
+    /*height: 100%;*/
     overflow:hidden;
     h1{
       margin: 40rpx auto;
@@ -86,7 +112,7 @@ export default {
     .bottom{
       width: 100%;
       text-align: center;
-      margin-top: 30rpx;
+      margin: 30rpx 0;
       .btn {
         display: block;
         appearance: none;

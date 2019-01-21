@@ -116,10 +116,11 @@ export default {
             clearTimeout(timer)
             wx.saveImageToPhotosAlbum({
               filePath: res.tempFilePath,
-              success () {
+              success: () => {
                 wx.hideLoading()
                 const url = '../result/main'
                 wx.navigateTo({ url })
+                // this.uploadImg(res.tempFilePath)
               },
               fail () {
                 wx.hideLoading()
@@ -136,7 +137,35 @@ export default {
         })
       })
 
+    },
+    uploadImg (path) {
+      wx.uploadFile({
+        url: 'https://api-cn.faceplusplus.com/facepp/v3/detect', // 仅为示例，非真实的接口地址
+        filePath: path,
+        name: 'image_file',
+        formData: {
+          api_key: 'Tti9NApKiVOqTmzlVKdISOIjLnfjCSpA',
+          api_secret: 'sN2B9-iVyrtyKeQ_HSn6j3JYVdm1LSg2',
+          return_landmark: 1,
+          calculate_all: 1,
+
+        },
+        success(res) {
+          console.log(res)
+          // do something
+          wx.hideLoading()
+          // const url = '../result/main'
+          // wx.navigateTo({ url })
+        },
+        fail (e) {
+         console.log(e)
+        }
+      })
     }
+  },
+  onLoad () {
+    this.imgPath = ''
+    this.photoPath = ''
   },
   onReady () {
     wx.getImageInfo({

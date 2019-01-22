@@ -21,7 +21,7 @@
 
 <script>
 import events from '../../../static/events'
-
+import {distance, classify} from './score'
 export default {
   data () {
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
@@ -117,10 +117,7 @@ export default {
             wx.saveImageToPhotosAlbum({
               filePath: res.tempFilePath,
               success: () => {
-                wx.hideLoading()
-                const url = '../result/main'
-                wx.navigateTo({ url })
-                // this.uploadImg(res.tempFilePath)
+                this.uploadImg(res.tempFilePath)
               },
               fail () {
                 wx.hideLoading()
@@ -140,7 +137,7 @@ export default {
     },
     uploadImg (path) {
       wx.uploadFile({
-        url: 'https://api-cn.faceplusplus.com/facepp/v3/detect', // 仅为示例，非真实的接口地址
+        url: 'https://api-cn.faceplusplus.com/facepp/v3/detect',
         filePath: path,
         name: 'image_file',
         formData: {
@@ -151,11 +148,20 @@ export default {
 
         },
         success(res) {
-          console.log(res)
-          // do something
-          wx.hideLoading()
-          // const url = '../result/main'
-          // wx.navigateTo({ url })
+          wx.getImageInfo({
+            src: path,
+            success(img) {
+              console.log(res)
+              const score = distance(res.data.faces[1], img.width, res.data.faces[0], img,widht)
+              const level = classify(score)
+              // do something
+              wx.hideLoading()
+              // const url = '../result/main'
+              // wx.navigateTo({ url })
+              console.log(img.width)
+              console.log(score, level)
+            }
+          })
         },
         fail (e) {
          console.log(e)

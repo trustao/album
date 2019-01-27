@@ -1,6 +1,10 @@
 <template>
   <container title="生成作品" background="#FFE200">
     <div class="wrap">
+      <div class="score">
+        <p><span>距离：</span><span>{{score}}</span></p>
+        <p><span>段位：</span><span> {{level}}</span></p>
+      </div>
       <div class="res-tip">
          <icon type="success" size="50" color="#6ac259"/>
           <p>已保存到手机相册</p>
@@ -48,8 +52,8 @@ export default {
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
     return {
       iphoneX,
-      imgUrls: [
-      ]
+      score: '',
+      level: ''
     }
   },
 
@@ -77,6 +81,11 @@ export default {
       wx.navigateBack()
     }
   },
+  onLoad (options) {
+    this.score = Number(options.score).toFixed(2)
+    if (isNaN(this.score)) this.score = options.score
+    this.level = options.level
+  },
   onShareAppMessage() {
     return {
       title: 'keke',
@@ -98,6 +107,23 @@ export default {
       width: 600rpx;
       height: 0;
       /*border-bottom: 1px solid #C7C7C7;*/
+    }
+    .score{
+      font-size: 40rpx;
+      padding: 40rpx 0 0;
+      p{
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        margin: 10rpx;
+        span{
+          flex: 1;
+          text-align: right;
+          &:last-child{
+            text-align: left;
+          }
+        }
+      }
     }
     .res-tip{
       padding: 60rpx 0;
@@ -154,9 +180,6 @@ export default {
       }
     }
     .ad-wrap {
-      position: fixed;
-      left: 0;
-      bottom: 0;
       width: 100vw;
     }
   }

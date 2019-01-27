@@ -28,7 +28,9 @@ export default {
     return {
       iphoneX,
       imgPath:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg',
-      photoPath:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      imgW: 0,
+      photoPath:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg',
+      sJson: ''
     }
   },
 
@@ -117,7 +119,9 @@ export default {
             wx.saveImageToPhotosAlbum({
               filePath: res.tempFilePath,
               success: () => {
-                this.uploadImg(res.tempFilePath)
+                this.uploadImg(this.photoPath, (data) => {
+                  this.takeScore(this.photoPath, data)
+                })
               },
               fail () {
                 wx.hideLoading()
@@ -135,7 +139,12 @@ export default {
       })
 
     },
-    uploadImg (path) {
+    uploadSource (path) {
+      this.uploadImg(path, (res) => {
+        this.sJson = res
+      })
+    },
+    uploadImg (path, cb) {
       wx.uploadFile({
         url: 'https://api-cn.faceplusplus.com/facepp/v3/detect',
         filePath: path,
@@ -145,26 +154,41 @@ export default {
           api_secret: 'sN2B9-iVyrtyKeQ_HSn6j3JYVdm1LSg2',
           return_landmark: 1,
           calculate_all: 1,
-
+          return_attributes: 'gender,age,smiling,headpose,facequality,blur,eyestatus,emotion,ethnicity,beauty,mouthstatus,eyegaze,skinstatus'
         },
         success(res) {
-          wx.getImageInfo({
-            src: path,
-            success(img) {
-              console.log(res)
-              const score = distance(res.data.faces[1], img.width, res.data.faces[0], img,widht)
-              const level = classify(score)
-              // do something
-              wx.hideLoading()
-              // const url = '../result/main'
-              // wx.navigateTo({ url })
-              console.log(img.width)
-              console.log(score, level)
-            }
-          })
+          cb(JSON.parse(res.data))
         },
         fail (e) {
          console.log(e)
+        }
+      })
+    },
+    takeScore (path, data) {
+      wx.getImageInfo({
+        src: path,
+        success: (img) => {
+          try {
+            console.log(data.faces[0], img.width, this.sJson.faces[0], this.imgW)
+            const score = distance(data.faces[0], img.width, this.sJson.faces[0], this.imgW)
+            const level = classify(score)
+            wx.hideLoading()
+            const url = '../result/main?score=' + score + '&level=' + level
+            wx.navigateTo({ url })
+            console.log(img.width)
+            console.log(score, level)
+          } catch (e) {
+            wx.hideLoading()
+            wx.showModal({
+              title: '',
+              content: '没有检测到人脸', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
+              showCancel: false,
+              success: function(res) {
+                const url = '../result/main?score=十万八千里&level=青铜'
+                wx.navigateTo({ url })
+              }
+            })
+          }
         }
       })
     }
@@ -178,6 +202,8 @@ export default {
       src: events.$emit('getMaskPath'),
       success: (info) => {
         this.imgPath = info.path
+        this.imgW = info.width
+        this.uploadSource(info.path)
       }
     })
 

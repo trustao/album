@@ -173,7 +173,7 @@ export default {
 
           },
           fail: () => {
-            this.waiting = false
+            console.log('fail')
           }
         })
       }, 3050)

@@ -4,14 +4,13 @@
       <img :src="AI" alt="">
       <p>AI考官 正在打分...</p>
     </div>
-    <div class="wrap">
+    <div class="wrap" v-else>
       <div class="userInfo">
           <open-data class="avatar" type="userAvatarUrl"></open-data>
           <open-data class="nickname" type="userNickName"></open-data>
       </div>
       <div class="star">
-        <img :src="STAR" v-for="i in (5 - nullStarCount)" :key="'s' + i" alt="">
-        <img :src="STARNULL" v-for="i in nullStarCount" :key="'n' + i" alt="">
+        <img :src="item >= (5 - nullStarCount) ? STARNULL : STAR" v-for="item in 5" :key="item">
       </div>
       <div class="score">王者</div>
       <div class="img-title">
@@ -41,6 +40,7 @@
 <script>
 import events from '../../../static/events'
 import {distance, classify} from './score'
+import {radiusPath} from '../index/draw'
 import AI from '../../images/imitation/ic_ai.png'
 import STAR from '../../images/imitation/ic_star1.png'
 import STARNULL from '../../images/imitation/ic_star2.png'
@@ -58,7 +58,8 @@ export default {
       sJson: '',
       AI,
       STARNULL,
-      STAR
+      STAR,
+      nullStarCount: 5
     }
   },
   computed: {
@@ -67,6 +68,9 @@ export default {
     },
     title () {
       return this.loading ? 'keke模仿大赛': ''
+    },
+    starCount () {
+      return 5 - this.nullStarCount
     }
   },
   methods: {
@@ -144,7 +148,7 @@ export default {
       radiusPath(ctx, 193, 342, phW, phH, 8.5)
       ctx.clip()
       // this.ctx.globalCompositeOperation = 'source-atop'
-      ctx.drawImage(this.photoPath, 193, 342, phW, phH)
+      ctx.drawImage(this.imgPath, 193, 342, phW, phH)
       ctx.store()
 
 
@@ -227,8 +231,8 @@ export default {
             this.level = level
             console.log(img.width)
             console.log(score, level)
-            this.create()
             this.loading = false
+            this.create()
           } catch (e) {
             wx.hideLoading()
             this.nullStarCount = 5
@@ -241,12 +245,16 @@ export default {
   onLoad () {
     this.loading = true
     this.name = global.name || '围城'
-    wx.getImageInfo({
-      src: global.avatarUrl,
-      success: ({path}) => {
-        this.avatarUrl = path || '/static/ic_star2.png'
-      }
-    })
+    if (global.avatarUrl) {
+      wx.getImageInfo({
+        src: global.avatarUrl,
+        success: ({path}) => {
+          this.avatarUrl = path || '/static/ic_star2.png'
+        }
+      })
+    } else {
+      this.avatarUrl = '/static/ic_star2.png'
+    }
     this.imgPath = ''
     this.photoPath = ''
   },

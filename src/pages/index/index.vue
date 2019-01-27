@@ -120,7 +120,7 @@ const API = 'https://api.pintuxiangce.com/icon/index'
 import Task from './taskQueue'
 import events from '../../../static/events'
 import icon from '@/images/ic_changePic.png'
-
+import {radiusPath} from './draw'
 const task = new Task()
 const TEMPLATET_API = ''
 const reversalTask = new Task()

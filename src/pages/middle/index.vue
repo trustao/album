@@ -1,18 +1,37 @@
 <template>
-  <container title="预览作品" background="#FFE200">
+  <container :title="title" :background="headBg">
+    <div class="wrap loading" v-if="loading">
+      <img :src="AI" alt="">
+      <p>AI考官 正在打分...</p>
+    </div>
     <div class="wrap">
-      <img class="img" :src="imgPath"  mode="aspectFit" >
-      <img class="img" :src="photoPath"  mode="aspectFit" >
-      <div class="tip-content">
-        <p>你的照片已存相册</p>
-        <p>可美化后替换照片</p>
+      <div class="userInfo">
+          <open-data class="avatar" type="userAvatarUrl"></open-data>
+          <open-data class="nickname" type="userNickName"></open-data>
+      </div>
+      <div class="star">
+        <img :src="STAR" v-for="i in (5 - nullStarCount)" :key="'s' + i" alt="">
+        <img :src="STARNULL" v-for="i in nullStarCount" :key="'n' + i" alt="">
+      </div>
+      <div class="score">王者</div>
+      <div class="img-title">
+        <div>原图</div>
+        <div>vs</div>
+        <div>模仿</div>
+      </div>
+      <div class="img-wrap">
+        <div class="img">
+          <img :src="imgPath"  mode="aspectFit" >
+        </div>
+        <div class="img">
+          <img :src="photoPath"  mode="aspectFit" >
+        </div>
       </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
         <div class="hor">
-          <div class="btn" id="re" @click="back">重新拍照</div>
-          <div class="btn" id="back" @click="chooseImg">相册选图</div>
+          <div class="btn" id="re" @click="back">再来一题</div>
+          <div class="btn" id="back" @click="create">保存图片</div>
         </div>
-        <div class="btn" @click="create">生成作品</div>
       </div>
       <canvas class="to-images" canvas-id="to-images"></canvas>
     </div>
@@ -22,18 +41,34 @@
 <script>
 import events from '../../../static/events'
 import {distance, classify} from './score'
+import AI from '../../images/imitation/ic_ai.png'
+import STAR from '../../images/imitation/ic_star1.png'
+import STARNULL from '../../images/imitation/ic_star2.png'
+
+const scoreText = ['王者', '钻石', '黄金', '白银', '青铜']
 export default {
   data () {
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
     return {
       iphoneX,
+      loading: false,
       imgPath:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg',
       imgW: 0,
       photoPath:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg',
-      sJson: ''
+      sJson: '',
+      AI,
+      STARNULL,
+      STAR
     }
   },
-
+  computed: {
+    headBg () {
+      return  this.loading ? '#fff' : '#FFE200'
+    },
+    title () {
+      return this.loading ? 'keke模仿大赛': ''
+    }
+  },
   methods: {
     backHome () {
       events.$emit('clearList')
@@ -44,29 +79,7 @@ export default {
     back () {
       wx.navigateBack()
     },
-    chooseImg () {
-      wx.chooseImage({
-        count: 1, // 默认9
-        sizeType: ['compressed', 'original'], // 可以指定是原图还是压缩图，默认二者都有
-        sourceType: ['album'], // 可以指定来源是相册还是相机，默认二者都有
-        success: (res) => {
-          const path = res.tempFilePaths[0]
-          // this.setImage(path)
-          events.$off('setImage')
-          events.$once('setImage', (img) => {
-            this.photoPath = img
-          })
-          const url = '../cropped/main?imgPath=' + path
-          wx.navigateTo({ url })
-        }
-      })
-    },
     create () {
-      wx.showLoading({
-        title: '图片生成中',
-        mask: true
-      })
-
       const timer = setTimeout(() => {
         wx.hideLoading()
         wx.showModal({
@@ -78,33 +91,68 @@ export default {
           }
         })
       }, 10000)
+      const nullStar = '/static/ic_star2.png'
+      const star = '/static/ic_star1.png'
       const goal = {
         QRCode: '/static/new_qrcode.png',
-        QRX: 47,
-        QRY: 4,
-        QRL: 56
+        QRX: 57,
+        QRY: 19,
+        QRL: 64
       }
       const ctx = wx.createCanvasContext('to-images')
-      const allW = 375 + 40
-      const allH = (375 + 20) * 2 +20 + 64
-      const phW = 375
-      const phH = 375
-      ctx.setFillStyle('#FFF')
+      const allW = 375
+      const allH = 667
+      const phW = 170
+      const phH = 170
+      ctx.setFillStyle('#FFE200')
       ctx.setStrokeStyle('#000')
       ctx.fillRect(0,0, allW, allH)
-      ctx.drawImage(this.imgPath, 20, 20, phW, phH)
-      ctx.strokeRect(20, 20, phW, phH)
-      ctx.drawImage(this.photoPath, 20, phH + 40, phW, phH)
-      ctx.strokeRect(20, phH + 40, phW, phH)
+      // 用户信息
+      ctx.drawImage(this.avatarUrl, 167, 20, 41, 41)
+      ctx.setFontSize(17)
+      ctx.setFillStyle('#000')
+      const metrics = ctx.measureText(this.name)
+      ctx.fillText(this.name, (allW - metrics.width) / 2, 65)
+
+      // star
+      for (let i = 0; i <5; i++) {
+        ctx.drawImage(i >= (5 - this.nullStarCount) ? nullStar : star, 48.2 + i * 60, 119, 39.8, 38.8)
+      }
+      // level
+      ctx.setFontSize(40)
+      ctx.setFillStyle('#5B29EF')
+      ctx.fillText(this.level, (allW - ctx.measureText(this.level).width) / 2, 183)
+
+      // 原图 vs 模仿
+      ctx.setFontSize(20)
+      ctx.setFillStyle('#4A4A4A')
+      ctx.fillText('原图', 76, 306)
+      ctx.fillText('vs', 177, 306)
+      ctx.fillText('模仿', 258, 306)
+
+
+      ctx.lineWidth = 5
+      // 图片
       ctx.save()
-      ctx.setFillStyle('#FFE200')
-      ctx.fillRect(0, allH - 64, allW, 64)
-      ctx.restore()
+      radiusPath(ctx, 13, 342, phW, phH,8.5)
+      ctx.clip()
+      // this.ctx.globalCompositeOperation = 'source-atop'
+      ctx.drawImage(this.imgPath, 13, 342, phW, phH)
+      ctx.store()
+
+      ctx.save()
+      radiusPath(ctx, 193, 342, phW, phH, 8.5)
+      ctx.clip()
+      // this.ctx.globalCompositeOperation = 'source-atop'
+      ctx.drawImage(this.photoPath, 193, 342, phW, phH)
+      ctx.store()
+
+
       ctx.drawImage(goal.QRCode, goal.QRX, allH - goal.QRY - goal.QRL, goal.QRL, goal.QRL)
       ctx.setFillStyle('#333')
       ctx.setFontSize(18)
       ctx.setTextBaseline('bottom')
-      ctx.fillText('快来创作你的图片模仿秀，keke', 112, allH - 21)
+      ctx.fillText('扫码参加keke模仿大赛', 135, allH - 39)
       ctx.draw(false, () => {
         wx.canvasToTempFilePath({
           canvasId: 'to-images',
@@ -119,8 +167,9 @@ export default {
             wx.saveImageToPhotosAlbum({
               filePath: res.tempFilePath,
               success: () => {
-                this.uploadImg(this.photoPath, (data) => {
-                  this.takeScore(this.photoPath, data)
+                wx.hideLoading()
+                wx.showToast({
+                  title: '保存成功'
                 })
               },
               fail () {
@@ -137,11 +186,13 @@ export default {
           }
         })
       })
-
     },
     uploadSource (path) {
       this.uploadImg(path, (res) => {
         this.sJson = res
+        this.uploadImg(this.photoPath, (data) => {
+          this.takeScore(this.photoPath, data)
+        })
       })
     },
     uploadImg (path, cb) {
@@ -172,28 +223,30 @@ export default {
             console.log(data.faces[0], img.width, this.sJson.faces[0], this.imgW)
             const score = distance(data.faces[0], img.width, this.sJson.faces[0], this.imgW)
             const level = classify(score)
-            wx.hideLoading()
-            const url = '../result/main?score=' + score + '&level=' + level
-            wx.navigateTo({ url })
+            this.nullStarCount = scoreText.indexOf(level)
+            this.level = level
             console.log(img.width)
             console.log(score, level)
+            this.create()
+            this.loading = false
           } catch (e) {
             wx.hideLoading()
-            wx.showModal({
-              title: '',
-              content: '没有检测到人脸', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
-              showCancel: false,
-              success: function(res) {
-                const url = '../result/main?score=十万八千里&level=青铜'
-                wx.navigateTo({ url })
-              }
-            })
+            this.nullStarCount = 5
+            this.level = '什么玩意'
           }
         }
       })
     }
   },
   onLoad () {
+    this.loading = true
+    this.name = global.name || '围城'
+    wx.getImageInfo({
+      src: global.avatarUrl,
+      success: ({path}) => {
+        this.avatarUrl = path || '/static/ic_star2.png'
+      }
+    })
     this.imgPath = ''
     this.photoPath = ''
   },
@@ -206,7 +259,6 @@ export default {
         this.uploadSource(info.path)
       }
     })
-
     this.photoPath = events.$emit('getPhoto')
   },
   onShareAppMessage() {
@@ -221,14 +273,91 @@ export default {
 
 <style lang="less" scoped>
   .wrap{
+    background: #FFE200;
     width: 100%;
+    height: 100%;
     text-align: center;
-    .img {
-      display: block;
-      width: 360rpx;
-      height: 360rpx;
-      border: 1px solid;
-      margin: 20rpx auto;
+    &.loading{
+      background: #fff;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      img{
+        width: 520rpx;
+        margin-bottom: 60rpx;
+      }
+      p{
+        width: 520rpx;
+        height: 100rpx;
+        line-height: 100rpx;
+        border-radius: 16rpx;
+        font-size: 36rpx;
+        color: #000;
+        background: #FFE200;
+      }
+    }
+    .userInfo {
+      position: fixed;
+      top: 64rpx;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      .avatar {
+        display: block;
+        width: 82rpx;
+        height: 82rpx;
+        border-radius: 50%;
+        overflow: hidden;
+      }
+      .name{
+        margin-top: 10rpx;
+        font-size: 34rpx;
+        color: #000;
+        line-height: 45rpx;
+      }
+    }
+    .star{
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      padding: 134rpx 96.4rpx 50rpx;
+      img{
+        width: 80rpx;
+        height: 80rpx;
+      }
+    }
+    .score{
+      font-size: 80rpx;
+      color: #5B29EF;
+      text-align: center;
+    }
+    .img-title{
+      margin: 134rpx 0 16rpx;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      padding: 0 76rpx;
+    }
+    .img-wrap{
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      padding: 0 26rpx;
+      margin-bottom: 140rpx;
+      .img {
+        display: block;
+        box-sizing: border-box;
+        width: 340rpx;
+        height: 340rpx;
+        border: 1px solid;
+        border-radius: 19rpx;
+        img{
+          width: 100%;
+          height: 100%;
+        }
+      }
     }
     .tip-content{
       font-size: 28rpx;
@@ -237,46 +366,29 @@ export default {
       color: #D0021B;
     }
     .bottom{
+      box-sizing: border-box;
       width: 100%;
+      padding: 0 56rpx;
       margin-top: 40rpx;
       .hor {
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         .btn{
-          width: 240rpx;
+          width: 300rpx;
           height: 88rpx;
           background: #fff;
-          border: 1rpx solid;
           text-align: center;
           line-height: 86rpx;
-          margin: 0 8rpx;
-        }
-      }
-      .btn {
-        display: block;
-        margin: 20rpx auto 32rpx;
-        appearance: none;
-        outline: none;
-        box-sizing: border-box;
-        border: 2rpx solid;
-        border-radius: 44rpx;
-        width: 514rpx;
-        height: 90rpx;
-        line-height: 86rpx;
-        font-size: 32rpx;
-        background: #FFE200;
-        text-align: center;
-        color: #000;
-        &.share{
-          background: transparent;
-        }
-        &.re{
-          background: rgb(251, 14, 55);
-          color: #fff;
-          border: 2rpx solid #000;
-        }
-        &:after, &:before{
-          display: none;
+          box-sizing: border-box;
+          border: 2rpx solid;
+          border-radius: 44rpx;
+          font-size: 32rpx;
+          &:first-child{
+            background: rgba(255,255,255,.51);
+          }
+          &:last-child{
+            background: #EFEFEF;
+          }
         }
       }
       .contact{

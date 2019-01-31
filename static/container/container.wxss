@@ -11,6 +11,7 @@ page{
   width: 100%;
   height: 100%;
   padding-top: 128rpx;
+  overflow: auto;
 }
 .container.iphoneX {
   padding-top: 176rpx;
@@ -31,6 +32,7 @@ page{
     width: 100%;
     height: 128rpx;
     background: #fff;
+    z-index: 99;
 }
 .container.plus .header{
   height: 116rpx;
@@ -89,4 +91,29 @@ page{
   overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
   background: #f4f4f4;
+}
+.userInfo {
+  position: absolute;
+  top: 64rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.userInfo .avatar {
+  display: block;
+  width: 82rpx;
+  height: 82rpx;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.userInfo .name{
+  margin-top: 10rpx;
+  font-size: 34rpx;
+  color: #000;
+  line-height: 45rpx;
 }

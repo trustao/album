@@ -153,24 +153,12 @@ export default {
           quality: 'high',
           success: (res) => {
             this.waiting = false
-            wx.saveImageToPhotosAlbum({
-              filePath: res.tempImagePath,
-              success () {
-                events.$off('getPhoto')
-                events.$on('getPhoto', () => {
-                  return res.tempImagePath
-                })
-                const url = '../middle/main'
-                wx.navigateTo({ url })
-              },
-              fail () {
-                wx.showToast({
-                  title: '保存失败，请在右上角设置中打开权限。',
-                  icon: 'none'
-                })
-              }
+            events.$off('getPhoto')
+            events.$on('getPhoto', () => {
+              return res.tempImagePath
             })
-
+            const url = '../middle/main'
+            wx.navigateTo({ url })
           },
           fail: () => {
             console.log('fail')

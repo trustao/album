@@ -16,6 +16,10 @@ Component({
     },
     beforeBack: {
       type: String
+    },
+    needUser: {
+      type: Boolean,
+      value: false
     }
   },
 

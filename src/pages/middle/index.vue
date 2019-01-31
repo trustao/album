@@ -1,18 +1,14 @@
 <template>
-  <container :title="title" :background="headBg">
+  <container :title="title" :background="headBg" :needUser="!loading">
     <div class="wrap loading" v-if="loading">
       <img :src="AI" alt="">
       <p>AI考官 正在打分...</p>
     </div>
     <div class="wrap" v-else>
-      <div class="userInfo">
-          <open-data class="avatar" type="userAvatarUrl"></open-data>
-          <open-data class="nickname" type="userNickName"></open-data>
-      </div>
       <div class="star">
         <img :src="item >= (5 - nullStarCount) ? STARNULL : STAR" v-for="item in 5" :key="item">
       </div>
-      <div class="score">王者</div>
+      <div class="score">{{level}}</div>
       <div class="img-title">
         <div>原图</div>
         <div>vs</div>
@@ -59,7 +55,9 @@ export default {
       AI,
       STARNULL,
       STAR,
-      nullStarCount: 5
+      nullStarCount: 5,
+      level: '',
+      avatarUrl: ''
     }
   },
   computed: {
@@ -74,14 +72,13 @@ export default {
     }
   },
   methods: {
-    backHome () {
-      events.$emit('clearList')
-      wx.navigateBack({
-        delta: 2
-      })
-    },
     back () {
-      wx.navigateBack()
+      events.$emit('indexChange')
+      this.$nextTick(() => {
+        wx.navigateBack({
+          delta: 2
+        })
+      })
     },
     create () {
       const timer = setTimeout(() => {
@@ -104,20 +101,27 @@ export default {
         QRL: 64
       }
       const ctx = wx.createCanvasContext('to-images')
+      console.log(ctx)
       const allW = 375
       const allH = 667
       const phW = 170
       const phH = 170
+      ctx.setTextBaseline('top')
       ctx.setFillStyle('#FFE200')
       ctx.setStrokeStyle('#000')
       ctx.fillRect(0,0, allW, allH)
       // 用户信息
-      ctx.drawImage(this.avatarUrl, 167, 20, 41, 41)
-      ctx.setFontSize(17)
-      ctx.setFillStyle('#000')
-      const metrics = ctx.measureText(this.name)
-      ctx.fillText(this.name, (allW - metrics.width) / 2, 65)
-
+      if (this.avatarUrl) {
+        ctx.save()
+        radiusPath(ctx, 167, 20, 41, 41 , 20.5)
+        ctx.clip()
+        ctx.drawImage(this.avatarUrl, 167, 20, 41, 41)
+        ctx.restore()
+        ctx.setFontSize(17)
+        ctx.setFillStyle('#000')
+        const metrics = ctx.measureText(this.name)
+        ctx.fillText(this.level, (allW - metrics.width) / 2, 65)
+      }
       // star
       for (let i = 0; i <5; i++) {
         ctx.drawImage(i >= (5 - this.nullStarCount) ? nullStar : star, 48.2 + i * 60, 119, 39.8, 38.8)
@@ -135,21 +139,23 @@ export default {
       ctx.fillText('模仿', 258, 306)
 
 
-      ctx.lineWidth = 5
+      ctx.lineWidth = 4
       // 图片
       ctx.save()
       radiusPath(ctx, 13, 342, phW, phH,8.5)
+      ctx.stroke()
       ctx.clip()
       // this.ctx.globalCompositeOperation = 'source-atop'
       ctx.drawImage(this.imgPath, 13, 342, phW, phH)
-      ctx.store()
+      ctx.restore()
 
       ctx.save()
       radiusPath(ctx, 193, 342, phW, phH, 8.5)
+      ctx.stroke()
       ctx.clip()
       // this.ctx.globalCompositeOperation = 'source-atop'
-      ctx.drawImage(this.imgPath, 193, 342, phW, phH)
-      ctx.store()
+      ctx.drawImage(this.photoPath, 193, 342, phW, phH)
+      ctx.restore()
 
 
       ctx.drawImage(goal.QRCode, goal.QRX, allH - goal.QRY - goal.QRL, goal.QRL, goal.QRL)
@@ -158,6 +164,7 @@ export default {
       ctx.setTextBaseline('bottom')
       ctx.fillText('扫码参加keke模仿大赛', 135, allH - 39)
       ctx.draw(false, () => {
+        console.log('draw')
         wx.canvasToTempFilePath({
           canvasId: 'to-images',
           x: 0,
@@ -232,9 +239,8 @@ export default {
             console.log(img.width)
             console.log(score, level)
             this.loading = false
-            this.create()
           } catch (e) {
-            wx.hideLoading()
+            this.loading = false
             this.nullStarCount = 5
             this.level = '什么玩意'
           }
@@ -244,16 +250,16 @@ export default {
   },
   onLoad () {
     this.loading = true
-    this.name = global.name || '围城'
+    this.name = global.name
     if (global.avatarUrl) {
       wx.getImageInfo({
         src: global.avatarUrl,
         success: ({path}) => {
-          this.avatarUrl = path || '/static/ic_star2.png'
+          this.avatarUrl = path
         }
       })
     } else {
-      this.avatarUrl = '/static/ic_star2.png'
+      this.avatarUrl = ''
     }
     this.imgPath = ''
     this.photoPath = ''
@@ -285,6 +291,7 @@ export default {
     width: 100%;
     height: 100%;
     text-align: center;
+    overflow: auto;
     &.loading{
       background: #fff;
       height: 100%;
@@ -294,6 +301,7 @@ export default {
       align-items: center;
       img{
         width: 520rpx;
+        height: 520rpx;
         margin-bottom: 60rpx;
       }
       p{
@@ -307,8 +315,8 @@ export default {
       }
     }
     .userInfo {
-      position: fixed;
-      top: 64rpx;
+      position: absolute;
+      top: -42rpx;
       left: 50%;
       transform: translateX(-50%);
       z-index: 999;
@@ -347,6 +355,8 @@ export default {
       flex-direction: row;
       justify-content: space-around;
       padding: 0 76rpx;
+      font-size: 40rpx;
+      color: #4A4A4A;
     }
     .img-wrap{
       display: flex;
@@ -361,6 +371,7 @@ export default {
         height: 340rpx;
         border: 1px solid;
         border-radius: 19rpx;
+        overflow: hidden;
         img{
           width: 100%;
           height: 100%;

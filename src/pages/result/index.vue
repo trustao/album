@@ -90,7 +90,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/c738d5e40bfa99731decacbaf8ef6298.jpg'
     }
   }
 }

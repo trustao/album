@@ -1,27 +1,35 @@
 <template>
-  <container :title="title" :background="headBg" :needUser="!loading">
+  <container :title="title" :background="headBg">
     <div class="wrap loading" v-if="loading">
       <img :src="AI" alt="">
       <p>AI考官 正在打分...</p>
     </div>
     <div class="wrap" v-else>
-      <div class="star">
-        <img :src="item >= (5 - nullStarCount) ? STARNULL : STAR" v-for="item in 5" :key="item">
-      </div>
-      <div class="score">{{level}}</div>
       <div class="img-title">
-        <div>原图</div>
+        <div>表情包</div>
         <div>vs</div>
-        <div>模仿</div>
+        <div>模仿照</div>
       </div>
       <div class="img-wrap">
         <div class="img">
           <img :src="imgPath"  mode="aspectFit" >
         </div>
         <div class="img">
-          <img :src="photoPath"  mode="aspectFit" >
+          <img :src="photoPath"  mode="aspectFit" @load="photoLoad">
         </div>
       </div>
+
+      <div class="star">
+        <img :src="item >= (5 - nullStarCount) ? STARNULL : STAR" v-for="item in 5" :key="item">
+      </div>
+      <div class="score">{{level}}</div>
+      <div class="bar-out">
+        <div class="bar-inner" :style="{width: (people / 100 * 606 ) + 'rpx'}"></div>
+      </div>
+      <div class="over-p">
+        超越 <span>{{people}}</span>%的挑战者
+      </div>
+      <div class="talk">{{talk}}</div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
         <div class="hor">
           <div class="btn" id="re" @click="back">再来一题</div>
@@ -42,22 +50,39 @@ import STAR from '../../images/imitation/ic_star1.png'
 import STARNULL from '../../images/imitation/ic_star2.png'
 
 const scoreText = ['王者', '钻石', '黄金', '白银', '青铜']
+const p = [
+  '"模仿如此之像，无愧王者称号"',
+  '"模仿不错哦，绝对是个⾼手"',
+  '"模仿得还可以，细节要仔细哦"',
+  '"模仿得⼀般哦，加油加油"',
+  '"模仿成这样，AI考官不忍直视"',
+  '"你绝对是来砸场⼦的"'
+]
+const ran = [
+  [90, 99],
+  [70, 89],
+  [50, 69],
+  [20, 49],
+  [10, 19]
+]
 export default {
   data () {
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
     return {
       iphoneX,
       loading: false,
-      imgPath:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg',
+      imgPath:'https://api.pintuxiangce.com/resources/uploads/icons/c738d5e40bfa99731decacbaf8ef6298.jpg',
       imgW: 0,
-      photoPath:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg',
+      photoPath:'https://api.pintuxiangce.com/resources/uploads/icons/c738d5e40bfa99731decacbaf8ef6298.jpg',
       sJson: '',
       AI,
       STARNULL,
       STAR,
-      nullStarCount: 5,
-      level: '',
-      avatarUrl: ''
+      nullStarCount: 3,
+      level: '王者',
+      avatarUrl: '',
+      talk: p[0],
+      people: 96
     }
   },
   computed: {
@@ -65,13 +90,16 @@ export default {
       return  this.loading ? '#fff' : '#FFE200'
     },
     title () {
-      return this.loading ? 'keke模仿大赛': ''
+      return this.loading ? 'keke表情包模仿挑战': ''
     },
     starCount () {
       return 5 - this.nullStarCount
     }
   },
   methods: {
+    photoLoad (e) {
+      console.log(e)
+    },
     back () {
       events.$emit('indexChange')
       this.$nextTick(() => {
@@ -92,16 +120,53 @@ export default {
           }
         })
       }, 10000)
+      this.draw()
+      this.draw((allW, allH) => {
+        setTimeout(() => {
+          wx.canvasToTempFilePath({
+            canvasId: 'to-images',
+            x: 0,
+            y: 0,
+            width: allW,
+            height: allH,
+            fileType: 'jpg',
+            quality: .8,
+            success: (res) => {
+              clearTimeout(timer)
+              wx.saveImageToPhotosAlbum({
+                filePath: res.tempFilePath,
+                success: () => {
+                  wx.hideLoading()
+                  wx.showToast({
+                    title: '保存成功'
+                  })
+                },
+                fail () {
+                  wx.hideLoading()
+                  wx.showToast({
+                    title: '保存失败，请在右上角设置中打开权限。',
+                    icon: 'none'
+                  })
+                }
+              })
+            },
+            fail (err) {
+              console.log(err)
+            }
+          })
+        }, 200)
+      })
+    },
+    draw (fn) {
       const nullStar = '/static/ic_star2.png'
       const star = '/static/ic_star1.png'
       const goal = {
         QRCode: '/static/new_qrcode.png',
-        QRX: 57,
+        QRX: 27,
         QRY: 19,
         QRL: 64
       }
       const ctx = wx.createCanvasContext('to-images')
-      console.log(ctx)
       const allW = 375
       const allH = 667
       const phW = 170
@@ -110,92 +175,96 @@ export default {
       ctx.setFillStyle('#FFE200')
       ctx.setStrokeStyle('#000')
       ctx.fillRect(0,0, allW, allH)
-      // 用户信息
-      if (this.avatarUrl) {
-        ctx.save()
-        radiusPath(ctx, 167, 20, 41, 41 , 20.5)
-        ctx.clip()
-        ctx.drawImage(this.avatarUrl, 167, 20, 41, 41)
-        ctx.restore()
-        ctx.setFontSize(17)
-        ctx.setFillStyle('#000')
-        const metrics = ctx.measureText(this.name)
-        ctx.fillText(this.level, (allW - metrics.width) / 2, 65)
-      }
-      // star
-      for (let i = 0; i <5; i++) {
-        ctx.drawImage(i >= (5 - this.nullStarCount) ? nullStar : star, 48.2 + i * 60, 119, 39.8, 38.8)
-      }
-      // level
-      ctx.setFontSize(40)
-      ctx.setFillStyle('#5B29EF')
-      ctx.fillText(this.level, (allW - ctx.measureText(this.level).width) / 2, 183)
 
       // 原图 vs 模仿
       ctx.setFontSize(20)
       ctx.setFillStyle('#4A4A4A')
-      ctx.fillText('原图', 76, 306)
-      ctx.fillText('vs', 177, 306)
-      ctx.fillText('模仿', 258, 306)
+      ctx.fillText('表情包', 66, 40)
+      ctx.fillText('vs', 177, 40)
+      ctx.fillText('模仿照', 248, 40)
 
 
       ctx.lineWidth = 4
       // 图片
       ctx.save()
-      radiusPath(ctx, 13, 342, phW, phH,8.5)
+      radiusPath(ctx, 13, 76, phW, phH,8.5)
       ctx.stroke()
       ctx.clip()
       // this.ctx.globalCompositeOperation = 'source-atop'
-      ctx.drawImage(this.imgPath, 13, 342, phW, phH)
+      ctx.drawImage(this.imgPath, 13, 76, phW, phH)
       ctx.restore()
 
       ctx.save()
-      radiusPath(ctx, 193, 342, phW, phH, 8.5)
+      radiusPath(ctx, 193, 76, phW, phH, 8.5)
       ctx.stroke()
       ctx.clip()
       // this.ctx.globalCompositeOperation = 'source-atop'
-      ctx.drawImage(this.photoPath, 193, 342, phW, phH)
+      ctx.drawImage(this.photoPath, 193, 76, phW, phH)
       ctx.restore()
+      // 用户信息
+      // if (this.avatarUrl) {
+      //   ctx.save()
+      //   radiusPath(ctx, 167, 20, 41, 41 , 20.5)
+      //   ctx.clip()
+      //   ctx.drawImage(this.avatarUrl, 167, 20, 41, 41)
+      //   ctx.restore()
+      //   ctx.setFontSize(17)
+      //   ctx.setFillStyle('#000')
+      //   const metrics = ctx.measureText(this.name)
+      //   ctx.fillText(this.level, (allW - metrics.width) / 2, 65)
+      // }
+      // star
+      for (let i = 0; i <5; i++) {
+        ctx.drawImage(i >= (5 - this.nullStarCount) ? nullStar : star, 62.2 + i * 54, 286, 35.8, 34.8)
+      }
+      // level
+      ctx.setFontSize(40)
+      ctx.setFillStyle('#5B29EF')
+      ctx.fillText(this.level, (allW - ctx.measureText(this.level).width) / 2, 335)
+
+      //bar
+      ctx.setLineJoin('round')
+      ctx.setLineWidth(12)
+      ctx.setStrokeStyle('#DDD')
+      ctx.beginPath()
+      ctx.moveTo(43, 409)
+      ctx.lineTo(329, 409)
+      ctx.closePath()
+      ctx.stroke()
+
+      ctx.setStrokeStyle('#7D51FF')
+      ctx.beginPath()
+      ctx.moveTo(43, 409)
+      let x = 31 + (300 * this.people / 100)
+      ctx.lineTo(x > 329 ? 329 : x, 409)
+      ctx.closePath()
+      ctx.stroke()
+
+      // des
+      ctx.setFillStyle('#4A4A4A')
+      ctx.setFontSize(16)
+      ctx.fillText('超越', 115, 441)
+      // 150 188
+      ctx.save()
+      ctx.setFillStyle('#7D51FF')
+      ctx.setFontSize(24)
+      ctx.fillText(this.people, 188 - ctx.measureText('' + this.people).width, 435)
+      ctx.restore()
+      ctx.fillText('% 的挑战者', 188, 441)
+
+      ctx.setFontSize(18)
+      ctx.setFillStyle('#000')
+      ctx.fillText(this.talk, (allW - ctx.measureText(this.talk).width) / 2, 506)
 
 
       ctx.drawImage(goal.QRCode, goal.QRX, allH - goal.QRY - goal.QRL, goal.QRL, goal.QRL)
       ctx.setFillStyle('#333')
       ctx.setFontSize(18)
       ctx.setTextBaseline('bottom')
-      ctx.fillText('扫码参加keke模仿大赛', 135, allH - 39)
+      ctx.fillText('扫码参加keke表情包模仿挑战', 105, allH - 39)
       ctx.draw(false, () => {
         console.log('draw')
-        wx.canvasToTempFilePath({
-          canvasId: 'to-images',
-          x: 0,
-          y: 0,
-          width: allW,
-          height: allH,
-          fileType: 'jpg',
-          quality: .8,
-          success: (res) => {
-            clearTimeout(timer)
-            wx.saveImageToPhotosAlbum({
-              filePath: res.tempFilePath,
-              success: () => {
-                wx.hideLoading()
-                wx.showToast({
-                  title: '保存成功'
-                })
-              },
-              fail () {
-                wx.hideLoading()
-                wx.showToast({
-                  title: '保存失败，请在右上角设置中打开权限。',
-                  icon: 'none'
-                })
-              }
-            })
-          },
-          fail (err) {
-            console.log(err)
-          }
-        })
+        fn && fn(allW, allH)
       })
     },
     uploadSource (path) {
@@ -226,6 +295,54 @@ export default {
         }
       })
     },
+    beautifyPhoto (path) {
+      let _this = this
+      wx.uploadFile({
+        url: 'https://api-cn.faceplusplus.com/facepp/v1/beautify',
+        filePath: path,
+        name: 'image_file',
+        formData: {
+          api_key: 'Tti9NApKiVOqTmzlVKdISOIjLnfjCSpA',
+          api_secret: 'sN2B9-iVyrtyKeQ_HSn6j3JYVdm1LSg2',
+          whitening: 100,
+          smoothing: 100
+        },
+        success: (res) => {
+          let data = JSON.parse(res.data)
+          let img = data.result
+          const fs = wx.getFileSystemManager()
+          let path = `${wx.env.USER_DATA_PATH}/p-${Date.now().toString(32)}.jpg`
+          console.log(`美颜： 用时${data.time_used}; 写入文件`)
+          fs.writeFile({
+            filePath: path,
+            data: img,
+            encoding: 'base64',
+            success (info) {
+              console.log(info)
+              wx.getImageInfo({
+                src: path,
+                success (d) {
+                  console.log('写入成功，获得图片' + d.path)
+                  _this.photoPath = d.path
+                },
+                fail (e) {
+                  console.log('fail', e)
+                }
+              })
+            },
+            fail (info) {
+              console.log(info)
+            }
+          })
+        },
+        fail (e) {
+          console.log(e)
+        },
+        complete: () => {
+          this.loading = false
+        }
+      })
+    },
     takeScore (path, data) {
       wx.getImageInfo({
         src: path,
@@ -236,14 +353,18 @@ export default {
             const level = classify(score)
             this.nullStarCount = scoreText.indexOf(level)
             this.level = level
-            console.log(img.width)
-            console.log(score, level)
-            this.loading = false
+            this.talk = p[this.nullStarCount]
+            this.people = (Math.random() * (ran[this.nullStarCount][1] - ran[this.nullStarCount][0]) + ran[this.nullStarCount][0]) | 0
           } catch (e) {
-            this.loading = false
             this.nullStarCount = 5
+            this.talk = p[5]
+            this.people = 0
             this.level = '什么玩意'
           }
+        },
+        complete: () => {
+          console.log(`评分：${this.level}; 美颜`)
+          this.beautifyPhoto(this.photoPath)
         }
       })
     }
@@ -279,7 +400,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/c738d5e40bfa99731decacbaf8ef6298.jpg'
     }
   }
 }
@@ -338,10 +459,10 @@ export default {
       display: flex;
       flex-direction: row;
       justify-content: space-between;
-      padding: 134rpx 96.4rpx 50rpx;
+      padding: 0 124.4rpx 28rpx;
       img{
-        width: 80rpx;
-        height: 80rpx;
+        width: 71.6rpx;
+        height: 70rpx;
       }
     }
     .score{
@@ -350,7 +471,7 @@ export default {
       text-align: center;
     }
     .img-title{
-      margin: 134rpx 0 16rpx;
+      margin: 22rpx 0 16rpx;
       display: flex;
       flex-direction: row;
       justify-content: space-around;
@@ -363,7 +484,7 @@ export default {
       flex-direction: row;
       justify-content: space-between;
       padding: 0 26rpx;
-      margin-bottom: 140rpx;
+      margin-bottom: 80rpx;
       .img {
         display: block;
         box-sizing: border-box;
@@ -378,6 +499,34 @@ export default {
         }
       }
     }
+    .bar-out{
+      width: 606rpx;
+      height: 24rpx;
+      margin:50rpx auto 0;
+      background: #DDD;
+      border-radius: 12rpx;
+      overflow: hidden;
+      .bar-inner{
+        height: 24rpx;
+        border-radius: 12rpx;
+        background: #5B29EF;
+      }
+    }
+    .over-p{
+      color: #4A4A4A;
+      font-size: 32rpx;
+      text-align: center;
+      span{
+        font-size: 48rpx;
+        color: #7D51FF;
+      }
+    }
+    .talk{
+      margin-top: 76rpx;
+      font-size: 36rpx;
+      color: #333;
+      text-align: center;
+    }
     .tip-content{
       font-size: 28rpx;
       margin: 20rpx 0;
@@ -388,7 +537,7 @@ export default {
       box-sizing: border-box;
       width: 100%;
       padding: 0 56rpx;
-      margin-top: 40rpx;
+      margin-top: 98rpx;
       .hor {
         display: flex;
         justify-content: space-between;

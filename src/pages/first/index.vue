@@ -1,38 +1,34 @@
 <template>
-  <container title="" background="#FFE200">
+  <container background="#FFE200">
     <div class="wrap-jump">
       <h1>keke表情包模仿挑战</h1>
       <div class="img">
-        <img :src="IMG"/>
+        <img src="https://api.pintuxiangce.com/resources/uploads/icons/c7311bf0960ce3c16bb3d0645c074fb6.png"/>
       </div>
-      <p>谁是表情包模仿界的</p>
-      <p>王者</p>
+      <p>测测你得多少分</p>
       <div class="bottom">
-        <button class="btn" id="jump" @tap="jump">开始模仿</button>
+        <button class="btn" open-type="getUserInfo" id="jump" @getuserinfo="jump">我要挑战</button>
       </div>
-      <!--<ad unit-id="adunit-c790d450da396f1c"></ad>-->
     </div>
   </container>
 </template>
 
 <script>
-import IMG from '../../images/imitation/picture.png'
 export default {
   data () {
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
     return {
-      IMG,
       iphoneX,
       list: [],
       index: 0
     }
   },
   methods: {
-    jump () {
-      const url = '../first/main'
+    jump (res) {
+      console.log(res)
+      const url = '../question/main'
       wx.navigateTo({ url })
     },
-
   },
   created () {
 
@@ -41,7 +37,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/c738d5e40bfa99731decacbaf8ef6298.jpg'
     }
   }
 }
@@ -51,29 +47,28 @@ export default {
   .wrap-jump{
     box-sizing: border-box;
     width: 100%;
-    height: 100%;
+    min-height: 100%;
     overflow:hidden;
-    background: #fff;
+    background: #FFE200;
     p{
       text-align: center;
-      margin-top: 50rpx;
-      font-size: 34rpx;
-      color: #707070;
+      font-size: 60rpx;
+      color: #000;
+      font-weight: bold;
+      line-height: 74rpx;
     }
     h1{
-      margin: 0rpx auto 50rpx;
-      font-size: 56rpx;
+      margin: 70rpx auto 50rpx;
+      font-size: 60rpx;
       font-weight: bold;
       color: #000;
       text-align: center;
     }
     .img{
       display: block;
-      width: 612rpx;
-      height: 612rpx;
-      margin: 0 auto;
-      border-radius: 40rpx;
-      border: 8rpx solid #000;
+      width: 718rpx;
+      height: 518rpx;
+      margin: 0 auto 70rpx;
       overflow: hidden;
       img{
         width: 100%;
@@ -90,20 +85,24 @@ export default {
     .bottom{
       width: 100%;
       text-align: center;
-      margin: 30rpx 0;
+      margin: 87rpx 0;
       .btn {
         display: block;
         appearance: none;
         outline: none;
         box-sizing: border-box;
-        border: 2rpx solid;
         border-radius: 56rpx;
-        width: 498rpx;
+        width: 514rpx;
         height: 112rpx;
-        line-height: 110rpx;
-        font-size: 32rpx;
-        background: #FFE200;
-        margin-bottom: 8rpx;
+        line-height: 112rpx;
+        font-size: 40rpx;
+        background: #FFF;
+        color: #000;
+        border: none;
+        font-weight: bold;
+        &:after, &:before{
+          display: none;
+        }
       }
       .btns{
         text-align: center;

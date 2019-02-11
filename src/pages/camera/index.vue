@@ -21,6 +21,15 @@
         </div>
       </div>
       <cover-image v-if="maskShow && devicePosition !== 'front'" :src="flashImg" class="flash-btn" @tap="flashHandler"></cover-image>
+      <cover-view class="cover-tip" v-if="needTip">
+        <cover-image class="cover-img" src="https://api.pintuxiangce.com/resources/uploads/icons/c7311bf0960ce3c16bb3d0645c074fb6.png"></cover-image>
+        <cover-view class="tip-msg">
+          <cover-view class="text">王者标准</cover-view>
+          <cover-view class="text">1.头部位置角度一样</cover-view>
+          <cover-view class="text">2.五官动作大小一样</cover-view>
+        </cover-view>
+        <cover-view class="cover-btn" @click="needTip = false">我知道了</cover-view>
+      </cover-view>
     </div>
   </div>
 </template>
@@ -34,6 +43,7 @@ import cameraImg from '../../images/photo2.png'
 const flashOff = 'https://api.pintuxiangce.com/resources/uploads/icons/b41b78281d041752282706c340899726.png'
 const flashOn = 'https://api.pintuxiangce.com/resources/uploads/images/d3cf28fafbbb073e94a78751771a4210.png'
 let startData = {}
+let once = true
 export default {
 
   data () {
@@ -57,6 +67,7 @@ export default {
       windowWidth,
       windowHeight,
       photoW,
+      needTip: false,
       isIphoneX: model.indexOf('iPhone X') >= 0,
       cameraShow: false,
       waitingNum: '',
@@ -157,6 +168,9 @@ export default {
             events.$on('getPhoto', () => {
               return res.tempImagePath
             })
+            wx.saveImageToPhotosAlbum({
+              filePath: res.tempFilePath
+            })
             const url = '../middle/main'
             wx.navigateTo({ url })
           },
@@ -175,6 +189,12 @@ export default {
   },
   onLoad () {
     this.imgPath = ''
+    if (once) {
+      setTimeout(() => {
+        this.needTip = true
+        once = false
+      }, 1000)
+    }
   },
   onReady () {
     wx.showLoading({
@@ -197,7 +217,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/c738d5e40bfa99731decacbaf8ef6298.jpg'
     }
   }
 }
@@ -291,7 +311,7 @@ export default {
       align-items: center;
       box-sizing: border-box;
       padding: 30rpx;
-      background: rgba(0,0,0, .37);
+      background: rgba(0,0,0, .2);
       height: 190rpx;
       width: 100%;
       color: #FFF;
@@ -332,6 +352,43 @@ export default {
     z-index: 9999;
     &.dis{
       filter: brightness(.3);
+    }
+  }
+  .cover-tip{
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 660rpx;
+    height: 900rpx;
+    background: #FFE200;
+    border-radius: 32rpx;
+    .cover-img{
+      width: 600rpx;
+      height: 400rpx;
+      margin: 46rpx auto 30rpx;
+    }
+    .tip-msg{
+      width: 100%;
+      margin-bottom: 70rpx;
+      .text{
+        width: 100%;
+        text-align: center;
+        font-size: 44rpx;
+        color: #000;
+      }
+    }
+    .cover-btn{
+      margin: 0 auto;
+      width: 400rpx;
+      height: 96rpx;
+      line-height: 96rpx;
+      background: #fff;
+      border-radius: 48rpx;
+      font-size: 34rpx;
+      color: #000;
+      font-weight: bold;
+      text-align: center;
     }
   }
 </style>

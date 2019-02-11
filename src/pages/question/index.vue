@@ -1,17 +1,20 @@
 <template>
-  <container title="keke模仿大赛" background="#fff">
+  <container title="keke表情包模仿挑战" background="#fff">
     <div class="wrap-jump">
-      <p>AI考官 给你出题</p>
-      <h1>模仿 {{name}}</h1>
+      <p>AI考官出的表情包题目为</p>
+      <h1>{{name}}</h1>
       <div class="img">
         <img :src="path"/>
       </div>
-      <div class="change" @click="change">换一题</div>
+      <div class="change-btn">
+        <div class="change" @click="change(false)">上一题</div>
+        <div class="change" @click="change(true)">下一题</div>
+      </div>
       <div class="bottom">
         <button class="btn" id="jump" @tap="jump">开始模仿</button>
         <button class="btn concat" id="advance" open-type="contact">我要反馈</button>
       </div>
-      <!--<ad unit-id="adunit-c790d450da396f1c"></ad>-->
+      <ad unit-id="adunit-c790d450da396f1c"></ad>
     </div>
   </container>
 </template>
@@ -57,8 +60,13 @@ export default {
         }
       })
     },
-    change () {
-      this.index++
+    change (isAdd) {
+      if (isAdd) {
+        this.index++
+      } else {
+        this.index--
+        if (this.index < 0) this.index = this.list.length
+      }
       this.preGetImage()
     },
     preGetImage () {
@@ -72,7 +80,7 @@ export default {
   },
   created () {
     events.$on('indexChange', () => {
-      this.change()
+      this.change(true)
     })
     this.getData()
     wx.getSetting({
@@ -100,7 +108,7 @@ export default {
     return {
       title: 'keke',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/c738d5e40bfa99731decacbaf8ef6298.jpg'
     }
   }
 }
@@ -110,7 +118,6 @@ export default {
   .wrap-jump{
     box-sizing: border-box;
     width: 100%;
-    height: 100%;
     overflow:hidden;
     background: #fff;
     p{
@@ -139,12 +146,18 @@ export default {
         height: 100%;
       }
     }
-    .change {
+    .change-btn{
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
       margin: 24rpx auto 64rpx;
-      font-size: 40rpx;
-      color: #7D51FF;
-      text-align: center;
-      font-weight: bold;
+      .change {
+        font-size: 40rpx;
+        color: #7D51FF;
+        text-align: center;
+        font-weight: bold;
+        margin: 0 93rpx;
+      }
     }
     .bottom{
       width: 100%;
@@ -157,7 +170,7 @@ export default {
         box-sizing: border-box;
         border: 2rpx solid;
         border-radius: 56rpx;
-        width: 498rpx;
+        width: 514rpx;
         height: 112rpx;
         line-height: 110rpx;
         font-size: 32rpx;
@@ -174,7 +187,7 @@ export default {
         border: none;
         display: inline;
         height: 34rpx;
-        font-size: 24rpx;
+        font-size: 30rpx;
         line-height: 34rpx;
         color: #FF2600;
         margin: 30rpx 15rpx;

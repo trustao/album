@@ -1,156 +1,273 @@
 <template>
-  <container title="keke" background="#FFE200">
-    <div class="wrap-jump">
-      <swiper
-        :indicator-dots="true"
-        :autoplay="true"
-        :circular="true"
-        indicator-active-color="#FFE200"
-        :interval="5000"
-        class="banner"
-      >
-        <swiper-item v-for="(item, index) in imgUrls" :key="index" class="s-item">
-          <img class="img" :src="item"/>
-        </swiper-item>
-      </swiper>
-      <div class="bottom">
-        <button class="btn" id="jump" @tap="jump">创作我的图片模仿秀</button>
-        <button class="btn concat" id="advance" open-type="contact">我要反馈</button>
+  <container title="选择模仿对象" background="#FFE200">
+    <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
+      <div class="cvs-operation" :class="{'iphoneX': iphoneX}">
+        <scroll-view scroll-y class="stencils-scroll">
+          <ul class="stencil-list" >
+            <li class="stencil-item" v-for="(item, index) in list" :key="index" :data-stencil="item">
+              <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item.full_icon_url" alt="" @tap="chooseImg(item)">
+              <div class="btn">
+                <img class="heart" @tap="zan(item.icon_id)" :src="heartArr.includes(item.icon_id) ? heartRed : heart" alt="">
+              </div>
+            </li>
+          </ul>
+        </scroll-view>
       </div>
-      <ad unit-id="adunit-c790d450da396f1c"></ad>
     </div>
   </container>
 </template>
 
 <script>
-import  img2 from '@/images/banner/2.jpg'
-import  img4 from '@/images/banner/4.jpg'
+  /* global getCurrentPages */
 
-export default {
-  data () {
-    const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
-    return {
-      iphoneX,
-      imgUrls: [
-         img2, img4
-      ]
-    }
-  },
+  const API = 'https://api.pintuxiangce.com/icon/index'
+  import heart from '@/images/ic_heart1.png'
+  import heartRed from '@/images/ic_heart2.png'
+  import events from '../../../static/events'
+  let jumping = false
+  export default {
 
-  methods: {
-    jump () {
-      const url = '../home/main'
-      wx.navigateTo({ url })
-    }
-  },
-  created () {
-    // wx.getUserInfo({
-    //   success(res) {
-    //     const userInfo = res.userInfo
-    //     const nickName = userInfo.nickName
-    //     const avatarUrl = userInfo.avatarUrl
-    //     const gender = userInfo.gender // 性别 0：未知、1：男、2：女
-    //     const province = userInfo.province
-    //     const city = userInfo.city
-    //     const country = userInfo.country
-    //     console.log(res)
-    //   }
-    // })
-    // wx.getSetting({
-    //   success(res) {
-    //     if (!res.authSetting['scope.userInfo']) {
-    //       wx.authorize({
-    //         scope: 'scope.userInfo',
-    //         success() {
-    //           // 用户已经同意小程序使用录音功能，后续调用 wx.startRecord 接口不会弹窗询问
-    //
-    //         }
-    //       })
-    //     }
-    //   }
-    // })
-  },
-  onShareAppMessage() {
-    return {
-      title: 'keke',
-      path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+    data () {
+      return {
+        heart,
+        heartRed,
+        curPlay: null,
+        kinds: [],
+        heartArr: [],
+        iphoneX: false,
+        viewW: 0,
+        viewH: 0,
+        photoPath: '/static/photo.jpg',
+        cvsW: 0,
+        cvsH: 0,
+        curkinds: '',
+        stencilPng: '',
+        translateX: 0,
+        translateY: 0,
+        rotate: 0,
+        scale: 1,
+        photoContentWidth: 0,
+        photoW: 0,
+        photoH: 0,
+        left: 0,
+        top: 0,
+        list: [],
+      }
+    },
+    methods: {
+      zan (id) {
+        console.log(id)
+        const index = this.heartArr.indexOf(id)
+        if (index >= 0) {
+          this.heartArr.splice(index, 1)
+        } else {
+          this.heartArr.push(id)
+        }
+        console.log(index, this.heartArr)
+        wx.setStorage({
+          key: 'heartArr',
+          data: JSON.stringify(this.heartArr)
+        })
+      },
+      getStencil (noChange) {
+        wx.request({
+          url: API,
+          success: (res) => {
+            this.list = res.data.data.filter(item => item.category_id == 30)
+          }
+        })
+      },
+      getSysInfo () {
+        try {
+          const res = wx.getSystemInfoSync()
+          if (/ios/ig.test(res.system)) this.ios = true
+          this.viewW = res.windowWidth
+          this.pixelRatio = res.pixelRatio
+          this.viewH = res.windowHeight
+        } catch (e) {
+          // Do something when catch error
+        }
+      }
+    },
+    created () {
+      this.getStencil()
+      this.getSysInfo()
+      wx.getStorage({
+        key: 'heartArr',
+        success(res) {
+          this.heartArr = JSON.parse(res.data) || []
+        }
+      })
+    },
+    onReady() {
+    },
+    onShow () {
+      // this.getStencil(true)
+    },
+    onShareAppMessage() {
+      return {
+        title: 'keke',
+        path: '/pages/first/main',
+        imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      }
     }
   }
-}
 </script>
 
 <style lang="less" scoped>
-  .wrap-jump{
+  .cvs-wrap{
     box-sizing: border-box;
+    position: relative;
     width: 100%;
-    /*height: 100%;*/
-    overflow:hidden;
-    h1{
-      margin: 40rpx auto;
-      font-size: 32rpx;
-      color: #333;
-      line-height: 44rpx;
-      text-align: center;
+    height: 100%;
+    scroll-y: hidden;
+    overflow: hidden;
+    background: #C6C6C6;
+    &.iphoneX{
+      .btns{
+        bottom: 60rpx;
+      }
     }
-    .banner{
-      margin: 40rpx auto 0;
-      width: 450rpx;
-      height: 950rpx;
-      overflow: hidden;
-      .s-item{
+
+    .cvs-operation{
+      position: relative;
+      box-sizing: border-box;
+      width: 100vw;
+      height: 100%;
+      // padding: 2.5vw;
+      /*border: 3rpx solid #2F2F2F;*/
+      /*padding-top: 68rpx;*/
+      z-index: 10;
+      &.iphoneX .stencil-list{
+        padding-bottom: 168rpx;
+      }
+      .stencils-scroll{
         width: 100%;
         height: 100%;
+        overflow: hidden;
       }
-      .img{
-        display: block;
-        width: 450rpx;
-        height: 894rpx;
-        margin: 0 auto;
-      }
-    }
-    .bottom{
-      width: 100%;
-      text-align: center;
-      margin: 30rpx 0;
-      .btn {
-        display: block;
-        appearance: none;
-        outline: none;
+      .stencil-list{
         box-sizing: border-box;
-        border: 2rpx solid;
-        border-radius: 44rpx;
-        width: 498rpx;
-        height: 90rpx;
-        line-height: 88rpx;
-        font-size: 32rpx;
-        background: #FFE200;
-        margin-bottom: 8rpx;
-      }
-      .btns{
-        text-align: center;
-      }
-      .concat{
-        appearance: none;
-        outline: none;
-        box-sizing: border-box;
-        border: none;
-        display: inline;
-        height: 34rpx;
-        font-size: 24rpx;
-        line-height: 34rpx;
-        color: #FF2600;
-        margin: 30rpx 15rpx;
-        background: transparent;
-        &:after{
-          display: none;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        padding: 0 0 40rpx;
+        .stencil-item{
+          box-sizing: border-box;
+          position: relative;
+          width: 100vw;
+          overflow: hidden;
+          white-space: normal;
+          word-break: break-all;
+          text-align: center;
+          background: #fff;
+          border-collapse: collapse;
+          margin: 8rpx 0 20rpx;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          align-items: center;
+          &:after{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            box-sizing: border-box;
+            width: 100%;
+            height: 100%;
+            /*border: 1rpx solid #000;*/
+            background: transparent;
+          }
+          &.no-style{
+            background: #fff;
+            border: none;
+          }
+          .stencil-img{
+            box-sizing: border-box;
+            width: 100%;
+            height: 100vw;
+            margin: 0;
+            padding: 0;
+          }
+          .btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            height: 88rpx;
+            background: #fff;
+            .heart {
+              width: 70rpx;
+              height: 60rpx;
+            }
+          }
+          p{
+            position: absolute;
+            bottom: 0rpx;
+            left: 0;
+            width: 100%;
+            height: 48rpx;
+            line-height: 48rpx;
+            font-size: 28rpx;
+            color: #fff;
+            background: rgba(0,0,0,.5);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
         }
-      }
-      p{
-        font-size: 20rpx;
-        color: #868686;
       }
     }
   }
-
+  .play-wrap{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-end;
+    position: relative;
+    height: 64rpx;
+    padding: 10rpx 0;
+    background: #FFE200;
+    .play-list {
+      left: 0;
+      height: 64rpx;
+      display: flex;
+      .play-item{
+        position: relative;
+        width: 60rpx;
+        height: 60rpx;
+        background: #fff;
+        border: 2rpx solid #000;
+        margin: 0 10rpx;
+        .play-img{
+          width: 100%;
+          height: 100%;
+        }
+        .play-delete{
+          position: absolute;
+          right: -12rpx;
+          top: -12rpx;
+          width: 28rpx;
+          height: 28rpx;
+        }
+      }
+    }
+    .play-add{
+      width: 64rpx;
+      height: 64rpx;
+      background: #fff;
+      margin: 0 10rpx;
+    }
+  }
+  .to-images{
+    position: fixed;
+    left: -600px;
+    top: 0;
+    width: 600px;
+    height: 1746px;
+    opacity: 0;
+  }
 </style>

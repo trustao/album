@@ -2,31 +2,17 @@
   <container title="选择模仿对象" background="#FFE200">
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <div scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
-        <scroll-view scroll-y scroll-x class="kinds" :scroll-into-view="'k' + curKindsIndex" scroll-with-animation>
-          <ul class="kinds-wrap">
-            <li class="kinds-item" v-for="(cate, key) in kinds" :id="'k' + key" :data-cate="cate" :key="key" @tap="changeKinds(cate)" :class="{active: curkinds === cate}">{{cate}}</li>
+        <scroll-view scroll-y class="stencils-scroll">
+          <ul class="stencil-list" >
+            <li class="stencil-item" v-for="(item, index) in list" :key="index" :data-stencil="item" @tap="chooseImg(item)">
+              <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item.full_icon_url" alt="">
+              <!--<p v-text="item.icon_name"></p>-->
+              <!--<div class="btn" @tap="chooseImg(item)">模仿</div>-->
+            </li>
+            <li class="stencil-item no-style" v-for="item in (3 - (list.length % 3 || 3))" :key="item"></li>
+
           </ul>
         </scroll-view>
-        <swiper class="stencils"
-                :current="currentIndex"
-                id="stencils"
-                @change="swiperChange">
-          <swiper-item v-for="(cate, key) in kindsData" :key="key">
-            <scroll-view scroll-y class="stencils-scroll">
-              <ul class="stencil-list" >
-                <li class="stencil-item" v-for="(item, index) in cate" :key="index" :data-stencil="item" @tap="chooseImg(item)">
-                  <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item.full_icon_url" alt="">
-                  <p v-text="item.icon_name"></p>
-                  <!--<div class="btn" @tap="chooseImg(item)">模仿</div>-->
-                </li>
-                <!--<li class="stencil-item no-style" v-for="item in (3 - (cate.length % 3 || 3))" :key="item"></li>-->
-                <li class="stencil-item" v-for="(item, index) in debugImg" :key="index">
-                  <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item" alt="">
-                </li>
-              </ul>
-            </scroll-view>
-          </swiper-item>
-        </swiper>
 
       </div>
     </div>
@@ -95,7 +81,8 @@ export default {
       inputBottom: 0,
       inputText: '',
       debugImg: [],
-      maskPath: ''
+      maskPath: '',
+      list: []
     }
   },
   computed: {
@@ -150,34 +137,7 @@ export default {
       wx.request({
         url: API,
         success: (res) => {
-          const category = {}
-          const kinds =[]
-          const kindsData = []
-          res.data.data.forEach(item => {
-            if (category[item.category_name || item.category_id]) {
-              category[item.category_name || item.category_id].push(item)
-            } else {
-              category[item.category_name || item.category_id] = [item]
-            }
-          })
-          Object.keys(category).forEach(key => {
-            kinds.push(key)
-            kindsData.push(category[key])
-          })
-          this.kinds = kinds
-          this.kindsData = kindsData
-          this.changeKinds(this.kinds[this.currentIndex])
-          if (noChange) return
-          // if (this.photoContentWidth) {
-          //   this.changeStencilPng(this.kindsData[0][0])
-          //   this.changeKinds(this.kinds[0])
-          // } else {
-          //   const unWatch = this.$watch('photoContentWidth',() => {
-          //     this.changeStencilPng(this.kindsData[0][0])
-          //     this.changeKinds(this.kinds[0])
-          //     unWatch()
-          //   })
-          // }
+          this.list = res.data.data.filter(item => item.category_id == 31).sort((a, b) => b.icon_id - a.icon_id)
         }
       })
     },
@@ -242,9 +202,9 @@ export default {
   },
   onShareAppMessage() {
     return {
-      title: 'keke',
+      title: 'keke模仿秀',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg'
     }
   }
 }
@@ -271,7 +231,6 @@ export default {
     height: 100%;
     // padding: 2.5vw;
     /*border: 3rpx solid #2F2F2F;*/
-    padding-top: 68rpx;
     background: #fff;
     z-index: 10;
     .kinds{
@@ -329,15 +288,15 @@ export default {
       .stencil-item{
         box-sizing: border-box;
         position: relative;
-        width: 48.5vw;
-        height: 48.5vw;
+        width: 33vw;
+        height: 33vw;
         overflow: hidden;
         white-space: normal;
         word-break: break-all;
         text-align: center;
         background: #3D4042;
         border-collapse: collapse;
-        margin-top: 8rpx;
+        margin-top: 4rpx;
         &:after{
           content: '';
           position: absolute;
@@ -352,6 +311,9 @@ export default {
         &.no-style{
           background: #fff;
           border: none;
+          &:after {
+            display: none;
+          }
         }
         .stencil-img{
           box-sizing: border-box;

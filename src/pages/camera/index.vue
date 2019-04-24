@@ -153,23 +153,24 @@ export default {
           quality: 'high',
           success: (res) => {
             this.waiting = false
-            wx.saveImageToPhotosAlbum({
-              filePath: res.tempImagePath,
-              success () {
-                events.$off('getPhoto')
-                events.$on('getPhoto', () => {
-                  return res.tempImagePath
-                })
-                const url = '../middle/main'
-                wx.navigateTo({ url })
-              },
-              fail () {
-                wx.showToast({
-                  title: '保存失败，请在右上角设置中打开权限。',
-                  icon: 'none'
-                })
-              }
+            events.$off('getPhoto')
+            events.$on('getPhoto', () => {
+              return res.tempImagePath
             })
+            const url = '../middle/main'
+            wx.navigateTo({ url })
+            // wx.saveImageToPhotosAlbum({
+            //   filePath: res.tempImagePath,
+            //   success () {
+            //
+            //   },
+            //   fail () {
+            //     wx.showToast({
+            //       title: '保存失败，请在右上角设置中打开权限。',
+            //       icon: 'none'
+            //     })
+            //   }
+            // })
 
           },
           fail: () => {
@@ -207,9 +208,9 @@ export default {
   },
   onShareAppMessage() {
     return {
-      title: 'keke',
+      title: 'keke模仿秀',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg'
     }
   }
 }

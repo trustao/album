@@ -1,10 +1,7 @@
 <template>
-  <container title="生成作品" background="#FFE200">
+  <container title="提交成功" background="#FFE200">
     <div class="wrap">
-      <div class="score">
-        <p><span>距离：</span><span>{{score}}</span></p>
-        <p><span>段位：</span><span> {{level}}</span></p>
-      </div>
+      <p class="red-tip">作品已提交，正在审核中</p>
       <div class="res-tip">
          <icon type="success" size="50" color="#6ac259"/>
           <p>已保存到手机相册</p>
@@ -12,14 +9,14 @@
           <p>keke</p>
       </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
-        <div class="btn re" id="re" @click="back">重新编辑</div>
-        <div class="btn" id="back" @click="backHome">回到主页</div>
-        <button class="btn share" id="share"  open-type="share">推荐给朋友</button>
-        <button class="btn share" id="advance" open-type="contact">我要反馈</button>
+        <!--<div class="btn re" id="re" @click="back">重新编辑</div>-->
+        <button class="btn share" id="share"  open-type="share">推荐好友</button>
+        <div class="btn" id="back" @click="backHome">回到首页</div>
+        <!--<button class="btn share" id="advance" open-type="contact">我要反馈</button>-->
       </div>
-      <div class="ad-wrap">
-        <ad unit-id="adunit-4b3dd23d2e2a8124"></ad>
-      </div>
+      <!--<div class="ad-wrap">-->
+        <!--<ad unit-id="adunit-4b3dd23d2e2a8124"></ad>-->
+      <!--</div>-->
     </div>
     <!--<div class="wrap-jump">-->
       <!--<h1>想要制作精致的形状拼图？<br>-->
@@ -88,9 +85,9 @@ export default {
   },
   onShareAppMessage() {
     return {
-      title: 'keke',
+      title: 'keke模仿秀',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg'
     }
   }
 }
@@ -99,7 +96,8 @@ export default {
 <style lang="less" scoped>
   .wrap{
     width: 100%;
-    height: 920rpx;
+    overflow: hidden;
+    /*height: 920rpx;*/
     text-align: center;
     &:after{
       content: '';
@@ -108,22 +106,14 @@ export default {
       height: 0;
       /*border-bottom: 1px solid #C7C7C7;*/
     }
-    .score{
-      font-size: 40rpx;
-      padding: 40rpx 0 0;
-      p{
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        margin: 10rpx;
-        span{
-          flex: 1;
-          text-align: right;
-          &:last-child{
-            text-align: left;
-          }
-        }
-      }
+    .red-tip {
+      text-align: center;
+      font-size:40rpx;
+      font-family:PingFangSC-Regular;
+      font-weight:400;
+      color:rgba(255,38,0,1);
+      line-height:56rpx;
+      margin-top: 60rpx;
     }
     .res-tip{
       padding: 60rpx 0;
@@ -143,7 +133,7 @@ export default {
         box-sizing: border-box;
         border: 2rpx solid;
         border-radius: 44rpx;
-        width: 320rpx;
+        width: 382rpx;
         height: 90rpx;
         line-height: 86rpx;
         font-size: 32rpx;

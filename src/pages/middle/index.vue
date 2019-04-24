@@ -1,18 +1,13 @@
 <template>
   <container title="预览作品" background="#FFE200">
     <div class="wrap">
-      <img class="img" :src="imgPath"  mode="aspectFit" >
-      <img class="img" :src="photoPath"  mode="aspectFit" >
-      <div class="tip-content">
-        <p>你的照片已存相册</p>
-        <p>可美化后替换照片</p>
+      <div class="img-wrap">
+        <img class="img" :src="photoPath"  mode="aspectFit" >
+        <img class="img pic" :src="imgPath"  mode="aspectFit" >
       </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
-        <div class="hor">
-          <div class="btn" id="re" @click="back">重新拍照</div>
-          <div class="btn" id="back" @click="chooseImg">相册选图</div>
-        </div>
-        <div class="btn" @click="create">生成作品</div>
+        <div class="btn re" @click="back">重新拍照</div>
+        <div class="btn" @click="create">提交作品</div>
       </div>
       <canvas class="to-images" canvas-id="to-images"></canvas>
     </div>
@@ -27,9 +22,9 @@ export default {
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
     return {
       iphoneX,
-      imgPath:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg',
+      imgPath:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg',
       imgW: 0,
-      photoPath:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg',
+      photoPath:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg',
       sJson: ''
     }
   },
@@ -79,23 +74,23 @@ export default {
         })
       }, 10000)
       const goal = {
-        QRCode: '/static/new_qrcode.png',
+        QRCode: '/static/newqrcode.png',
         QRX: 47,
         QRY: 4,
         QRL: 56
       }
       const ctx = wx.createCanvasContext('to-images')
-      const allW = 375 + 40
-      const allH = (375 + 20) * 2 +20 + 64
+      const allW = 375
+      const allH = 375 + 64
       const phW = 375
       const phH = 375
       ctx.setFillStyle('#FFF')
       ctx.setStrokeStyle('#000')
       ctx.fillRect(0,0, allW, allH)
-      ctx.drawImage(this.imgPath, 20, 20, phW, phH)
-      ctx.strokeRect(20, 20, phW, phH)
-      ctx.drawImage(this.photoPath, 20, phH + 40, phW, phH)
-      ctx.strokeRect(20, phH + 40, phW, phH)
+      ctx.drawImage(this.photoPath, 0, 0, phW, phH)
+      // ctx.strokeRect(20, 20, phW, phH)
+      ctx.drawImage(this.imgPath, phW / 3 * 2, phH / 3 * 2, phW / 3, phH / 3)
+      // ctx.strokeRect(20, phH + 40, phW, phH)
       ctx.save()
       ctx.setFillStyle('#FFE200')
       ctx.fillRect(0, allH - 64, allW, 64)
@@ -104,7 +99,7 @@ export default {
       ctx.setFillStyle('#333')
       ctx.setFontSize(18)
       ctx.setTextBaseline('bottom')
-      ctx.fillText('快来创作你的图片模仿秀，keke', 112, allH - 21)
+      ctx.fillText('秀出你的神模仿，keke', 112, allH - 21)
       ctx.draw(false, () => {
         wx.canvasToTempFilePath({
           canvasId: 'to-images',
@@ -119,9 +114,8 @@ export default {
             wx.saveImageToPhotosAlbum({
               filePath: res.tempFilePath,
               success: () => {
-                this.uploadImg(this.photoPath, (data) => {
-                  this.takeScore(this.photoPath, data)
-                })
+                const url = '../result/main'
+                wx.navigateTo({ url })
               },
               fail () {
                 wx.hideLoading()
@@ -194,8 +188,8 @@ export default {
     }
   },
   onLoad () {
-    this.imgPath = ''
-    this.photoPath = ''
+    // this.imgPath = ''
+    // this.photoPath = ''
   },
   onReady () {
     wx.getImageInfo({
@@ -211,9 +205,9 @@ export default {
   },
   onShareAppMessage() {
     return {
-      title: 'keke',
+      title: 'keke模仿秀',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg'
     }
   }
 }
@@ -223,12 +217,20 @@ export default {
   .wrap{
     width: 100%;
     text-align: center;
-    .img {
-      display: block;
-      width: 360rpx;
-      height: 360rpx;
-      border: 1px solid;
-      margin: 20rpx auto;
+    .img-wrap {
+      position: relative;
+      .img {
+        display: block;
+        width: 100vw;
+        height: 100vw;
+      }
+      .pic {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 33.3vw;
+        height: 33.3vw;
+      }
     }
     .tip-content{
       font-size: 28rpx;
@@ -239,19 +241,6 @@ export default {
     .bottom{
       width: 100%;
       margin-top: 40rpx;
-      .hor {
-        display: flex;
-        justify-content: center;
-        .btn{
-          width: 240rpx;
-          height: 88rpx;
-          background: #fff;
-          border: 1rpx solid;
-          text-align: center;
-          line-height: 86rpx;
-          margin: 0 8rpx;
-        }
-      }
       .btn {
         display: block;
         margin: 20rpx auto 32rpx;
@@ -260,7 +249,7 @@ export default {
         box-sizing: border-box;
         border: 2rpx solid;
         border-radius: 44rpx;
-        width: 514rpx;
+        width: 382rpx;
         height: 90rpx;
         line-height: 86rpx;
         font-size: 32rpx;
@@ -271,9 +260,7 @@ export default {
           background: transparent;
         }
         &.re{
-          background: rgb(251, 14, 55);
-          color: #fff;
-          border: 2rpx solid #000;
+          background:  #fff;
         }
         &:after, &:before{
           display: none;

@@ -1,17 +1,23 @@
 <template>
-  <container title="选择模仿对象" background="#FFE200">
+  <container title="keke模仿秀" background="#FFE200">
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <div class="cvs-operation" :class="{'iphoneX': iphoneX}">
         <scroll-view scroll-y class="stencils-scroll">
-          <ul class="stencil-list" >
-            <li class="stencil-item" v-for="(item, index) in list" :key="index" :data-stencil="item">
-              <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item.full_icon_url" alt="" @tap="chooseImg(item)">
+          <ul class="stencil-list">
+            <li class="stencil-item" v-for="(item, index) in list" :key="index">
+              <img mode="aspectFit" data-img class="stencil-img" :data-stencil="item" @tap="dblTap(item)" :src="item.full_icon_url">
               <div class="btn">
-                <img class="heart" @tap="zan(item.icon_id)" :src="heartArr.includes(item.icon_id) ? heartRed : heart" alt="">
+                <img class="heart" :src="item.zan"  @tap="zan(item)">
               </div>
             </li>
           </ul>
         </scroll-view>
+        <div class="submit">
+          <p @tap="goNextPage">我要秀</p>
+          <button open-type="contact" class="question">
+            <img :src="quesIcon" alt="">
+          </button>
+        </div>
       </div>
     </div>
   </container>
@@ -23,14 +29,16 @@
   const API = 'https://api.pintuxiangce.com/icon/index'
   import heart from '@/images/ic_heart1.png'
   import heartRed from '@/images/ic_heart2.png'
+  import quesIcon from '@/images/ic_feedback.png'
   import events from '../../../static/events'
   let jumping = false
+  let lastTime = 0
   export default {
 
     data () {
       return {
         heart,
-        heartRed,
+        heartRed,quesIcon,
         curPlay: null,
         kinds: [],
         heartArr: [],
@@ -55,12 +63,21 @@
       }
     },
     methods: {
-      zan (id) {
-        console.log(id)
+      dblTap (item) {
+        const now = Date.now()
+        if (now - lastTime < 300) {
+          this.zan(item)
+        }
+        lastTime = now
+      },
+      zan (item) {
+        const id = item.icon_id
         const index = this.heartArr.indexOf(id)
         if (index >= 0) {
           this.heartArr.splice(index, 1)
+          item.zan = this.heart
         } else {
+          item.zan = this.heartRed
           this.heartArr.push(id)
         }
         console.log(index, this.heartArr)
@@ -69,11 +86,18 @@
           data: JSON.stringify(this.heartArr)
         })
       },
+      goNextPage () {
+        const url = '../home/main'
+        wx.navigateTo({ url })
+      },
       getStencil (noChange) {
         wx.request({
           url: API,
           success: (res) => {
-            this.list = res.data.data.filter(item => item.category_id == 30)
+            this.list = res.data.data.filter(item => {
+              if (item.category_id == 30) item.zan = this.heartArr.indexOf(item.icon_id) >= 0 ? this.heartRed : this.heart
+              return item.category_id == 30
+            }).sort((a, b) => b.icon_id - a.icon_id)
           }
         })
       },
@@ -94,7 +118,7 @@
       this.getSysInfo()
       wx.getStorage({
         key: 'heartArr',
-        success(res) {
+        success: (res) => {
           this.heartArr = JSON.parse(res.data) || []
         }
       })
@@ -106,9 +130,9 @@
     },
     onShareAppMessage() {
       return {
-        title: 'keke',
+        title: 'keke模仿秀',
         path: '/pages/first/main',
-        imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+        imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg'
       }
     }
   }
@@ -122,13 +146,44 @@
     height: 100%;
     scroll-y: hidden;
     overflow: hidden;
-    background: #C6C6C6;
+    background: #eee;
     &.iphoneX{
       .btns{
         bottom: 60rpx;
       }
     }
-
+    .submit {
+      position: absolute;
+      bottom: 120rpx;
+      left: 0;
+      width: 100%;
+      .question {
+        position: absolute;
+        top: 0;
+        right: 40rpx;
+        background: transparent;
+        border: none;
+        &:after {
+          display: none;
+        }
+        img {
+          width: 88rpx;
+          height: 88rpx;
+        }
+      }
+      p{
+        width:240rpx;
+        height:88rpx;
+        line-height: 84rpx;
+        background:rgba(255,226,0,1);
+        border-radius:22px;
+        border:1px solid rgba(0,0,0,1);
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+      }
+    }
     .cvs-operation{
       position: relative;
       box-sizing: border-box;
@@ -153,7 +208,7 @@
         flex-direction: row;
         flex-wrap: wrap;
         justify-content: space-around;
-        padding: 0 0 40rpx;
+        padding-bottom: 140rpx;
         .stencil-item{
           box-sizing: border-box;
           position: relative;
@@ -162,24 +217,13 @@
           white-space: normal;
           word-break: break-all;
           text-align: center;
-          background: #fff;
+          background: #3D4042;
           border-collapse: collapse;
-          margin: 8rpx 0 20rpx;
+          margin-top: 20rpx;
           display: flex;
           flex-direction: column;
           justify-content: flex-start;
           align-items: center;
-          &:after{
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            box-sizing: border-box;
-            width: 100%;
-            height: 100%;
-            /*border: 1rpx solid #000;*/
-            background: transparent;
-          }
           &.no-style{
             background: #fff;
             border: none;
@@ -221,53 +265,5 @@
         }
       }
     }
-  }
-  .play-wrap{
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: flex-end;
-    position: relative;
-    height: 64rpx;
-    padding: 10rpx 0;
-    background: #FFE200;
-    .play-list {
-      left: 0;
-      height: 64rpx;
-      display: flex;
-      .play-item{
-        position: relative;
-        width: 60rpx;
-        height: 60rpx;
-        background: #fff;
-        border: 2rpx solid #000;
-        margin: 0 10rpx;
-        .play-img{
-          width: 100%;
-          height: 100%;
-        }
-        .play-delete{
-          position: absolute;
-          right: -12rpx;
-          top: -12rpx;
-          width: 28rpx;
-          height: 28rpx;
-        }
-      }
-    }
-    .play-add{
-      width: 64rpx;
-      height: 64rpx;
-      background: #fff;
-      margin: 0 10rpx;
-    }
-  }
-  .to-images{
-    position: fixed;
-    left: -600px;
-    top: 0;
-    width: 600px;
-    height: 1746px;
-    opacity: 0;
   }
 </style>

@@ -1315,9 +1315,9 @@ export default {
   },
   onShareAppMessage() {
     return {
-      title: 'keke',
+      title: 'keke模仿秀',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/24e02e999cedf6d03fd214205c2f732d.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg'
     }
   }
 }

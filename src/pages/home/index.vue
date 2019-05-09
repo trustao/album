@@ -137,7 +137,7 @@ export default {
       wx.request({
         url: API,
         success: (res) => {
-          this.list = res.data.data.filter(item => item.category_id == 31).sort((a, b) => b.icon_id - a.icon_id)
+          this.list = res.data.data.filter(item => item.category_id == 31).reverse()
         }
       })
     },

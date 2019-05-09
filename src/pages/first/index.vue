@@ -1,11 +1,14 @@
 <template>
   <container title="keke模仿秀" background="#FFE200">
+    <div class="tip" v-if="needTip" @tap="clearTip">
+      <img :src="TIP" alt="">
+    </div>
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <div class="cvs-operation" :class="{'iphoneX': iphoneX}">
         <scroll-view scroll-y class="stencils-scroll">
           <ul class="stencil-list">
             <li class="stencil-item" v-for="(item, index) in list" :key="index">
-              <img mode="aspectFit" data-img class="stencil-img" :data-stencil="item" @tap="dblTap(item)" :src="item.full_icon_url">
+              <img mode="aspectFit" data-img class="stencil-img" :data-imgid="item.icon_id" :data-stencil="item" @tap="dblTap(item)" :src="item.full_icon_url">
               <div class="btn">
                 <img class="heart" :src="item.zan"  @tap="zan(item)">
               </div>
@@ -30,6 +33,7 @@
   import heart from '@/images/ic_heart1.png'
   import heartRed from '@/images/ic_heart2.png'
   import quesIcon from '@/images/ic_feedback.png'
+  import TIP from '@/images/tip.png'
   import events from '../../../static/events'
   let jumping = false
   let lastTime = 0
@@ -37,6 +41,7 @@
 
     data () {
       return {
+        TIP,
         heart,
         heartRed,quesIcon,
         curPlay: null,
@@ -60,9 +65,18 @@
         left: 0,
         top: 0,
         list: [],
+        needTip: false
       }
     },
     methods: {
+      clearTip () {
+        console.log(this.needTip)
+        this.needTip = false
+        wx.setStorage({
+          key: 'notTip',
+          data: 1
+        })
+      },
       dblTap (item) {
         const now = Date.now()
         if (now - lastTime < 300) {
@@ -97,7 +111,7 @@
             this.list = res.data.data.filter(item => {
               if (item.category_id == 30) item.zan = this.heartArr.indexOf(item.icon_id) >= 0 ? this.heartRed : this.heart
               return item.category_id == 30
-            }).sort((a, b) => b.icon_id - a.icon_id)
+            }).reverse()
           }
         })
       },
@@ -116,6 +130,17 @@
     created () {
       this.getStencil()
       this.getSysInfo()
+      wx.getStorage({
+        key: 'notTip',
+        success: (res) => {
+          this.needTip = !res.data
+          console.log('notTip', res)
+        },
+        fail: (re) =>{
+          console.log(re)
+          this.needTip = true
+        }
+      })
       wx.getStorage({
         key: 'heartArr',
         success: (res) => {
@@ -139,6 +164,18 @@
 </script>
 
 <style lang="less" scoped>
+  .tip {
+    position: absolute;
+    right: 16rpx;
+    top: 16rpx;
+    width: 468rpx;
+    height: 86.5rpx;
+    z-index: 9999;
+    img {
+      width: 100%;
+      height: 100%;
+    }
+  }
   .cvs-wrap{
     box-sizing: border-box;
     position: relative;

@@ -7,7 +7,7 @@
       </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
         <div class="btn re" @click="back">重新拍照</div>
-        <div class="btn" @click="create">提交作品</div>
+        <div class="btn" @click="createToLocal">提交作品</div>
       </div>
       <canvas class="to-images" canvas-id="to-images"></canvas>
     </div>
@@ -56,7 +56,7 @@ export default {
         }
       })
     },
-    create () {
+    createToLocal () {
       wx.showLoading({
         title: '图片生成中',
         mask: true
@@ -114,8 +114,7 @@ export default {
             wx.saveImageToPhotosAlbum({
               filePath: res.tempFilePath,
               success: () => {
-                const url = '../result/main'
-                wx.navigateTo({ url })
+                this.createToUpload()
               },
               fail () {
                 wx.hideLoading()
@@ -133,28 +132,151 @@ export default {
       })
 
     },
-    uploadSource (path) {
-      this.uploadImg(path, (res) => {
-        this.sJson = res
+    createToUpload () {
+      const timer = setTimeout(() => {
+        wx.hideLoading()
+        wx.showModal({
+          title: 'ERROR',
+          content: 'Canvas Crashed', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
+          showCancel: false,
+          success: function(res) {
+
+          }
+        })
+      }, 10000)
+      const goal = {
+        QRCode: '/static/newqrcode.png',
+        QRX: 47,
+        QRY: 4,
+        QRL: 56
+      }
+      const ctx = wx.createCanvasContext('to-images')
+      const allW = 375
+      const allH = 375
+      const phW = 375
+      const phH = 375
+      ctx.setFillStyle('#FFF')
+      ctx.setStrokeStyle('#000')
+      ctx.fillRect(0,0, allW, allH)
+      ctx.drawImage(this.photoPath, 0, 0, phW, phH)
+      // ctx.strokeRect(20, 20, phW, phH)
+      ctx.drawImage(this.imgPath, phW / 3 * 2, phH / 3 * 2, phW / 3, phH / 3)
+      // ctx.strokeRect(20, phH + 40, phW, phH)
+      ctx.save()
+      // ctx.setFillStyle('#FFE200')
+      // ctx.fillRect(0, allH - 64, allW, 64)
+      // ctx.restore()
+      // ctx.drawImage(goal.QRCode, goal.QRX, allH - goal.QRY - goal.QRL, goal.QRL, goal.QRL)
+      // ctx.setFillStyle('#333')
+      // ctx.setFontSize(18)
+      // ctx.setTextBaseline('bottom')
+      // ctx.fillText('秀出你的神模仿，keke', 112, allH - 21)
+      ctx.draw(false, () => {
+        wx.canvasToTempFilePath({
+          canvasId: 'to-images',
+          x: 0,
+          y: 0,
+          width: allW,
+          height: allH,
+          destWidth: 700,
+          destHeight: 700,
+          fileType: 'jpg',
+          quality: .8,
+          success: (res) => {
+            clearTimeout(timer)
+            this.uploadImg(res.tempFilePath)
+          },
+          fail (err) {
+            console.log(err)
+          }
+        })
       })
+
     },
-    uploadImg (path, cb) {
+    uploadImg (path) {
       wx.uploadFile({
-        url: 'https://api-cn.faceplusplus.com/facepp/v3/detect',
+        url: 'https://api.pintuxiangce.com/admin/upload/icon',
         filePath: path,
-        name: 'image_file',
+        name: 'icon_file',
         formData: {
-          api_key: 'Tti9NApKiVOqTmzlVKdISOIjLnfjCSpA',
-          api_secret: 'sN2B9-iVyrtyKeQ_HSn6j3JYVdm1LSg2',
-          return_landmark: 1,
-          calculate_all: 1,
-          return_attributes: 'gender,age,smiling,headpose,facequality,blur,eyestatus,emotion,ethnicity,beauty,mouthstatus,eyegaze,skinstatus'
+          icon: '',
+          image: ''
         },
         success(res) {
-          cb(JSON.parse(res.data))
+          const icon = JSON.parse(res.data).data.path
+          try {
+            wx.uploadFile({
+              url: 'https://api.pintuxiangce.com/admin/upload/image',
+              filePath: path,
+              name: 'image_file',
+              formData: {
+                icon: icon,
+                image: ''
+              },
+              success(imgRes) {
+                try {
+                  const img = JSON.parse(imgRes.data).data.path
+                  wx.request({
+                    method: 'POST',
+                    data: {
+                      id: 0,
+                      name: new Date().toLocaleString(),
+                      ename: new Date().toLocaleString(),
+                      category: 32,
+                      good_num: 0,
+                      sort: 1,
+                      icon_url: icon,
+                      icon: img
+                    },
+                    header: {
+                      'content-type': 'application/x-www-form-urlencoded'
+                    },
+                    url: 'https://api.pintuxiangce.com/admin/icon/create',
+                    success: (res) => {
+                      wx.hideLoading()
+                      const url = '../result/main'
+                      wx.navigateTo({ url })
+                    },
+                    fail () {
+                      wx.hideLoading()
+                      wx.showToast({
+                        title: '上传失败',
+                        icon: 'none'
+                      })
+                    }
+                  })
+                } catch (e) {
+                  wx.hideLoading()
+                  wx.showToast({
+                    title: '上传失败',
+                    icon: 'none'
+                  })
+                }
+              },
+              fail (e) {
+                console.log(e)
+                wx.hideLoading()
+                wx.showToast({
+                  title: '上传失败',
+                  icon: 'none'
+                })
+              }
+            })
+          } catch (e) {
+            wx.hideLoading()
+            wx.showToast({
+              title: '上传失败',
+              icon: 'none'
+            })
+          }
         },
         fail (e) {
          console.log(e)
+          wx.hideLoading()
+          wx.showToast({
+            title: '上传失败',
+            icon: 'none'
+          })
         }
       })
     },
@@ -197,7 +319,6 @@ export default {
       success: (info) => {
         this.imgPath = info.path
         this.imgW = info.width
-        this.uploadSource(info.path)
       }
     })
 

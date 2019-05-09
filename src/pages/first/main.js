@@ -9,6 +9,9 @@ export default {
     "disableScroll": true,
     usingComponents: {
       'container': '/static/container/container'
-    }
+    },
+    navigationBarTextStyle: 'black',
+    navigationBarBackgroundColor: '#FFE200',
+    navigationBarTitleText: 'keke模仿秀',
   }
 }

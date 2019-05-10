@@ -82,7 +82,8 @@ export default {
       inputText: '',
       debugImg: [],
       maskPath: '',
-      list: []
+      list: [],
+      chooseName: ''
     }
   },
   computed: {
@@ -94,12 +95,13 @@ export default {
     }
   },
   methods: {
-    chooseImg ({full_icon_url}) {
+    chooseImg ({full_icon_url, icon_name}) {
       if (jumping) return
       jumping = true
       setTimeout(() => {
         jumping = false
       }, 500)
+      this.chooseName = icon_name
       this.maskPath = full_icon_url
       console.log(full_icon_url)
       this.$nextTick(() => {
@@ -192,10 +194,14 @@ export default {
     this.getSysInfo()
   },
   onReady() {
-    events.$off('getMaskPath')
+    events.$off(['getMaskPath', 'getChooseName'])
     events.$on('getMaskPath', () => {
       return this.maskPath
     })
+    events.$on('getChooseName', () => {
+      return this.chooseName
+    })
+
   },
   onShow () {
     // this.getStencil(true)

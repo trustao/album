@@ -10,7 +10,6 @@ export default {
     disableScroll: true,
     usingComponents: {
       'container': '/static/container/container'
-    },
-    navigationStyle: 'custom'
+    }
   }
 }

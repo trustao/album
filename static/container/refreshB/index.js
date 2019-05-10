@@ -66,6 +66,13 @@ Component({
         })
       }
     },
+    startRefresh () {
+      this.fetchStartTime = Date.now()
+      this.setData({
+        fetching: true,
+        headHeight: INIT_HEIGHT
+      })
+    },
     fetchEnd () {
       if (this.fetchStartTime && Date.now() - this.fetchStartTime < 1000) {
         setTimeout(() => {

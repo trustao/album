@@ -10,10 +10,6 @@ export default {
     usingComponents: {
       'container': '/static/container/container',
       'refresh': '/static/container/refreshB/index'
-    },
-    navigationBarTextStyle: 'black',
-    navigationBarBackgroundColor: '#FFE200',
-    navigationBarTitleText: 'keke模仿秀',
-    navigationStyle: 'custom'
+    }
   }
 }

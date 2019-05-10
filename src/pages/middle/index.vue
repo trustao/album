@@ -7,7 +7,7 @@
       </div>
       <div class="bottom" :class="{iphoneX: iphoneX}">
         <div class="btn re" @click="back">重新拍照</div>
-        <div class="btn" @click="createToLocal">提交作品</div>
+        <div class="btn" @click="createToLocal">发布作品</div>
       </div>
       <canvas class="to-images" canvas-id="to-images"></canvas>
     </div>
@@ -216,12 +216,13 @@ export default {
               success(imgRes) {
                 try {
                   const img = JSON.parse(imgRes.data).data.path
+                  const name = events.$emit('getChooseName')
                   wx.request({
                     method: 'POST',
                     data: {
                       id: 0,
-                      name: new Date().toLocaleString(),
-                      ename: new Date().toLocaleString(),
+                      name: name,
+                      ename: Date.now(),
                       category: 32,
                       good_num: 0,
                       sort: 1,
@@ -234,8 +235,15 @@ export default {
                     url: 'https://api.pintuxiangce.com/admin/icon/create',
                     success: (res) => {
                       wx.hideLoading()
-                      const url = '../result/main'
-                      wx.navigateTo({ url })
+                      wx.showToast({
+                        title: '作品已保存到手机相册',
+                        icon: '',
+                        duration: 1000
+                      })
+                      events.$emit('refreshList')
+                      wx.navigateBack({
+                        delta: 3
+                      })
                     },
                     fail () {
                       wx.hideLoading()
@@ -344,6 +352,7 @@ export default {
         display: block;
         width: 100vw;
         height: 100vw;
+        background: #cecece;
       }
       .pic {
         position: absolute;
@@ -351,6 +360,7 @@ export default {
         bottom: 0;
         width: 33.3vw;
         height: 33.3vw;
+        background: #bcbcbc;
       }
     }
     .tip-content{

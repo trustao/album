@@ -9,14 +9,15 @@
       width: 100%;
       padding: 0;
       margin: 0;
+      background: #eee;
       overflow:hidden;
       display:flex;
       align-items: center;
       justify-content: center;
     }
 .content {
-     min-height: 100%;
-   }
+
+}
 
 
 .refresh-loading {

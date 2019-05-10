@@ -1,0 +1,16 @@
+<!--static/container/refresh/index.wxml-->
+<view class="refresh-scroll">
+  <view class="refresh-head" style="{{'height:'+ headHeight + 'px'}}">
+    <image class="{{'refresh-img ' + (fetching && 'animate')}}" src="./ic_refresh.png"></image>
+  </view>
+  <scroll-view scroll-y="{{headHeight === 0 || headHeight === INIT_HEIGHT}}" style="width: 100%;height: 100%;overflow: hidden"
+               scroll-top="{{scrollTop}}"
+               bindtouchend="touchendHanlder"
+               bindtouchmove="touchmoveHandler"
+               bindtouchstart="touchstartHanlder">
+    <view class="refresh-content">
+      <slot></slot>
+    </view>
+  </scroll-view>
+
+</view>

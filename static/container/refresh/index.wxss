@@ -1,0 +1,15 @@
+/* static/container/refresh/index.wxss */
+
+.refresh-scroll {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+.refresh{
+      width: 100%;
+      ackground: #00FFFF;
+    }
+.content {
+     background: #ff00ff;
+     min-height: 100%;
+   }

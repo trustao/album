@@ -5,21 +5,26 @@
     </div>
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <div class="cvs-operation" :class="{'iphoneX': iphoneX}">
-        <scroll-view scroll-y class="stencils-scroll">
-          <ul class="stencil-list">
+        <refresh @refresh="refresh" id="refreshA">
+          <ul class="stencil-list" id="list">
             <li class="stencil-item" v-for="(item, index) in list" :key="index">
-              <img mode="aspectFit" data-img class="stencil-img" :data-imgid="item.icon_id" :data-stencil="item" @tap="dblTap(item)" :src="item.full_icon_url">
-              <div class="btn">
-                <img class="heart" :src="item.zan"  @tap="zan(item)">
-              </div>
+              <img mode="aspectFit" data-img class="stencil-img" :data-imgid="item.icon_id" @tap="choosePreview(item)" :data-stencil="item" :src="item.full_icon_url">
             </li>
           </ul>
-        </scroll-view>
+        </refresh>
         <div class="submit">
           <p @tap="goNextPage">我要秀</p>
           <button open-type="contact" class="question">
             <img :src="quesIcon" alt="">
           </button>
+        </div>
+      </div>
+      <div class="preview-mask" v-if="previewData" @tap="closePreview">
+        <div class="preview" @tap.stop="">
+          <img mode="aspectFit" data-img class="stencil-img" :data-imgid="previewData.icon_id" :data-stencil="previewData" @tap="dblTap(previewData)"  :src="previewData.full_icon_url">
+          <div class="btn">
+            <img class="heart" :src="previewData.zan"  @tap="zan(previewData)">
+          </div>
         </div>
       </div>
     </div>
@@ -33,42 +38,42 @@
   import heart from '@/images/ic_heart1.png'
   import heartRed from '@/images/ic_heart2.png'
   import quesIcon from '@/images/ic_feedback.png'
+  import shareIcon from '@/images/ic_share.png'
   import TIP from '@/images/tip.png'
   import events from '../../../static/events'
   let jumping = false
   let lastTime = 0
-  export default {
 
+  let touching = false
+  export default {
     data () {
       return {
+        scrollTop: 0,
+        swa: false,
         TIP,
         heart,
-        heartRed,quesIcon,
+        heartRed,quesIcon,shareIcon,
         curPlay: null,
         kinds: [],
         heartArr: [],
         iphoneX: false,
         viewW: 0,
         viewH: 0,
-        photoPath: '/static/photo.jpg',
-        cvsW: 0,
-        cvsH: 0,
-        curkinds: '',
-        stencilPng: '',
-        translateX: 0,
-        translateY: 0,
-        rotate: 0,
-        scale: 1,
-        photoContentWidth: 0,
-        photoW: 0,
-        photoH: 0,
         left: 0,
         top: 0,
         list: [],
-        needTip: false
+        needTip: false,
+        previewData: null,
+        // refreshShow: false
       }
     },
     methods: {
+      choosePreview (item) {
+        this.previewData = item
+      },
+      closePreview () {
+        this.previewData = null
+      },
       clearTip () {
         console.log(this.needTip)
         this.needTip = false
@@ -94,7 +99,6 @@
           item.zan = this.heartRed
           this.heartArr.push(id)
         }
-        console.log(index, this.heartArr)
         wx.setStorage({
           key: 'heartArr',
           data: JSON.stringify(this.heartArr)
@@ -104,7 +108,7 @@
         const url = '../home/main'
         wx.navigateTo({ url })
       },
-      getStencil (noChange) {
+      getStencil (cb) {
         wx.request({
           url: API,
           success: (res) => {
@@ -112,7 +116,13 @@
               if (item.category_id == 30) item.zan = this.heartArr.indexOf(item.icon_id) >= 0 ? this.heartRed : this.heart
               return item.category_id == 30
             }).reverse()
+            typeof cb === 'function' && cb()
           }
+        })
+      },
+      refresh () {
+        this.getStencil(() => {
+          this.$mp.page.selectComponent("#refreshA").fetchEnd()
         })
       },
       getSysInfo () {
@@ -128,16 +138,18 @@
       }
     },
     created () {
+      setTimeout(() => {
+        this.refreshShow = true
+        this.scrollTop = 40
+      }, 6000)
       this.getStencil()
       this.getSysInfo()
       wx.getStorage({
         key: 'notTip',
         success: (res) => {
           this.needTip = !res.data
-          console.log('notTip', res)
         },
         fail: (re) =>{
-          console.log(re)
           this.needTip = true
         }
       })
@@ -149,6 +161,7 @@
       })
     },
     onReady() {
+      console.log(this)
     },
     onShow () {
       // this.getStencil(true)
@@ -241,6 +254,7 @@
       .stencil-list{
         box-sizing: border-box;
         width: 100%;
+        min-height: 110vh;
         display: flex;
         flex-direction: row;
         flex-wrap: wrap;
@@ -249,14 +263,14 @@
         .stencil-item{
           box-sizing: border-box;
           position: relative;
-          width: 100vw;
+          width: 48.5vw;
+          height: 48.5vw;
           overflow: hidden;
           white-space: normal;
           word-break: break-all;
           text-align: center;
-          background: #3D4042;
           border-collapse: collapse;
-          margin-top: 20rpx;
+          margin-top: 10rpx;
           display: flex;
           flex-direction: column;
           justify-content: flex-start;
@@ -299,6 +313,42 @@
             overflow: hidden;
             text-overflow: ellipsis;
           }
+        }
+      }
+    }
+  }
+
+  .preview-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, .8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    .preview {
+      width: 100vw;
+      .stencil-img{
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        height: 100vw;
+        margin: 0;
+        padding: 0;
+      }
+      .btn {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100vw;
+        height: 88rpx;
+        background: #fff;
+        .heart {
+          width: 70rpx;
+          height: 60rpx;
         }
       }
     }

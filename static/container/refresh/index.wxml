@@ -1,0 +1,14 @@
+<!--static/container/refresh/index.wxml-->
+<scroll-view scroll-y class="refresh-scroll"
+
+             bindscrolltoupper="upper"
+             bindscroll="scrollHandler"
+             scroll-with-animation="{{scrollAnimation}}"
+             bindtouchend="touchendHanlder"
+             bindtouchstart="touchstartHanlder"
+             scroll-top="{{scrollTop}}">
+  <view class="refresh-head" style="{{'height:'+ headHeight + 'px'}}" wx:if="{{showRefreshHead}}">123457</view>
+  <view class="refresh-content">
+    <slot></slot>
+  </view>
+</scroll-view>

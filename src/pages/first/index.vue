@@ -14,11 +14,14 @@
                 @change="swiperChange">
           <swiper-item :key="0">
             <refresh @refresh="refresh('A')" id="refreshA">
-              <ul class="stencil-list">
-                <li class="stencil-item" v-for="(item, index) in list" :key="index">
-                  <img mode="aspectFit" data-img class="stencil-img" :data-imgid="item.icon_id" @tap="choosePreview(item)" :data-stencil="item" :src="item.full_icon_url">
+              <ul class="stencil-list wonderful">
+                <li class="stencil-item" v-for="(item, index) in list" :key="index"  @tap="dblTap(item)">
+                  <img mode="aspectFit" data-img class="stencil-img" :data-imgid="item.icon_id" :data-stencil="item" :src="item.full_icon_url">
+                  <div class="btn"  @tap="zan(item)">
+                    <img class="heart" :src="item.zan">
+                    <div class="count">{{item.icon_good_num}}</div>
+                  </div>
                 </li>
-                <li class="stencil-item no-style" v-for="item in (2 - (list.length % 2 || 2))" :key="item"></li>
               </ul>
             </refresh>
           </swiper-item>
@@ -27,31 +30,39 @@
               <ul class="stencil-list">
                 <li class="stencil-item" v-for="(item, index) in listB" :key="index">
                   <img mode="aspectFit" data-img class="stencil-img" :data-imgid="item.icon_id" @tap="choosePreview(item)" :data-stencil="item" :src="item.full_icon_url">
+                  <div class="btn">
+                    <img class="heart" :src="item.zan">
+                    <div class="count">{{item.icon_good_num}}</div>
+                  </div>
                 </li>
-                <li class="stencil-item no-style" v-for="item in (2 - (listB.length % 2 || 2))" :key="item"></li>
+                <li class="stencil-item no-style" v-if="listB.length % 2"></li>
               </ul>
             </refresh>
           </swiper-item>
         </swiper>
 
         <div class="submit">
-          <p @tap="goNextPage">我要秀</p>
+          <p @tap="goNextPage">
+            我要秀
+          </p>
           <button open-type="contact" class="question">
             <img :src="quesIcon" alt="">
           </button>
           <button open-type="share" class="share">
             <img :src="shareIcon" alt="">
           </button>
+          <img class="create-tip" v-if="needCreateTip" :src="createTipIcon" alt=""  @tap.stop="clearCreateTip">
         </div>
       </div>
-      <div class="preview-mask" v-if="previewData" @tap="closePreview">
-        <div class="preview" @tap.stop="">
-          <img mode="aspectFit" data-img class="stencil-img" :data-imgid="previewData.icon_id" :data-stencil="previewData" @tap="dblTap(previewData)"  :src="previewData.full_icon_url">
-          <div class="btn">
-            <img class="heart" :src="previewData.zan"  @tap="zan(previewData)">
-          </div>
-        </div>
-      </div>
+      <cover-view class="preview-mask" v-if="previewData" @tap="closePreview">
+        <cover-view class="preview" @tap.stop="">
+          <cover-image mode="aspectFit" data-img class="stencil-img" :data-imgid="previewData.icon_id" :data-stencil="previewData" @tap="dblTap(previewData)"  :src="previewData.full_icon_url" />
+          <cover-view class="btn"  @tap="zan(previewData)">
+            <cover-image class="heart" :src="previewData.zan" />
+            <cover-view class="count">{{previewData.icon_good_num}}</cover-view>
+          </cover-view>
+        </cover-view>
+      </cover-view>
     </div>
   </container>
 </template>
@@ -60,11 +71,12 @@
   /* global getCurrentPages */
 
   const API = 'https://api.pintuxiangce.com/icon/index'
-  import heart from '@/images/ic_heart1.png'
-  import heartRed from '@/images/ic_heart2.png'
+  // import heart from '@/images/ic_heart1.png'
+  // import heartRed from '@/images/ic_heart2.png'
   import quesIcon from '@/images/ic_feedback.png'
   import shareIcon from '@/images/ic_share.png'
   import TIP from '@/images/tip.png'
+  import createTipIcon from '@/images/createTipIcon.png'
   import events from '../../../static/events'
   let jumping = false
   let lastTime = 0
@@ -76,8 +88,9 @@
         scrollTop: 0,
         swa: false,
         TIP,
-        heart,
-        heartRed,quesIcon,shareIcon,
+        heart: 'https://api.pintuxiangce.com/resources/uploads/icons/58b5d98a57709892019a8f6405c3fd47.png',
+        heartRed: 'https://api.pintuxiangce.com/resources/uploads/images/8e16130788fcdb4eb2aae6060bd05437.png',
+        quesIcon,shareIcon,createTipIcon,
         curPlay: null,
         kinds: ['精选', '最新'],
         heartArr: [],
@@ -89,6 +102,7 @@
         list: [],
         listB: [],
         needTip: false,
+        needCreateTip: false,
         previewData: null,
         currentIndex: 0,
         curkinds: '精选'
@@ -119,6 +133,13 @@
           data: 1
         })
       },
+      clearCreateTip () {
+        this.needCreateTip = false
+        wx.setStorage({
+          key: 'needCreateTip',
+          data: 1
+        })
+      },
       dblTap (item) {
         const now = Date.now()
         if (now - lastTime < 300) {
@@ -132,16 +153,30 @@
         if (index >= 0) {
           this.heartArr.splice(index, 1)
           item.zan = this.heart
+          item.icon_good_num--
+          wx.request({
+            url: 'https://api.pintuxiangce.com/icon/unlike?id=' + id,
+            success: (res) => {},
+            fail: () => {}
+          })
         } else {
           item.zan = this.heartRed
           this.heartArr.push(id)
+          item.icon_good_num++
+          wx.request({
+            url: 'https://api.pintuxiangce.com/icon/like?id=' + id,
+            success: (res) => {},
+            fail: () => {}
+          })
+
         }
         wx.setStorage({
-          key: 'heartArr',
+          key: 'zanArr',
           data: JSON.stringify(this.heartArr)
         })
       },
       goNextPage () {
+        this.clearCreateTip()
         const url = '../home/main'
         wx.navigateTo({ url })
       },
@@ -156,7 +191,7 @@
             this.listB = res.data.data.filter(item => {
               if (item.category_id == 32) item.zan = this.heartArr.indexOf(item.icon_id) >= 0 ? this.heartRed : this.heart
               return item.category_id == 32
-            }).sort((a, b) => b - a)
+            }).sort((a, b) => b.icon_ename - a.icon_ename)
             typeof cb === 'function' && cb()
           }
         })
@@ -194,8 +229,17 @@
           this.needTip = true
         }
       })
+     wx.getStorage({
+        key: 'needCreateTip',
+        success: (res) => {
+          this.needCreateTip = !res.data
+        },
+        fail: (re) =>{
+          this.needCreateTip = true
+        }
+      })
       wx.getStorage({
-        key: 'heartArr',
+        key: 'zanArr',
         success: (res) => {
           this.heartArr = JSON.parse(res.data) || []
         }
@@ -249,7 +293,7 @@
     height: 100%;
     scroll-y: hidden;
     overflow: hidden;
-    background: #eee;
+    background: #EAEBED;
     display: flex;
     flex-direction: column;
     &.iphoneX{
@@ -265,9 +309,10 @@
       .question, .share {
         position: absolute;
         top: 0;
-        right: 40rpx;
+        right: -2rpx;
         background: transparent;
         border: none;
+        z-index: 99;
         &:after {
           display: none;
         }
@@ -290,13 +335,23 @@
         left: 50%;
         transform: translateX(-50%);
         text-align: center;
+        font-size: 38rpx;
+      }
+      .create-tip {
+        position: absolute;
+        width: 560rpx;
+        height: 94rpx;
+        left: 50%;
+        top: -104rpx;
+        transform: translateX(-50%);
+        z-index: 999;
       }
     }
     .cvs-operation{
       position: relative;
       box-sizing: border-box;
       width: 100vw;
-      background: #eee;
+      background: #EAEBED;
       flex: 1;
       // padding: 2.5vw;
       /*border: 3rpx solid #2F2F2F;*/
@@ -321,18 +376,39 @@
         align-items: flex-start;
         align-content: flex-start;
         padding-bottom: 140rpx;
-
+        background: #EAEBED;
+        &.wonderful {
+          padding-left: 100rpx;
+          padding-right: 100rpx;
+          .stencil-item {
+            width: 550rpx;
+            height: auto;
+            .stencil-img {
+              width: 550rpx;
+              height: 550rpx;
+            }
+            .btn {
+              height: 88rpx;
+              .heart {
+                width: 56rpx;
+                height: 50rpx;
+              }
+              .count {
+                font-size: 44rpx;
+              }
+            }
+          }
+        }
         .stencil-item{
           box-sizing: border-box;
           position: relative;
           width: 48.5vw;
-          height: 48.5vw;
           overflow: hidden;
           white-space: normal;
           word-break: break-all;
           text-align: center;
           border-collapse: collapse;
-          margin-top: 10rpx;
+          margin-top: 20rpx;
           display: flex;
           flex-direction: column;
           justify-content: flex-start;
@@ -344,7 +420,7 @@
           .stencil-img{
             box-sizing: border-box;
             width: 100%;
-            height: 100vw;
+            height: 48.5vw;
             margin: 0;
             padding: 0;
           }
@@ -353,11 +429,15 @@
             justify-content: center;
             align-items: center;
             width: 100vw;
-            height: 88rpx;
+            height: 60rpx;
             background: #fff;
             .heart {
-              width: 70rpx;
-              height: 60rpx;
+              width: 40rpx;
+              height: 36rpx;
+            }
+            .count {
+              font-size: 30rpx;
+              margin-left: 8rpx;
             }
           }
           p{
@@ -392,12 +472,13 @@
     justify-content: center;
     align-items: center;
     .preview {
-      width: 100vw;
+      width: 550rpx;
+      margin: auto;
       .stencil-img{
         display: block;
         box-sizing: border-box;
-        width: 100%;
-        height: 100vw;
+        width: 550rpx;
+        height: 550rpx;
         margin: 0;
         padding: 0;
       }
@@ -405,12 +486,16 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        width: 100vw;
+        width: 550rpx;
         height: 88rpx;
         background: #fff;
         .heart {
-          width: 70rpx;
-          height: 60rpx;
+          width: 56rpx;
+          height: 50rpx;
+        }
+        .count {
+          font-size: 44rpx;
+          margin-left: 8rpx;
         }
       }
     }
@@ -421,7 +506,8 @@
     align-items: center;
     justify-content: center;
     height: 68rpx;
-    margin-bottom: 20rpx;
+    margin-bottom: 0rpx;
+    background: #FFE200;
     white-space: nowrap;
   }
   .kinds-item{

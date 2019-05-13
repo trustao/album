@@ -22,9 +22,9 @@ export default {
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
     return {
       iphoneX,
-      imgPath:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg',
+      imgPath:'',
       imgW: 0,
-      photoPath:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg',
+      photoPath:'',
       sJson: ''
     }
   },
@@ -288,6 +288,60 @@ export default {
         }
       })
     },
+    beautifyPhoto (path) {
+      let _this = this
+      wx.uploadFile({
+        url: 'https://api-cn.faceplusplus.com/facepp/v1/beautify',
+        filePath: path,
+        name: 'image_file',
+        formData: {
+          api_key: 'Tti9NApKiVOqTmzlVKdISOIjLnfjCSpA',
+          api_secret: 'sN2B9-iVyrtyKeQ_HSn6j3JYVdm1LSg2',
+          whitening: 100,
+          smoothing: 100
+        },
+        success: (res) => {
+          let data = JSON.parse(res.data)
+          let img = data.result
+          const fs = wx.getFileSystemManager()
+          let path = `${wx.env.USER_DATA_PATH}/p-${Date.now().toString(32)}.jpg`
+          console.log(`美颜： 用时${data.time_used}; 写入文件`)
+          fs.writeFile({
+            filePath: path,
+            data: img,
+            encoding: 'base64',
+            success (info) {
+              console.log(info)
+              wx.getImageInfo({
+                src: path,
+                success (d) {
+                  console.log('写入成功，获得图片' + d.path)
+                  _this.photoPath = d.path
+                  wx.getImageInfo({
+                    src: events.$emit('getMaskPath'),
+                    success: (info) => {
+                      _this.imgPath = info.path
+                      _this.imgW = info.width
+                    }
+                  })
+                },
+                fail (e) {
+                  console.log('fail', e)
+                }
+              })
+            },
+            fail (info) {
+              console.log(info)
+            }
+          })
+        },
+        fail (e) {
+          console.log(e)
+        },
+        complete: () => {
+        }
+      })
+    },
     takeScore (path, data) {
       wx.getImageInfo({
         src: path,
@@ -321,16 +375,12 @@ export default {
     // this.imgPath = ''
     // this.photoPath = ''
   },
+  onUnload () {
+    this.photoPath = ''
+    this.imgPath = ''
+  },
   onReady () {
-    wx.getImageInfo({
-      src: events.$emit('getMaskPath'),
-      success: (info) => {
-        this.imgPath = info.path
-        this.imgW = info.width
-      }
-    })
-
-    this.photoPath = events.$emit('getPhoto')
+    this.beautifyPhoto(events.$emit('getPhoto'))
   },
   onShareAppMessage() {
     return {

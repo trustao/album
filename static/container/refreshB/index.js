@@ -74,21 +74,13 @@ Component({
       })
     },
     fetchEnd () {
-      if (this.fetchStartTime && Date.now() - this.fetchStartTime < 1000) {
-        setTimeout(() => {
-          this.setData({
-            fetching: false,
-            headHeight: 0,
-            scrollTop: 0
-          })
-        }, 1000 - Date.now() - this.fetchStartTime)
-        return
-      }
-      this.setData({
-        fetching: false,
-        headHeight: 0,
-        scrollTop: 0
-      })
+      setTimeout(() => {
+        this.setData({
+          fetching: false,
+          headHeight: 0,
+          scrollTop: 0
+        })
+      }, 800)
     },
   },
 

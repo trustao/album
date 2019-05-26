@@ -18,6 +18,14 @@
           <div class="back" @tap="back">取消</div>
           <div class="take-photo" :class="{waiting: waiting}" @tap="takePhoto">{{waitingNum}}</div>
           <img :src="cameraImg" class="change-device" @tap="changeDevice" />
+          <movable-area class="move-wrap">
+            <movable-view :x="x" direction="horizontal" class="move-content" @change="moveHandler" @touchend="moveEnd">
+              <div class="move-item"
+                   v-for="(item, index) in delayArr" :class="activeIndex === index ? 'active' : ''"
+                   @click="moveTo(index)"
+                   :key="index">{{item}}s</div>
+            </movable-view>
+          </movable-area>
         </div>
       </div>
       <cover-image v-if="maskShow && devicePosition !== 'front'" :src="flashImg" class="flash-btn" @tap="flashHandler"></cover-image>
@@ -34,6 +42,7 @@ import cameraImg from '../../images/photo2.png'
 const flashOff = 'https://api.pintuxiangce.com/resources/uploads/icons/b41b78281d041752282706c340899726.png'
 const flashOn = 'https://api.pintuxiangce.com/resources/uploads/images/d3cf28fafbbb073e94a78751771a4210.png'
 let startData = {}
+let moveDis = 0
 export default {
 
   data () {
@@ -60,15 +69,58 @@ export default {
       isIphoneX: model.indexOf('iPhone X') >= 0,
       cameraShow: false,
       waitingNum: '',
-      waiting: false
+      waiting: false,
+      x: 90,
+      activeIndex: 1,
+      moveOuterW: 0,
+      moveInnerW: 0,
+      delayArr: [0, 3, 10, 30]
     }
   },
   computed: {
     opacityWidth () {
       return this.opacity * 100 + '%'
+    },
+    disArr () {
+      const arr = []
+      for (let i = 0; i < 4; i++) {
+        arr.push(this.moveOuterW /2 - this.moveInnerW / 4 * i - this.moveInnerW / 8)
+      }
+      return arr
     }
   },
   methods: {
+    moveEnd (ev) {
+      console.log('moveEnd')
+      let dis = 1000, res = 0, index = 0
+      this.disArr.forEach((v, i) => {
+        const d = Math.abs(v - moveDis)
+        if (d < dis) {
+          dis = d
+          res = v
+          index = i
+        }
+      })
+      console.log(res, index)
+      this.x = this.x === res ? res + 0.001 : res
+      this.activeIndex = index
+    },
+    moveTo (index) {
+      this.x = this.disArr[index]
+      this.activeIndex = index
+    },
+    moveHandler (ev) {
+      moveDis = ev.mp.detail.x
+    },
+    getMoveW () {
+      wx.createSelectorQuery().select('.move-wrap').boundingClientRect((rect) => {
+        this.moveOuterW = rect.width
+      }).exec()
+      wx.createSelectorQuery().select('.move-content').boundingClientRect((rect) => {
+        this.moveInnerW = rect.width
+        this.x = this.moveOuterW /2 - this.moveInnerW / 4 * this.activeIndex - this.moveInnerW / 8
+      }).exec()
+    },
     errorHandler () {
       wx.showModal({
         content: '相机开启失败', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
@@ -134,19 +186,29 @@ export default {
     back () {
       wx.navigateBack()
     },
+    delay (time, callback) {
+      let i = 0
+      if (time > 0) {
+        f.call(this)
+      } else {
+        callback()
+      }
+      function f() {
+        this.waitingNum = time - i
+        setTimeout(() => {
+          i++
+          if (i < time) {
+            f.call(this)
+          } else {
+            callback()
+          }
+        }, 1000)
+      }
+    },
     takePhoto () {
       if (this.waiting) return
       this.waiting = true
-      setTimeout(() => {
-        this.waitingNum = 3
-      }, 50)
-      setTimeout(() => {
-        this.waitingNum = 2
-      }, 1050)
-      setTimeout(() => {
-        this.waitingNum = 1
-      }, 2050)
-      setTimeout(() => {
+      this.delay(this.delayArr[this.activeIndex], () => {
         this.waitingNum = ''
         const ctx = wx.createCameraContext()
         ctx.takePhoto({
@@ -159,25 +221,12 @@ export default {
             })
             const url = '../middle/main'
             wx.navigateTo({ url })
-            // wx.saveImageToPhotosAlbum({
-            //   filePath: res.tempImagePath,
-            //   success () {
-            //
-            //   },
-            //   fail () {
-            //     wx.showToast({
-            //       title: '保存失败，请在右上角设置中打开权限。',
-            //       icon: 'none'
-            //     })
-            //   }
-            // })
-
           },
           fail: () => {
             this.waiting = false
           }
         })
-      }, 3050)
+      })
     },
     imageLoad () {
       wx.hideLoading()
@@ -195,16 +244,26 @@ export default {
       mask: true
     })
     const path = events.$emit('getMaskPath')
+    // const path = 'https://api.pintuxiangce.com/resources/uploads/icons/99a90b3b06bf91d61fc6bf4520ac786e.jpg'
     console.log(path)
     this.imgPath = path
     this.cameraShow = true
     setTimeout(() => {
       // this.getRectData()
       this.maskShow = true
+      this.getMoveW()
     }, 500)
   },
   onShow () {
     // this.getStencil(true)
+    wx.setKeepScreenOn({
+      keepScreenOn: true
+    })
+  },
+  onHide () {
+    wx.setKeepScreenOn({
+      keepScreenOn: false
+    })
   },
   onShareAppMessage() {
     return {
@@ -301,17 +360,22 @@ export default {
       display: flex;
       flex-direction: row;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-end;
       box-sizing: border-box;
-      padding: 30rpx;
-      background: rgba(0,0,0, .37);
+      padding: 30rpx 30rpx 68rpx;
+      background: rgba(0,0,0, .25);
       height: 190rpx;
       width: 100%;
       color: #FFF;
       .back{
         width: 80rpx;
+        font-size: 34rpx;
       }
       .take-photo{
+        position: absolute;
+        top: 30rpx;
+        left: 50%;
+        transform: translateX(-50%);
         width: 80rpx;
         height: 80rpx;
         border: 2px solid #333;
@@ -329,9 +393,43 @@ export default {
         }
       }
       .change-device{
-        width: 80rpx;
-        height: 80rpx;
+        width: 68rpx;
+        height: 68rpx;
         /*background: #fff;*/
+      }
+      .move-wrap {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 600rpx;
+        height: 56rpx;
+        .move-content {
+          display: flex;
+          flex-direction: row;
+          width: 320rpx;
+          height: 56rpx;
+          .move-item {
+            width: 80rpx;
+            text-align: center;
+            color: #fff;
+            font-size: 30rpx;
+            &.active {
+              position: relative;
+              color: #FFE200;
+              &:after {
+                content: '';
+                position: absolute;
+                bottom: 6rpx;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 36rpx;
+                height: 4rpx;
+                background: #FFE200;
+              }
+            }
+          }
+        }
       }
     }
   }

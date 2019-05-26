@@ -15,7 +15,7 @@
           <swiper-item :key="0">
             <refresh @refresh="refresh('A')" id="refreshA">
               <ul class="stencil-list wonderful">
-                <li class="stencil-item" v-for="(item, index) in list" :key="index"  @tap="dblTap(item)">
+                <li class="stencil-item" v-for="(item, index) in wonderfulList" :id="(index === wonderfulList.length - preLoadingCount) ? 'wonderful-loading' : ''" :key="index"  @tap="dblTap(item)">
                   <img mode="aspectFit" data-img class="stencil-img" :data-imgid="item.icon_id" :data-stencil="item" :src="item.full_icon_url">
                   <div class="btn"  @tap="zan(item)">
                     <img class="heart" :src="item.zan">
@@ -28,14 +28,14 @@
           <swiper-item :key="1">
             <refresh @refresh="refresh('B')" id="refreshB">
               <ul class="stencil-list">
-                <li class="stencil-item" v-for="(item, index) in listB" :key="index">
+                <li class="stencil-item" v-for="(item, index) in newList" :key="index" :id="(index === newList.length - preLoadingCount) ? 'new-loading' : ''">
                   <img mode="aspectFit" data-img class="stencil-img" :data-imgid="item.icon_id" @tap="choosePreview(item)" :data-stencil="item" :src="item.full_icon_url">
                   <div class="btn">
                     <img class="heart" :src="item.zan">
                     <div class="count">{{item.icon_good_num}}</div>
                   </div>
                 </li>
-                <li class="stencil-item no-style" v-if="listB.length % 2"></li>
+                <li class="stencil-item no-style" v-if="newList.length % 2"></li>
               </ul>
             </refresh>
           </swiper-item>
@@ -52,6 +52,7 @@
             <img :src="shareIcon" alt="">
           </button>
           <img class="create-tip" v-if="needCreateTip" :src="createTipIcon" alt=""  @tap.stop="clearCreateTip">
+          <img class="photo-share-tip" v-if="photoShare" :src="alert4" alt=""  @tap.stop="clearPhotoShareTip">
         </div>
       </div>
       <cover-view class="preview-mask" v-if="previewData" @tap="closePreview">
@@ -76,11 +77,13 @@
   import quesIcon from '@/images/ic_feedback.png'
   import shareIcon from '@/images/ic_share.png'
   import TIP from '@/images/tip.png'
+  import alert4 from '@/images/alert4.png'
   import createTipIcon from '@/images/createTipIcon.png'
   import events from '../../../static/events'
   let jumping = false
   let lastTime = 0
-
+  let wNode = null
+  let nNode = null
   let touching = false
   export default {
     data () {
@@ -90,7 +93,7 @@
         TIP,
         heart: 'https://api.pintuxiangce.com/resources/uploads/icons/58b5d98a57709892019a8f6405c3fd47.png',
         heartRed: 'https://api.pintuxiangce.com/resources/uploads/images/8e16130788fcdb4eb2aae6060bd05437.png',
-        quesIcon,shareIcon,createTipIcon,
+        quesIcon,shareIcon,createTipIcon, alert4,
         curPlay: null,
         kinds: ['精选', '最新'],
         heartArr: [],
@@ -101,15 +104,38 @@
         top: 0,
         list: [],
         listB: [],
+        pageSize: 8,
+        preLoadingCount: 2,
+        wonderfulPage: 1,
+        newPage: 1,
         needTip: false,
         needCreateTip: false,
         previewData: null,
         currentIndex: 0,
-        curkinds: '精选'
+        curkinds: '精选',
+        photoShare: false
         // refreshShow: false
       }
     },
+    computed: {
+      wonderfulList () {
+        return this.list.slice(0, this.wonderfulPage * this.pageSize)
+      },
+      newList () {
+        return this.listB.slice(0, this.newPage * this.pageSize)
+      }
+    },
     methods: {
+      observeNode (querStr, fn) {
+        const observe = wx.createIntersectionObserver()
+        observe.relativeToViewport({bottom: 10}).observe(querStr, (res) => {
+          fn && fn(res)
+        })
+        return observe
+      },
+      clearPhotoShareTip () {
+
+      },
       swiperChange (ev){
         this.currentIndex = ev.target.current
         this.changeKinds(this.kinds[this.currentIndex])
@@ -185,19 +211,52 @@
           url: API,
           success: (res) => {
             this.list = res.data.data.filter(item => {
-              if (item.category_id == 30) item.zan = this.heartArr.indexOf(item.icon_id) >= 0 ? this.heartRed : this.heart
-              return item.category_id == 30
-            }).reverse()
+              if (item.category_id == 32) item.zan = this.heartArr.indexOf(item.icon_id) >= 0 ? this.heartRed : this.heart
+              return item.category_id == 32 && item.icon_choice == 1
+            }).sort((a, b) => new Date(b.icon_created_at).getTime() - new Date(a.icon_created_at).getTime())
             this.listB = res.data.data.filter(item => {
               if (item.category_id == 32) item.zan = this.heartArr.indexOf(item.icon_id) >= 0 ? this.heartRed : this.heart
-              return item.category_id == 32
-            }).sort((a, b) => b.icon_ename - a.icon_ename)
+              return item.category_id == 32 && item.icon_choice == 0
+            }).sort((a, b) => new Date(b.icon_created_at).getTime() - new Date(a.icon_created_at).getTime())
             typeof cb === 'function' && cb()
+            this.$nextTick(() => {
+              this.lazyLoad()
+            })
           }
         })
       },
+      lazyLoad () {
+        console.log(nNode, wNode)
+        nNode && nNode.disconnect()
+        wNode && wNode.disconnect()
+        setTimeout(() => {
+          const obFn = () => {
+            console.log('newLoading in', nNode)
+            nNode && nNode.disconnect()
+            if (this.newList.length < this.listB.length) {
+              this.newPage++
+              setTimeout(() => {
+                nNode = this.observeNode('#new-loading', obFn)
+              }, 200)
+            }
+          }
+          const obFn2 = () => {
+            console.log('wonderful in')
+            wNode && wNode.disconnect()
+            if (this.wonderfulList.length < this.list.length) {
+              this.wonderfulPage++
+              setTimeout(() => {
+                wNode = this.observeNode('#wonderful-loading', obFn2)
+              }, 200)
+            }
+          }
+          nNode = this.observeNode('#new-loading', obFn)
+          wNode = this.observeNode('#wonderful-loading', obFn2)
+        }, 300)
+      },
       refresh (pos) {
         this.getStencil(() => {
+          this[`${pos === 'A' ? 'wonderful' : 'new'}Page`] = 1
           this.$mp.page.selectComponent("#refresh" + pos).fetchEnd()
         })
       },
@@ -213,7 +272,7 @@
         }
       }
     },
-    created () {
+    mounted () {
       setTimeout(() => {
         this.refreshShow = true
         this.scrollTop = 40
@@ -262,6 +321,20 @@
     },
     onShow () {
       // this.getStencil(true)
+      wx.getStorage({
+        key: 'photoShare',
+        success: (res) => {
+          const photoShare = JSON.parse(res.data) || false
+          wx.getStorage({
+            key: 'photoCount',
+            success: (res) => {
+              const photoCount = JSON.parse(res.data) || 0
+              this.photoShare = photoCount && photoShare
+            }
+          })
+        }
+      })
+
     },
     onShareAppMessage() {
       return {
@@ -344,6 +417,14 @@
         left: 50%;
         top: -104rpx;
         transform: translateX(-50%);
+        z-index: 999;
+      }
+      .photo-share-tip {
+        position: absolute;
+        width: 446rpx;
+        height: 94rpx;
+        right: 10rpx;
+        top: -224rpx;
         z-index: 999;
       }
     }

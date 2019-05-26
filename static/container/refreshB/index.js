@@ -1,6 +1,6 @@
 // static/container/refresh/index.js
 const INIT_HEIGHT = 40
-
+let time = 0
 Component({
   /**
    * 组件的属性列表
@@ -30,7 +30,10 @@ Component({
 
     },
     scrollHandler (ev) {
-
+      if (Date.now() - time > 100) {
+        this.triggerEvent("onScroll", ev)
+        time = Date.now()
+      }
     },
     touchendHanlder () {
       if (this.data.fetching) return

@@ -8,6 +8,7 @@
       <div class="bottom" :class="{iphoneX: iphoneX}">
         <div class="btn re" @click="back">重新拍照</div>
         <div class="btn" @click="createToLocal">发布作品</div>
+        <img class="tip" v-if="needTip" :src="alert3" alt=""  @tap.stop="clearTip">
       </div>
       <canvas class="to-images" canvas-id="to-images"></canvas>
     </div>
@@ -17,19 +18,30 @@
 <script>
 import events from '../../../static/events'
 import {distance, classify} from './score'
+import alert3 from '@/images/alert3.png'
+
 export default {
   data () {
     const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
     return {
       iphoneX,
+      alert3,
       imgPath:'',
       imgW: 0,
       photoPath:'',
-      sJson: ''
+      sJson: '',
+      needTip: false
     }
   },
 
   methods: {
+    clearTip () {
+      this.needTip = false
+      wx.setStorage({
+        key: 'publishTip',
+        data: 1
+      })
+    },
     backHome () {
       events.$emit('clearList')
       wx.navigateBack({
@@ -234,6 +246,41 @@ export default {
                     },
                     url: 'https://api.pintuxiangce.com/admin/icon/create',
                     success: (res) => {
+                      wx.getStorage({
+                        key: 'photoCount',
+                        success: (res) => {
+                          const photoCount = JSON.parse(res.data) || 0
+                          if (photoCount > 0) {
+                            wx.setStorage({
+                              key: 'photoShare',
+                              data: 0
+                            })
+                            wx.setStorage({
+                              key: 'photoCount',
+                              data: photoCount + 1
+                            })
+                          } else {
+                            wx.setStorage({
+                              key: 'photoShare',
+                              data: 1
+                            })
+                            wx.setStorage({
+                              key: 'photoCount',
+                              data: 1
+                            })
+                          }
+                        },
+                        fail: () => {
+                          wx.setStorage({
+                            key: 'photoShare',
+                            data: 1
+                          })
+                          wx.setStorage({
+                            key: 'photoCount',
+                            data: 1
+                          })
+                        }
+                      })
                       wx.hideLoading()
                       wx.showToast({
                         title: '作品已保存到手机相册',
@@ -241,9 +288,11 @@ export default {
                         duration: 1000
                       })
                       events.$emit('refreshList')
-                      wx.navigateBack({
-                        delta: 3
-                      })
+                      setTimeout(() => {
+                        wx.navigateBack({
+                          delta: 3
+                        })
+                      }, 300)
                     },
                     fail () {
                       wx.hideLoading()
@@ -380,6 +429,15 @@ export default {
     this.imgPath = ''
   },
   onReady () {
+    wx.getStorage({
+      key: 'publishTip',
+      success: (res) => {
+        this.needTip = !res.data
+      },
+      fail: (re) =>{
+        this.needTip = true
+      }
+    })
     this.beautifyPhoto(events.$emit('getPhoto'))
   },
   onShareAppMessage() {
@@ -420,6 +478,7 @@ export default {
       color: #D0021B;
     }
     .bottom{
+      position: relative;
       width: 100%;
       margin-top: 40rpx;
       .btn {
@@ -462,6 +521,14 @@ export default {
         &:after{
           display: none;
          }
+      }
+      .tip {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 560rpx;
+        height: 94rpx;
+        bottom: -120rpx;
       }
     }
     .to-images{

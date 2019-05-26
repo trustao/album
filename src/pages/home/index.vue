@@ -3,15 +3,18 @@
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <div scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
         <scroll-view scroll-y class="stencils-scroll">
-          <ul class="stencil-list" >
-            <li class="stencil-item" v-for="(item, index) in list" :key="index" :data-stencil="item" @tap="chooseImg(item)">
-              <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item.full_icon_url" alt="">
-              <!--<p v-text="item.icon_name"></p>-->
-              <!--<div class="btn" @tap="chooseImg(item)">模仿</div>-->
-            </li>
-            <li class="stencil-item no-style" v-for="item in (3 - (list.length % 3 || 3))" :key="item"></li>
+          <div v-for="(list, key) in listData" :key="key">
+            <p class="title">{{key}}</p>
+            <ul class="stencil-list">
+              <li class="stencil-item" v-for="(item, index) in list" :key="index" :data-stencil="item" @tap="chooseImg(item)">
+                <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item.full_icon_url" alt="">
+                <!--<p v-text="item.icon_name"></p>-->
+                <!--<div class="btn" @tap="chooseImg(item)">模仿</div>-->
+              </li>
+              <li class="stencil-item no-style" v-for="item in (3 - (list.length % 3 || 3))" :key="item"></li>
 
-          </ul>
+            </ul>
+          </div>
         </scroll-view>
 
       </div>
@@ -82,8 +85,8 @@ export default {
       inputText: '',
       debugImg: [],
       maskPath: '',
-      list: [],
-      chooseName: ''
+      chooseName: '',
+      listData: {}
     }
   },
   computed: {
@@ -139,7 +142,17 @@ export default {
       wx.request({
         url: API,
         success: (res) => {
-          this.list = res.data.data.filter(item => item.category_id == 31).reverse()
+          const data = {}
+          res.data.data.forEach(item => {
+            if ((+item.category_id > 19 && +item.category_id < 28) || +item.category_id > 32) {
+              if (data[item.category_name]) {
+                data[item.category_name].unshift(item)
+              } else {
+                data[item.category_name] = [item]
+              }
+            }
+          })
+          this.listData = data
         }
       })
     },
@@ -281,6 +294,10 @@ export default {
     }
     &.iphoneX .stencil-list{
       padding-bottom: 168rpx;
+    }
+    .title {
+      margin-bottom: 6rpx;
+      padding-left: 20rpx;
     }
     .stencil-list{
       box-sizing: border-box;

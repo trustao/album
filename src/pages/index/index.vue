@@ -1283,32 +1283,32 @@ export default {
     }
   },
   created () {
-    this.getStencil()
-    this.getSysInfo()
-    events.$on('backHome', (back) => {
-      wx.showModal({
-        content: '返回将清空内容', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
-        success: (res) => {
-          if (res.confirm) {
-            events.$emit('clearList')
-            back()
-          }
-        }
-      })
-    })
+    // this.getStencil()
+    // this.getSysInfo()
+    // events.$on('backHome', (back) => {
+    //   wx.showModal({
+    //     content: '返回将清空内容', //'微信对拼图渲染支持有限，导致中低端机型一定概率渲染失败。点击确认将重启小程序，请再次尝试。',
+    //     success: (res) => {
+    //       if (res.confirm) {
+    //         events.$emit('clearList')
+    //         back()
+    //       }
+    //     }
+    //   })
+    // })
   },
   onReady() {
     // wx.showLoading({
     //   mask: true
     // })
-    this.getRectData()
-    events.$off(['clearList', 'setImage'])
-    events.$on('clearList', () => {
-      this.clear()
-    })
-    events.$on('setImage', (path) => {
-      this.setImage(path)
-    })
+    // this.getRectData()
+    // events.$off(['clearList', 'setImage'])
+    // events.$on('clearList', () => {
+    //   this.clear()
+    // })
+    // events.$on('setImage', (path) => {
+    //   this.setImage(path)
+    // })
   },
   onShow () {
     // this.getStencil(true)

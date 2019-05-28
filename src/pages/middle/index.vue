@@ -22,8 +22,12 @@ import alert3 from '@/images/alert3.png'
 
 export default {
   data () {
-    const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
+    const model = wx.getSystemInfoSync().model
+    console.log(model)
+    const isIphone = model.indexOf('iPhone') >= 0
+    const iphoneX = model.indexOf('iPhone X') >= 0
     return {
+      isIphone,
       iphoneX,
       alert3,
       imgPath:'',
@@ -342,8 +346,8 @@ export default {
         formData: {
           api_key: 'Tti9NApKiVOqTmzlVKdISOIjLnfjCSpA',
           api_secret: 'sN2B9-iVyrtyKeQ_HSn6j3JYVdm1LSg2',
-          whitening: 100,
-          smoothing: 100
+          whitening: this.isIphone ? 100 : 30,
+          smoothing: this.isIphone ? 100 : 30
         },
         success: (res) => {
           let data = JSON.parse(res.data)

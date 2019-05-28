@@ -90,7 +90,7 @@ export default {
       allData: {},
       page: 1,
       pageSize: 24,
-      preLoadingCount: 2
+      preLoadingCount: 2,
     }
   },
   computed: {
@@ -105,6 +105,7 @@ export default {
       let count = 0
       Object.keys(this.allData).forEach(key => {
         this.allData[key].forEach(item => {
+          console.log(this.pageSize * this.page)
           if (count < this.pageSize * this.page) {
             count++
             if (count === this.pageSize * this.page - this.preLoadingCount) {
@@ -123,7 +124,7 @@ export default {
       return res
     },
     dataLoadComplete () {
-      return Object.keys(this.allData).reduce((a, b) => a.concat(this.allData[b]), []).length === Object.keys(this.listData).reduce((a, b) => a.concat(this.allData[b]), []).length
+      return Object.keys(this.allData).reduce((a, b) => a.concat(this.allData[b]), []).length === Object.keys(this.listData).reduce((a, b) => a.concat(this.listData[b]), []).length
     }
   },
   methods: {
@@ -360,6 +361,7 @@ export default {
     .title {
       margin-bottom: 6rpx;
       padding-left: 20rpx;
+      font-weight: bold;
     }
     .stencil-list{
       box-sizing: border-box;
@@ -379,7 +381,7 @@ export default {
         white-space: normal;
         word-break: break-all;
         text-align: center;
-        background: #3D4042;
+        background: #ffffff;
         border-collapse: collapse;
         margin-top: 4rpx;
         &:after{
@@ -390,7 +392,7 @@ export default {
           box-sizing: border-box;
           width: 100%;
           height: 100%;
-          border: 1rpx solid #000;
+          border: 1rpx solid #fffff;
           background: transparent;
         }
         &.no-style{

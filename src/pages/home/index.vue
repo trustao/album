@@ -285,7 +285,7 @@ export default {
     return {
       title: 'keke模仿秀',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/2f40b8f4c719666222a418c06c836489.jpg'
     }
   }
 }

@@ -73,7 +73,7 @@ export default {
         title: '图片生成中',
         mask: true
       })
-
+      this.clearTip()
       const timer = setTimeout(() => {
         wx.hideLoading()
         wx.showModal({
@@ -251,10 +251,6 @@ export default {
                         success: (res) => {
                           const photoCount = JSON.parse(res.data) || 0
                           if (photoCount > 0) {
-                            wx.setStorage({
-                              key: 'photoShare',
-                              data: 0
-                            })
                             wx.setStorage({
                               key: 'photoCount',
                               data: photoCount + 1

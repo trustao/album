@@ -9,7 +9,8 @@ export default {
     navigationBarTitleText: '',
     disableScroll: true,
     usingComponents: {
-      'container': '/static/container/container'
+      'container': '/static/container/container',
+      'refresh': '/static/container/refreshB/index'
     }
   }
 }

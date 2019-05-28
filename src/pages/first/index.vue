@@ -48,7 +48,7 @@
           <button open-type="contact" class="question">
             <img :src="quesIcon" alt="">
           </button>
-          <button open-type="share" class="share">
+          <button open-type="share" class="share" @tap.stop="clearPhotoShareTip">
             <img :src="shareIcon" alt="">
           </button>
           <img class="create-tip" v-if="needCreateTip" :src="createTipIcon" alt=""  @tap.stop="clearCreateTip">
@@ -104,8 +104,8 @@
         top: 0,
         list: [],
         listB: [],
-        pageSize: 8,
-        preLoadingCount: 2,
+        pageSize: 16,
+        preLoadingCount: 4,
         wonderfulPage: 1,
         newPage: 1,
         needTip: false,
@@ -134,7 +134,11 @@
         return observe
       },
       clearPhotoShareTip () {
-
+        this.photoShare = false
+        wx.setStorage({
+          key: 'photoShare',
+          data: 0
+        })
       },
       swiperChange (ev){
         this.currentIndex = ev.target.current

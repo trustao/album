@@ -22,8 +22,12 @@ import alert3 from '@/images/alert3.png'
 
 export default {
   data () {
-    const iphoneX = wx.getSystemInfoSync().model.indexOf('iPhone X') >= 0
+    const model = wx.getSystemInfoSync().model
+    console.log(model)
+    const isIphone = model.indexOf('iPhone') >= 0
+    const iphoneX = model.indexOf('iPhone X') >= 0
     return {
+      isIphone,
       iphoneX,
       alert3,
       imgPath:'',
@@ -73,7 +77,7 @@ export default {
         title: '图片生成中',
         mask: true
       })
-
+      this.clearTip()
       const timer = setTimeout(() => {
         wx.hideLoading()
         wx.showModal({
@@ -252,10 +256,6 @@ export default {
                           const photoCount = JSON.parse(res.data) || 0
                           if (photoCount > 0) {
                             wx.setStorage({
-                              key: 'photoShare',
-                              data: 0
-                            })
-                            wx.setStorage({
                               key: 'photoCount',
                               data: photoCount + 1
                             })
@@ -346,8 +346,8 @@ export default {
         formData: {
           api_key: 'Tti9NApKiVOqTmzlVKdISOIjLnfjCSpA',
           api_secret: 'sN2B9-iVyrtyKeQ_HSn6j3JYVdm1LSg2',
-          whitening: 100,
-          smoothing: 100
+          whitening: this.isIphone ? 100 : 30,
+          smoothing: this.isIphone ? 100 : 30
         },
         success: (res) => {
           let data = JSON.parse(res.data)
@@ -444,7 +444,7 @@ export default {
     return {
       title: 'keke模仿秀',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/2f40b8f4c719666222a418c06c836489.jpg'
     }
   }
 }

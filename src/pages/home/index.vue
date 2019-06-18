@@ -2,11 +2,11 @@
   <container title="选择模仿对象" background="#FFE200">
     <div class="cvs-wrap" :class="{'iphoneX': iphoneX}">
       <div scroll-y class="cvs-operation" :class="{'iphoneX': iphoneX}">
-        <scroll-view scroll-y class="stencils-scroll">
+        <refresh @refresh="refresh" id="refresh" class="stencils-scroll">
           <div v-for="(list, key) in listData" :key="key">
             <p class="title">{{key}}</p>
             <ul class="stencil-list">
-              <li class="stencil-item" v-for="(item, index) in list" :key="index" :data-stencil="item" @tap="chooseImg(item)">
+              <li class="stencil-item" v-for="(item, index) in list" :key="index" :data-stencil="item" @tap="chooseImg(item)" :id="item.id">
                 <img mode="aspectFit" class="stencil-img" :data-stencil="item" :src="item.full_icon_url" alt="">
                 <!--<p v-text="item.icon_name"></p>-->
                 <!--<div class="btn" @tap="chooseImg(item)">模仿</div>-->
@@ -15,8 +15,7 @@
 
             </ul>
           </div>
-        </scroll-view>
-
+        </refresh>
       </div>
     </div>
   </container>
@@ -29,6 +28,8 @@ const API = 'https://api.pintuxiangce.com/icon/index'
 import icon from '@/images/ic_changePic.png'
 import events from '../../../static/events'
 let jumping = false
+let LNode = null
+
 export default {
 
   data () {
@@ -86,7 +87,10 @@ export default {
       debugImg: [],
       maskPath: '',
       chooseName: '',
-      listData: {}
+      allData: {},
+      page: 1,
+      pageSize: 24,
+      preLoadingCount: 2,
     }
   },
   computed: {
@@ -95,9 +99,64 @@ export default {
     },
     curKindsIndex () {
       return this.kinds.indexOf(this.curkinds)
+    },
+    listData () {
+      const res = {}
+      let count = 0
+      Object.keys(this.allData).forEach(key => {
+        this.allData[key].forEach(item => {
+          console.log(this.pageSize * this.page)
+          if (count < this.pageSize * this.page) {
+            count++
+            if (count === this.pageSize * this.page - this.preLoadingCount) {
+              item.id = 'pre-loading'
+            } else {
+              item.id = ''
+            }
+            if (!res[key]) {
+              res[key] = [item]
+            } else {
+              res[key].push(item)
+            }
+          }
+        })
+      })
+      return res
+    },
+    dataLoadComplete () {
+      return Object.keys(this.allData).reduce((a, b) => a.concat(this.allData[b]), []).length === Object.keys(this.listData).reduce((a, b) => a.concat(this.listData[b]), []).length
     }
   },
   methods: {
+    refresh () {
+      this.page = 1
+      this.getStencil(() => {
+        this.$mp.page.selectComponent("#refresh").fetchEnd()
+      })
+    },
+    observeNode (querStr, fn) {
+      const observe = wx.createIntersectionObserver()
+      observe.relativeToViewport({bottom: 10}).observe(querStr, (res) => {
+        fn && fn(res)
+      })
+      return observe
+    },
+    lazyLoad () {
+      LNode && LNode.disconnect()
+      setTimeout(() => {
+        const obFn = () => {
+          console.log('observe loading')
+          LNode && LNode.disconnect()
+          if (!this.dataLoadComplete) {
+            this.page++
+            setTimeout(() => {
+              LNode = this.observeNode('#pre-loading', obFn)
+            }, 200)
+          }
+        }
+        LNode = this.observeNode('#pre-loading', obFn)
+      }, 300)
+    },
     chooseImg ({full_icon_url, icon_name}) {
       if (jumping) return
       jumping = true
@@ -138,7 +197,7 @@ export default {
 
       })
     },
-    getStencil (noChange) {
+    getStencil (cb) {
       wx.request({
         url: API,
         success: (res) => {
@@ -152,7 +211,11 @@ export default {
               }
             }
           })
-          this.listData = data
+          this.allData = data
+          setTimeout(() => {
+            this.lazyLoad()
+          }, 300)
+          typeof cb === 'function' && cb()
         }
       })
     },
@@ -202,7 +265,7 @@ export default {
       }
   }
 },
-  created () {
+  mounted () {
     this.getStencil()
     this.getSysInfo()
   },
@@ -223,7 +286,7 @@ export default {
     return {
       title: 'keke模仿秀',
       path: '/pages/first/main',
-      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/4d74d69d5f87069c3576f2aa96507f5b.jpg'
+      imageUrl:'https://api.pintuxiangce.com/resources/uploads/icons/2f40b8f4c719666222a418c06c836489.jpg'
     }
   }
 }
@@ -298,6 +361,7 @@ export default {
     .title {
       margin-bottom: 6rpx;
       padding-left: 20rpx;
+      font-weight: bold;
     }
     .stencil-list{
       box-sizing: border-box;
@@ -317,7 +381,7 @@ export default {
         white-space: normal;
         word-break: break-all;
         text-align: center;
-        background: #3D4042;
+        background: #ffffff;
         border-collapse: collapse;
         margin-top: 4rpx;
         &:after{
@@ -328,7 +392,7 @@ export default {
           box-sizing: border-box;
           width: 100%;
           height: 100%;
-          border: 1rpx solid #000;
+          border: 1rpx solid #fffff;
           background: transparent;
         }
         &.no-style{

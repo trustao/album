@@ -96,6 +96,13 @@ export default {
       return 5 - this.nullStarCount
     }
   },
+  watch: {
+    loading (val) {
+      wx.setKeepScreenOn({
+        keepScreenOn: val
+      })
+    }
+  },
   methods: {
     photoLoad (e) {
       console.log(e)
@@ -103,9 +110,7 @@ export default {
     back () {
       events.$emit('indexChange')
       this.$nextTick(() => {
-        wx.navigateBack({
-          delta: 2
-        })
+        wx.navigateBack()
       })
     },
     create () {
@@ -371,6 +376,9 @@ export default {
   },
   onLoad () {
     this.loading = true
+    wx.setKeepScreenOn({
+      keepScreenOn: true
+    })
     this.name = global.name
     if (global.avatarUrl) {
       wx.getImageInfo({

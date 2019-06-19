@@ -3,6 +3,7 @@
     <div class="camera-wrap">
       <camera v-if="cameraShow" class="camera" :style="{width: photoW + 'px', height: photoW + 'px'}" :device-position="devicePosition" :flash="flash" @error="errorHandler"></camera>
       <!--<cover-image mode="aspectFit" @load="imageLoad" v-if="maskShow" class="mask-img" :style="{opacity: opacity,width: photoW + 'px', height: photoW + 'px'}" :src="imgPath"></cover-image>-->
+      <canvas v-if="maskShow" class="point-cvs"  :style="{width: photoW + 'px', height: photoW + 'px'}" canvas-id="point-cvs"></canvas>
       <div class="i-wrap" v-if="cameraShow" :style="{height: windowHeight - photoW - (isIphoneX ? 44 : 0) + 'px'}">
         <!--<div class="opacity-controller-wrap">-->
           <!--<div class="opacity-controller">-->
@@ -16,10 +17,13 @@
         </div>
         <div class="btns">
           <div class="back" @tap="back">取消</div>
-          <div class="take-photo" :class="{waiting: waiting}" @tap="takePhoto">{{waitingNum}}</div>
-          <img :src="cameraImg" class="change-device" @tap="changeDevice" />
+<!--          <div class="take-photo" :class="{waiting: waiting}" @tap="takePhoto">{{waitingNum}}</div>-->
+<!--          <img :src="cameraImg" class="change-device" @tap="changeDevice" />-->
         </div>
       </div>
+      <cover-view class="photo-tip" v-if="startPhoto" :style="{top: photoW + 'px', 'font-size': fontSize + 'px'}">
+        {{waitingNum}}
+      </cover-view>
       <cover-image v-if="maskShow && devicePosition !== 'front'" :src="flashImg" class="flash-btn" @tap="flashHandler"></cover-image>
       <cover-view class="cover-tip" v-if="needTip">
         <cover-image class="cover-img" src="https://api.pintuxiangce.com/resources/uploads/icons/c7311bf0960ce3c16bb3d0645c074fb6.png"></cover-image>
@@ -28,7 +32,7 @@
           <cover-view class="text">1.头部位置角度一样</cover-view>
           <cover-view class="text">2.五官动作大小一样</cover-view>
         </cover-view>
-        <cover-view class="cover-btn" @click="needTip = false">我知道了</cover-view>
+        <cover-view class="cover-btn" @click="closeTip">我知道了</cover-view>
       </cover-view>
     </div>
   </div>
@@ -44,6 +48,7 @@ const flashOff = 'https://api.pintuxiangce.com/resources/uploads/icons/b41b78281
 const flashOn = 'https://api.pintuxiangce.com/resources/uploads/images/d3cf28fafbbb073e94a78751771a4210.png'
 let startData = {}
 let once = true
+let init = true
 export default {
 
   data () {
@@ -70,7 +75,9 @@ export default {
       needTip: false,
       isIphoneX: model.indexOf('iPhone X') >= 0,
       cameraShow: false,
-      waitingNum: '',
+      waitingNum: '准备',
+      fontSize: 20,
+      startPhoto: false,
       waiting: false
     }
   },
@@ -146,17 +153,25 @@ export default {
       wx.navigateBack()
     },
     takePhoto () {
+      console.log('开始拍照')
       if (this.waiting) return
       this.waiting = true
       setTimeout(() => {
-        this.waitingNum = 3
+        this.waitingNum = 5
+        this.fontSize = 36
       }, 50)
       setTimeout(() => {
-        this.waitingNum = 2
+        this.waitingNum = 4
       }, 1050)
       setTimeout(() => {
-        this.waitingNum = 1
+        this.waitingNum = 3
       }, 2050)
+      setTimeout(() => {
+        this.waitingNum = 2
+      }, 3050)
+      setTimeout(() => {
+        this.waitingNum = 1
+      }, 4050)
       setTimeout(() => {
         this.waitingNum = ''
         const ctx = wx.createCameraContext()
@@ -172,46 +187,117 @@ export default {
               filePath: res.tempFilePath
             })
             const url = '../middle/main'
-            wx.navigateTo({ url })
+            wx.redirectTo({ url })
           },
           fail: () => {
             console.log('fail')
           }
         })
-      }, 3050)
+      }, 5050)
     },
     imageLoad () {
-      wx.hideLoading()
+      this.drawPoint()
+    },
+    closeTip () {
+      this.needTip = false
+      setTimeout(() => {
+        this.takePhoto()
+      }, 800)
+      once = false
+    },
+    uploadImg (path) {
+      return new Promise(((resolve, reject) => {
+        wx.getImageInfo({
+          src: path,
+          success: (info) => {
+            wx.uploadFile({
+              url: 'https://api-cn.faceplusplus.com/facepp/v3/detect',
+              filePath: info.path,
+              name: 'image_file',
+              formData: {
+                api_key: 'Tti9NApKiVOqTmzlVKdISOIjLnfjCSpA',
+                api_secret: 'sN2B9-iVyrtyKeQ_HSn6j3JYVdm1LSg2',
+                return_landmark: 1,
+                calculate_all: 1,
+                return_attributes: 'gender,age,smiling,headpose,facequality,blur,eyestatus,emotion,ethnicity,beauty,mouthstatus,eyegaze,skinstatus'
+              },
+              success(res) {
+                resolve(JSON.parse(res.data))
+              },
+              fail (e) {
+                reject(e)
+                console.log(e)
+              }
+            })
+            this.imgW = info.width
+          }
+        })
+      }))
+    },
+    drawPoint () {
+      console.log('获取点信息')
+      this.uploadImg(this.imgPath).then((data) => {
+        console.log('获得信息')
+        const faceData = data.faces[0].landmark
+        const ctx = wx.createCanvasContext('point-cvs')
+        const scale = this.imgW / this.photoW
+        ctx.beginPath()
+        Object.keys(faceData).forEach(key => {
+          if (/^left_eyebrow_|^right_eyebrow_|^left_eye_|^right_eye_|^mouth_/.test(key) &&
+            !['mouth_upper_lip_left_contour3',
+              'mouth_upper_lip_right_contour3','mouth_upper_lip_bottom','mouth_lower_lip_top','mouth_lower_lip_left_contour1',
+              'mouth_lower_lip_right_contour1','left_eye_center','left_eye_pupil','right_eye_center','right_eye_pupil'].includes(key)
+          ) {
+
+            ctx.moveTo(faceData[key].x / scale, faceData[key].y / scale)
+            ctx.arc(faceData[key].x / scale, faceData[key].y / scale, 1, 0, 2 * Math.PI)
+            ctx.closePath()
+            ctx.setFillStyle('#058ef6')
+            ctx.fill()
+          }
+        })
+        ctx.draw()
+        if (once) {
+          setTimeout(() => {
+            this.startPhoto = true
+            wx.hideLoading()
+            this.needTip = true
+          }, 300)
+        } else {
+          wx.hideLoading()
+          this.startPhoto = true
+          setTimeout(() => {
+            this.takePhoto()
+          }, 800)
+        }
+      }).catch(err => {
+        console.error(err)
+      })
+    },
+    init () {
+      console.log('init')
+      wx.showLoading({
+        title: '请稍等',
+        mask: true
+      })
+      this.waiting = false
+      this.fontSize = 20
+      this.waitingNum = '准备'
+      const path = events.$emit('getMaskPath')
+      console.log(path)
+      this.imgPath = path
+      this.cameraShow = true
+      setTimeout(() => {
+        // this.getRectData()
+        this.maskShow = true
+      }, 500)
     }
-  },
-  onShow () {
-    this.waiting = false
   },
   onLoad () {
     this.imgPath = ''
-    if (once) {
-      setTimeout(() => {
-        this.needTip = true
-        once = false
-      }, 1000)
-    }
   },
   onReady () {
-    wx.showLoading({
-      title: '请稍等',
-      mask: true
-    })
-    const path = events.$emit('getMaskPath')
-    console.log(path)
-    this.imgPath = path
-    this.cameraShow = true
-    setTimeout(() => {
-      // this.getRectData()
-      this.maskShow = true
-    }, 500)
-  },
-  onShow () {
-    // this.getStencil(true)
+    this.init()
   },
   onShareAppMessage() {
     return {
@@ -233,6 +319,26 @@ export default {
     overflow: hidden;
     .camera{
       margin: auto;
+    }
+    .point-cvs {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .photo-tip {
+      position: absolute;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 120rpx;
+      height: 120rpx;
+      background: rgba(0,0,0,0.75);
+      border: 1px solid #FFFFFF;
+      border-radius: 50%;
+      color: #fff;
+      font-weight: bold;
+      line-height: 120rpx;
+      text-align: center;
     }
     .opacity-controller-wrap {
       position: absolute;
@@ -307,11 +413,11 @@ export default {
       bottom: 0;
       display: flex;
       flex-direction: row;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
       box-sizing: border-box;
       padding: 30rpx;
-      background: rgba(0,0,0, .2);
+      background: transparent;
       height: 190rpx;
       width: 100%;
       color: #FFF;

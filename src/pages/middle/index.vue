@@ -113,6 +113,93 @@ export default {
         wx.navigateBack()
       })
     },
+    uploadPhoto (cb) {
+      console.log('上传')
+      wx.uploadFile({
+        url: 'https://api.pintuxiangce.com/admin/upload/icon',
+        filePath: this.photoPath,
+        name: 'icon_file',
+        formData: {
+          icon: '',
+          image: ''
+        },
+        success(res) {
+          try {
+            const icon = JSON.parse(res.data).data.path
+            wx.uploadFile({
+              url: 'https://api.pintuxiangce.com/admin/upload/image',
+              filePath: this.imgPath,
+              name: 'image_file',
+              formData: {
+                icon: icon,
+                image: ''
+              },
+              success(imgRes) {
+                try {
+                  const img = JSON.parse(imgRes.data).data.path
+                  const name = events.$emit('getChooseName')
+                  wx.request({
+                    method: 'POST',
+                    data: {
+                      id: 0,
+                      name: name,
+                      ename: Date.now(),
+                      category: 31,
+                      good_num: 0,
+                      sort: 1,
+                      icon_url: icon,
+                      icon: img
+                    },
+                    header: {
+                      'content-type': 'application/x-www-form-urlencoded'
+                    },
+                    url: 'https://api.pintuxiangce.com/admin/icon/create',
+                    success: (res) => {
+                      cb()
+                    },
+                    fail () {
+                      wx.hideLoading()
+                      wx.showToast({
+                        title: '上传失败',
+                        icon: 'none'
+                      })
+                    }
+                  })
+                } catch (e) {
+                  wx.hideLoading()
+                  wx.showToast({
+                    title: '上传失败',
+                    icon: 'none'
+                  })
+                }
+              },
+              fail (e) {
+                console.log(e)
+                wx.hideLoading()
+                wx.showToast({
+                  title: '上传失败',
+                  icon: 'none'
+                })
+              }
+            })
+          } catch (e) {
+            wx.hideLoading()
+            wx.showToast({
+              title: '上传失败',
+              icon: 'none'
+            })
+          }
+        },
+        fail (e) {
+          console.log(e)
+          wx.hideLoading()
+          wx.showToast({
+            title: '上传失败',
+            icon: 'none'
+          })
+        }
+      })
+    },
     create () {
       const timer = setTimeout(() => {
         wx.hideLoading()
@@ -138,21 +225,23 @@ export default {
             quality: .8,
             success: (res) => {
               clearTimeout(timer)
-              wx.saveImageToPhotosAlbum({
-                filePath: res.tempFilePath,
-                success: () => {
-                  wx.hideLoading()
-                  wx.showToast({
-                    title: '保存成功'
-                  })
-                },
-                fail () {
-                  wx.hideLoading()
-                  wx.showToast({
-                    title: '保存失败，请在右上角设置中打开权限。',
-                    icon: 'none'
-                  })
-                }
+              this.uploadPhoto(() => {
+                wx.saveImageToPhotosAlbum({
+                  filePath: res.tempFilePath,
+                  success: () => {
+                    wx.hideLoading()
+                    wx.showToast({
+                      title: '保存成功'
+                    })
+                  },
+                  fail () {
+                    wx.hideLoading()
+                    wx.showToast({
+                      title: '保存失败，请在右上角设置中打开权限。',
+                      icon: 'none'
+                    })
+                  }
+                })
               })
             },
             fail (err) {

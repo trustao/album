@@ -245,7 +245,7 @@ export default {
         const scale = this.imgW / this.photoW
         ctx.beginPath()
         Object.keys(faceData).forEach(key => {
-          if (/^left_eyebrow_|^right_eyebrow_|^left_eye_|^right_eye_|^mouth_/.test(key) &&
+          if (/^left_eye_|^right_eye_|^mouth_/.test(key) &&
             !['mouth_upper_lip_left_contour3',
               'mouth_upper_lip_right_contour3','mouth_upper_lip_bottom','mouth_lower_lip_top','mouth_lower_lip_left_contour1',
               'mouth_lower_lip_right_contour1','left_eye_center','left_eye_pupil','right_eye_center','right_eye_pupil'].includes(key)

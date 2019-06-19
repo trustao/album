@@ -113,94 +113,123 @@ export default {
         wx.navigateBack()
       })
     },
-    uploadPhoto (cb) {
-      console.log('上传')
-      wx.uploadFile({
-        url: 'https://api.pintuxiangce.com/admin/upload/icon',
-        filePath: this.photoPath,
-        name: 'icon_file',
-        formData: {
-          icon: '',
-          image: ''
-        },
-        success(res) {
-          try {
-            const icon = JSON.parse(res.data).data.path
-            wx.uploadFile({
-              url: 'https://api.pintuxiangce.com/admin/upload/image',
-              filePath: this.imgPath,
-              name: 'image_file',
-              formData: {
-                icon: icon,
-                image: ''
-              },
-              success(imgRes) {
-                try {
-                  const img = JSON.parse(imgRes.data).data.path
-                  const name = events.$emit('getChooseName')
-                  wx.request({
-                    method: 'POST',
-                    data: {
-                      id: 0,
-                      name: name,
-                      ename: Date.now(),
-                      category: 31,
-                      good_num: 0,
-                      sort: 1,
-                      icon_url: icon,
-                      icon: img
-                    },
-                    header: {
-                      'content-type': 'application/x-www-form-urlencoded'
-                    },
-                    url: 'https://api.pintuxiangce.com/admin/icon/create',
-                    success: (res) => {
-                      cb()
-                    },
-                    fail () {
-                      wx.hideLoading()
-                      wx.showToast({
-                        title: '上传失败',
-                        icon: 'none'
-                      })
-                    }
-                  })
-                } catch (e) {
+    uploadPhoto (path) {
+      console.log('绘制', path)
+      const ctx = wx.createCanvasContext('to-images')
+      ctx.drawImage(path, 0, 0, 375, 375)
+      ctx.draw(false, () => {
+        console.log('上传')
+        setTimeout(() => {
+          wx.canvasToTempFilePath({
+            canvasId: 'to-images',
+            x: 0,
+            y: 0,
+            width: 375,
+            height: 375,
+            destWidth: 700,
+            destHeight: 700,
+            fileType: 'jpg',
+            quality: .8,
+            success: (res) => {
+              wx.uploadFile({
+                url: 'https://api.pintuxiangce.com/admin/upload/icon',
+                filePath: res.tempFilePath,
+                name: 'icon_file',
+                formData: {
+                  icon: '',
+                  image: ''
+                },
+                success:(res) => {
+                  try {
+                    const icon = JSON.parse(res.data).data.path
+                    wx.uploadFile({
+                      url: 'https://api.pintuxiangce.com/admin/upload/image',
+                      filePath: this.imgPath,
+                      name: 'image_file',
+                      formData: {
+                        icon: icon,
+                        image: ''
+                      },
+                      success: (imgRes) => {
+                        try {
+                          const img = JSON.parse(imgRes.data).data.path
+                          wx.request({
+                            method: 'POST',
+                            data: {
+                              id: 0,
+                              name: '模仿大赛' + Date.now().toString(16),
+                              ename: Date.now(),
+                              category: 31,
+                              good_num: 0,
+                              sort: 1,
+                              icon_url: icon,
+                              icon: img
+                            },
+                            header: {
+                              'content-type': 'application/x-www-form-urlencoded'
+                            },
+                            url: 'https://api.pintuxiangce.com/admin/icon/create',
+                            success: (res) => {
+                              console.log('上传成功')
+                            },
+                            fail (e) {
+                              console.error(e)
+                              wx.hideLoading()
+                              wx.showToast({
+                                title: '上传失败',
+                                icon: 'none'
+                              })
+                            }
+                          })
+                        } catch (e) {
+                          console.error(e)
+                          wx.hideLoading()
+                          wx.showToast({
+                            title: '上传失败',
+                            icon: 'none'
+                          })
+                        }
+                      },
+                      fail (e) {
+                        console.log(e)
+                        wx.hideLoading()
+                        wx.showToast({
+                          title: '上传失败',
+                          icon: 'none'
+                        })
+                      }
+                    })
+                  } catch (e) {
+                    console.error(e)
+                    wx.hideLoading()
+                    wx.showToast({
+                      title: '上传失败',
+                      icon: 'none'
+                    })
+                  }
+                },
+                fail (e) {
+                  console.log(e)
                   wx.hideLoading()
                   wx.showToast({
                     title: '上传失败',
                     icon: 'none'
                   })
                 }
-              },
-              fail (e) {
-                console.log(e)
-                wx.hideLoading()
-                wx.showToast({
-                  title: '上传失败',
-                  icon: 'none'
-                })
-              }
-            })
-          } catch (e) {
-            wx.hideLoading()
-            wx.showToast({
-              title: '上传失败',
-              icon: 'none'
-            })
-          }
-        },
-        fail (e) {
-          console.log(e)
-          wx.hideLoading()
-          wx.showToast({
-            title: '上传失败',
-            icon: 'none'
+              })
+            },
+            fail (err) {
+              console.log(err)
+            }
           })
-        }
+        }, 300)
       })
     },
     create () {
+      wx.showLoading({
+        title: '请稍等',
+        mask: true
+      })
       const timer = setTimeout(() => {
         wx.hideLoading()
         wx.showModal({
@@ -225,23 +254,21 @@ export default {
             quality: .8,
             success: (res) => {
               clearTimeout(timer)
-              this.uploadPhoto(() => {
-                wx.saveImageToPhotosAlbum({
-                  filePath: res.tempFilePath,
-                  success: () => {
-                    wx.hideLoading()
-                    wx.showToast({
-                      title: '保存成功'
-                    })
-                  },
-                  fail () {
-                    wx.hideLoading()
-                    wx.showToast({
-                      title: '保存失败，请在右上角设置中打开权限。',
-                      icon: 'none'
-                    })
-                  }
-                })
+              wx.saveImageToPhotosAlbum({
+                filePath: res.tempFilePath,
+                success: () => {
+                  wx.hideLoading()
+                  wx.showToast({
+                    title: '保存成功'
+                  })
+                },
+                fail () {
+                  wx.hideLoading()
+                  wx.showToast({
+                    title: '保存失败，请在右上角设置中打开权限。',
+                    icon: 'none'
+                  })
+                }
               })
             },
             fail (err) {
@@ -489,6 +516,9 @@ export default {
         this.imgPath = info.path
         this.imgW = info.width
         this.uploadSource(info.path)
+        setTimeout(() => {
+          this.uploadPhoto(events.$emit('getPhoto'))
+        }, 800)
       }
     })
     this.photoPath = events.$emit('getPhoto')

@@ -38,6 +38,9 @@ export default {
     },
     path () {
       return  this.list.length > 0 ? this.list[this.index % this.list.length].full_icon_url : ''
+    },
+    iconName () {
+      return  this.list.length > 0 ? this.list[this.index % this.list.length].icon_name : ''
     }
   },
   methods: {
@@ -45,6 +48,10 @@ export default {
       events.$off('getMaskPath')
       events.$on('getMaskPath', () => {
         return this.path
+      })
+      events.$off('getChooseName')
+      events.$on('getChooseName', () => {
+        return this.iconName
       })
       const url = '../camera/main'
       wx.navigateTo({ url })

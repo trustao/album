@@ -3,7 +3,7 @@
     <div class="camera-wrap">
       <camera v-if="cameraShow" class="camera" :style="{width: photoW + 'px', height: photoW + 'px'}" :device-position="devicePosition" :flash="flash" @error="errorHandler"></camera>
       <!--<cover-image mode="aspectFit" @load="imageLoad" v-if="maskShow" class="mask-img" :style="{opacity: opacity,width: photoW + 'px', height: photoW + 'px'}" :src="imgPath"></cover-image>-->
-      <canvas v-if="maskShow" class="point-cvs"  :style="{width: photoW + 'px', height: photoW + 'px'}" canvas-id="point-cvs"></canvas>
+      <canvas v-if="maskShow && needPoint" class="point-cvs"  :style="{width: photoW + 'px', height: photoW + 'px'}" canvas-id="point-cvs"></canvas>
       <div class="i-wrap" v-if="cameraShow" :style="{height: windowHeight - photoW - (isIphoneX ? 44 : 0) + 'px'}">
         <!--<div class="opacity-controller-wrap">-->
           <!--<div class="opacity-controller">-->
@@ -78,6 +78,7 @@ export default {
       waitingNum: '准备',
       fontSize: 20,
       startPhoto: false,
+      needPoint: true,
       waiting: false
     }
   },
@@ -159,6 +160,7 @@ export default {
       setTimeout(() => {
         this.waitingNum = 5
         this.fontSize = 36
+        this.needPoint = false
       }, 50)
       setTimeout(() => {
         this.waitingNum = 4
@@ -202,7 +204,7 @@ export default {
       this.needTip = false
       setTimeout(() => {
         this.takePhoto()
-      }, 800)
+      }, 2500)
       once = false
     },
     uploadImg (path) {
@@ -250,9 +252,9 @@ export default {
           ) {
 
             ctx.moveTo(faceData[key].x / scale, faceData[key].y / scale)
-            ctx.arc(faceData[key].x / scale, faceData[key].y / scale, 1, 0, 2 * Math.PI)
+            ctx.arc(faceData[key].x / scale, faceData[key].y / scale, 2, 0, 2 * Math.PI)
             ctx.closePath()
-            ctx.setFillStyle('#058ef6')
+            ctx.setFillStyle('#e02020')
             ctx.fill()
           }
         })
@@ -262,13 +264,13 @@ export default {
             this.startPhoto = true
             wx.hideLoading()
             this.needTip = true
-          }, 300)
+          }, 500)
         } else {
           wx.hideLoading()
           this.startPhoto = true
           setTimeout(() => {
             this.takePhoto()
-          }, 800)
+          }, 2500)
         }
       }).catch(err => {
         console.error(err)
@@ -281,6 +283,7 @@ export default {
         mask: true
       })
       this.waiting = false
+      this.needPoint = true
       this.fontSize = 20
       this.waitingNum = '准备'
       const path = events.$emit('getMaskPath')
